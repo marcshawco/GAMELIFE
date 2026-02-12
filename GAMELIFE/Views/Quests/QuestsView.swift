@@ -539,6 +539,13 @@ private struct QuestTrackingDiagnosticsRow: View {
             guard permissionManager.screenTimeEnabled else {
                 return ("exclamationmark.triangle.fill", "Screen Time access missing. Connect Mind Activity in Neural Links.", SystemTheme.warningOrange)
             }
+            guard screenTimeManager.isMonitorExtensionInstalled else {
+                return (
+                    "app.badge.checkmark",
+                    "Screen Time monitor extension is not bundled in this build. Quest usage cannot auto-update yet.",
+                    SystemTheme.warningOrange
+                )
+            }
 
             let progressPct = Int(displayedProgress * 100)
             let syncText = relativeTimestamp(screenTimeManager.lastSyncDate)

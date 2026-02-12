@@ -10,6 +10,7 @@ import DeviceActivity
 import ManagedSettings
 import FamilyControls
 import Foundation
+import UserNotifications
 
 // MARK: - GAMELIFE Device Activity Monitor
 
@@ -102,9 +103,47 @@ class GAMELIFEMonitor: DeviceActivityMonitor {
             completedIds.append(questIdString)
             defaults.set(completedIds, forKey: "completedQuestIds")
             defaults.set(Date(), forKey: "lastCompletionDate")
+            sendCompletionNotification(for: questIdString)
 
             log("Quest marked complete: \(questIdString)")
         }
+    }
+
+    private func sendCompletionNotification(for questIdString: String) {
+        let questTitle = activeQuestMetadata(for: questIdString)?["title"] as? String ?? "Screen Time Quest"
+        let xp = activeQuestMetadata(for: questIdString)?["xpReward"] as? Int ?? 0
+        let gold = activeQuestMetadata(for: questIdString)?["goldReward"] as? Int ?? 0
+
+        let content = UNMutableNotificationContent()
+        content.title = "[SYSTEM] Quest Auto-Completed"
+        if xp > 0 || gold > 0 {
+            content.body = "\(questTitle) finished from Screen Time. +\(xp) XP, +\(gold) Gold."
+        } else {
+            content.body = "\(questTitle) finished from Screen Time tracking."
+        }
+        content.sound = .default
+        content.interruptionLevel = .active
+
+        let request = UNNotificationRequest(
+            identifier: "screen-time-complete-\(questIdString)-\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) { [weak self] error in
+            if let error {
+                self?.log("Failed scheduling completion notification: \(error.localizedDescription)")
+            } else {
+                self?.log("Completion notification scheduled for quest: \(questIdString)")
+            }
+        }
+    }
+
+    private func activeQuestMetadata(for questIdString: String) -> [String: Any]? {
+        guard let entries = sharedDefaults?.array(forKey: "activeScreenTimeQuests") as? [[String: Any]] else {
+            return nil
+        }
+        return entries.first { ($0["id"] as? String) == questIdString }
     }
 
     /// Reset daily progress for a quest

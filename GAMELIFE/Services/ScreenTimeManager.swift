@@ -11,6 +11,7 @@ import FamilyControls
 import DeviceActivity
 import ManagedSettings
 import Combine
+import UIKit
 
 // MARK: - Screen Time Manager
 
@@ -55,6 +56,7 @@ class ScreenTimeManager: ObservableObject {
         loadTrackedUsage()
         refreshAuthorizationStatus()
         resetTrackedUsageIfNeeded()
+        refreshExtensionState()
     }
 
     // MARK: - Authorization
@@ -84,6 +86,7 @@ class ScreenTimeManager: ObservableObject {
         @unknown default:
             isAuthorized = false
         }
+        refreshExtensionState()
     }
 
     // MARK: - App Category Definitions
@@ -219,6 +222,7 @@ class ScreenTimeManager: ObservableObject {
     func startUsageMonitoring() {
         guard isAuthorized else { return }
         resetTrackedUsageIfNeeded()
+        refreshExtensionState()
 
         // Set up daily monitoring schedule
         let schedule = DeviceActivitySchedule(
@@ -266,6 +270,24 @@ class ScreenTimeManager: ObservableObject {
         let minutes = usageMinutes(forCategoryLabel: quest.screenTimeCategory)
         recordSync(event: "Category sampled: \(minutes) min")
         return min(1.0, Double(minutes) / target)
+    }
+
+    var isMonitorExtensionInstalled: Bool {
+        guard let pluginsPath = Bundle.main.builtInPlugInsPath else { return false }
+        return FileManager.default.fileExists(atPath: "\(pluginsPath)/GAMELIFEMonitor.appex")
+    }
+
+    private func refreshExtensionState() {
+        guard isAuthorized else { return }
+        if !isMonitorExtensionInstalled {
+            // Be explicit: authorization exists, but there is no background monitor bundle.
+            lastDetectedEvent = "Monitor extension missing in this build. Screen Time progress events will not stream."
+            return
+        }
+
+        if lastDetectedEvent.contains("Monitor extension missing") || lastDetectedEvent.isEmpty {
+            lastDetectedEvent = "Screen Time monitor extension ready."
+        }
     }
 
     /// Record usage minutes for a concrete Family Controls selection.

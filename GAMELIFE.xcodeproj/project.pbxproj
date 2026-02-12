@@ -6,8 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A10100012F40000100AAA001 /* GAMELIFEMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A10100042F40000100AAA001 /* GAMELIFEMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10100032F40000100AAA001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 905CB4342F34C57C00529544 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10100072F40000100AAA001;
+			remoteInfo = GAMELIFEMonitor;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A10100022F40000100AAA001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10100012F40000100AAA001 /* GAMELIFEMonitor.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		905CB43C2F34C57C00529544 /* GAMELIFE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GAMELIFE.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10100042F40000100AAA001 /* GAMELIFEMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GAMELIFEMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +45,22 @@
 			path = GAMELIFE;
 			sourceTree = "<group>";
 		};
+		A10100052F40000100AAA001 /* GAMELIFEMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GAMELIFEMonitor;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		905CB4392F34C57C00529544 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10100062F40000100AAA001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				905CB43E2F34C57C00529544 /* GAMELIFE */,
+				A10100052F40000100AAA001 /* GAMELIFEMonitor */,
 				905CB43D2F34C57C00529544 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				905CB43C2F34C57C00529544 /* GAMELIFE.app */,
+				A10100042F40000100AAA001 /* GAMELIFEMonitor.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,10 +98,12 @@
 				905CB4382F34C57C00529544 /* Sources */,
 				905CB4392F34C57C00529544 /* Frameworks */,
 				905CB43A2F34C57C00529544 /* Resources */,
+				A10100022F40000100AAA001 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A101000A2F40000100AAA001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				905CB43E2F34C57C00529544 /* GAMELIFE */,
@@ -69,6 +114,28 @@
 			productName = GAMELIFE;
 			productReference = 905CB43C2F34C57C00529544 /* GAMELIFE.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10100072F40000100AAA001 /* GAMELIFEMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A101000D2F40000100AAA001 /* Build configuration list for PBXNativeTarget "GAMELIFEMonitor" */;
+			buildPhases = (
+				A10100092F40000100AAA001 /* Sources */,
+				A10100062F40000100AAA001 /* Frameworks */,
+				A10100082F40000100AAA001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10100052F40000100AAA001 /* GAMELIFEMonitor */,
+			);
+			name = GAMELIFEMonitor;
+			packageProductDependencies = (
+			);
+			productName = GAMELIFEMonitor;
+			productReference = A10100042F40000100AAA001 /* GAMELIFEMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +148,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					905CB43B2F34C57C00529544 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					A10100072F40000100AAA001 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -100,12 +170,20 @@
 			projectRoot = "";
 			targets = (
 				905CB43B2F34C57C00529544 /* GAMELIFE */,
+				A10100072F40000100AAA001 /* GAMELIFEMonitor */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		905CB43A2F34C57C00529544 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10100082F40000100AAA001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +200,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10100092F40000100AAA001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A101000A2F40000100AAA001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10100072F40000100AAA001 /* GAMELIFEMonitor */;
+			targetProxy = A10100032F40000100AAA001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		905CB4452F34C57D00529544 /* Debug */ = {
@@ -273,7 +366,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -320,7 +413,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -333,6 +426,62 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A101000B2F40000100AAA001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GAMELIFEMonitor/GAMELIFEMonitor.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3LZ2R96K44;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.deviceactivity.monitor-extension";
+				INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).GAMELIFEMonitor";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.GAMELIFEMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A101000C2F40000100AAA001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GAMELIFEMonitor/GAMELIFEMonitor.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3LZ2R96K44;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.deviceactivity.monitor-extension";
+				INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).GAMELIFEMonitor";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.GAMELIFEMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -355,6 +504,15 @@
 			buildConfigurations = (
 				905CB4482F34C57D00529544 /* Debug */,
 				905CB4492F34C57D00529544 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A101000D2F40000100AAA001 /* Build configuration list for PBXNativeTarget "GAMELIFEMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A101000B2F40000100AAA001 /* Debug */,
+				A101000C2F40000100AAA001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

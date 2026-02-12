@@ -93,6 +93,7 @@ class GameEngine: ObservableObject {
         setupHealthKitObservers()
         setupScreenTimeObservers()
         setupLocationQuestObservers()
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         setupCloudKitSync()
         Task { @MainActor [weak self] in
             await self?.syncDynamicBossGoals()
@@ -102,7 +103,7 @@ class GameEngine: ObservableObject {
     // MARK: - Quest Completion
 
     /// Complete a daily quest and award rewards
-    func completeQuest(_ quest: DailyQuest) -> QuestCompletionResult {
+    func completeQuest(_ quest: DailyQuest, sendSystemNotification: Bool = true) -> QuestCompletionResult {
         guard let index = dailyQuests.firstIndex(where: { $0.id == quest.id }) else {
             return QuestCompletionResult(success: false, message: "Quest not found")
         }
@@ -157,11 +158,13 @@ class GameEngine: ObservableObject {
 
         // Always emit a system notification for completed quests so users get
         // consistent OS-level banners in addition to in-app feedback.
-        NotificationManager.shared.sendQuestCompletionNotification(
-            questTitle: completedQuest.title,
-            xp: finalXP,
-            gold: gold
-        )
+        if sendSystemNotification {
+            NotificationManager.shared.sendQuestCompletionNotification(
+                questTitle: completedQuest.title,
+                xp: finalXP,
+                gold: gold
+            )
+        }
 
         applyLinkedQuestDamage(for: completedQuest)
 
@@ -223,6 +226,7 @@ class GameEngine: ObservableObject {
         if quest.trackingType == .location || previousQuest?.trackingType == .location {
             syncLocationGeofences()
         }
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.scheduleQuestReminder(for: quest)
         save()
     }
@@ -238,6 +242,7 @@ class GameEngine: ObservableObject {
         if deletedQuest?.trackingType == .location {
             LocationManager.shared.removeQuestGeofence(for: questID)
         }
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.removeQuestReminder(questID: questID)
         save()
     }
@@ -254,6 +259,7 @@ class GameEngine: ObservableObject {
         isInDungeon = false
 
         LocationManager.shared.removeAllGeofences()
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         clearQuestCompletionUndoSnapshot()
         save()
     }
@@ -1120,6 +1126,7 @@ class GameEngine: ObservableObject {
         refreshQuestCyclesIfNeeded()
         syncBossLinksWithQuests()
         syncLocationGeofences()
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
 
         dailyQuests.forEach { NotificationManager.shared.scheduleQuestReminder(for: $0) }
 
@@ -1225,10 +1232,14 @@ class GameEngine: ObservableObject {
     func updateScreenTimeQuests() async {
         let screenTimeManager = ScreenTimeManager.shared
         var autoCompletedRewards: [(title: String, xp: Int, gold: Int)] = []
+        QuestManager.shared.checkExtensionCompletions()
+        let extensionProgress = QuestManager.shared.getProgressFromExtension()
 
         for i in dailyQuests.indices {
             if dailyQuests[i].trackingType == .screenTime {
-                let progress = screenTimeManager.checkQuestProgress(for: dailyQuests[i])
+                let reportedProgress = extensionProgress[dailyQuests[i].id] ?? 0
+                let sampledProgress = screenTimeManager.checkQuestProgress(for: dailyQuests[i])
+                let progress = max(reportedProgress, sampledProgress)
                 dailyQuests[i].currentProgress = min(progress, 1.0)
 
                 if progress >= 1.0 && dailyQuests[i].status != .completed {
@@ -1243,6 +1254,11 @@ class GameEngine: ObservableObject {
                     }
                 }
             }
+        }
+
+        if let extensionLog = QuestManager.shared.latestExtensionLog() {
+            screenTimeManager.lastDetectedEvent = extensionLog
+            screenTimeManager.lastSyncDate = Date()
         }
 
         for reward in autoCompletedRewards {
@@ -1311,6 +1327,7 @@ class GameEngine: ObservableObject {
         QuestDataManager.shared.saveDailyQuests(dailyQuests)
         QuestDataManager.shared.saveBossFights(activeBossFights)
         ActivityLogDataManager.shared.saveActivityLog(recentActivity)
+        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         if syncToCloud {
             CloudKitSyncManager.shared.queueUpload(
                 player: player,

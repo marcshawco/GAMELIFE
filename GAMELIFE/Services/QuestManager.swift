@@ -35,6 +35,9 @@ class QuestManager: ObservableObject {
         static let completedQuestIds = "completedQuestIds"
         static let questProgress = "questProgress"
         static let lastSyncDate = "lastSyncDate"
+        static let monitoringQuests = "monitoringQuests"
+        static let activeScreenTimeQuests = "activeScreenTimeQuests"
+        static let extensionLogs = "extensionLogs"
     }
 
     // MARK: - Initialization
@@ -105,7 +108,7 @@ class QuestManager: ObservableObject {
     /// Stop all monitoring
     func stopAllMonitoring() {
         center.stopMonitoring()
-        sharedDefaults?.removeObject(forKey: "monitoringQuests")
+        sharedDefaults?.removeObject(forKey: SharedKeys.monitoringQuests)
         print("[SYSTEM] All monitoring stopped")
     }
 
@@ -153,7 +156,7 @@ class QuestManager: ObservableObject {
     private func completeQuestFromExtension(questId: UUID) {
         // Find the quest and complete it
         if let quest = GameEngine.shared.dailyQuests.first(where: { $0.id == questId }) {
-            _ = GameEngine.shared.completeQuest(quest)
+            _ = GameEngine.shared.completeQuest(quest, sendSystemNotification: false)
 
             // Show system message
             SystemMessageHelper.showQuestComplete(
@@ -165,19 +168,19 @@ class QuestManager: ObservableObject {
     }
 
     private func saveMonitoringState(questId: UUID, apps: FamilyActivitySelection) {
-        var monitoringQuests = sharedDefaults?.dictionary(forKey: "monitoringQuests") as? [String: Data] ?? [:]
+        var monitoringQuests = sharedDefaults?.dictionary(forKey: SharedKeys.monitoringQuests) as? [String: Data] ?? [:]
 
         // Encode the FamilyActivitySelection
         if let encoded = try? JSONEncoder().encode(apps) {
             monitoringQuests[questId.uuidString] = encoded
-            sharedDefaults?.set(monitoringQuests, forKey: "monitoringQuests")
+            sharedDefaults?.set(monitoringQuests, forKey: SharedKeys.monitoringQuests)
         }
     }
 
     private func clearMonitoringState(questId: UUID) {
-        var monitoringQuests = sharedDefaults?.dictionary(forKey: "monitoringQuests") as? [String: Data] ?? [:]
+        var monitoringQuests = sharedDefaults?.dictionary(forKey: SharedKeys.monitoringQuests) as? [String: Data] ?? [:]
         monitoringQuests.removeValue(forKey: questId.uuidString)
-        sharedDefaults?.set(monitoringQuests, forKey: "monitoringQuests")
+        sharedDefaults?.set(monitoringQuests, forKey: SharedKeys.monitoringQuests)
     }
 
     @objc private func appDidBecomeActive() {
@@ -204,8 +207,50 @@ class QuestManager: ObservableObject {
             ])
         }
 
-        sharedDefaults?.set(questData, forKey: "activeScreenTimeQuests")
+        sharedDefaults?.set(questData, forKey: SharedKeys.activeScreenTimeQuests)
         sharedDefaults?.set(Date(), forKey: SharedKeys.lastSyncDate)
+    }
+
+    /// Ensure all active Screen Time quests are monitored and stale monitors are removed.
+    func synchronizeMonitoring(with quests: [DailyQuest]) {
+        let activeScreenTimeQuests = quests.filter {
+            $0.trackingType == .screenTime && $0.status != .completed
+        }
+
+        var activeIDs = Set<UUID>()
+        for quest in activeScreenTimeQuests {
+            activeIDs.insert(quest.id)
+            guard let data = quest.screenTimeSelectionData,
+                  let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data),
+                  (!selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty) else {
+                continue
+            }
+            startMonitoring(for: quest, apps: selection)
+        }
+
+        let monitoredQuestIDs = currentlyMonitoredQuestIDs()
+        for questID in monitoredQuestIDs where !activeIDs.contains(questID) {
+            let placeholderQuest = DailyQuest(
+                id: questID,
+                title: "Screen Time Quest",
+                description: "",
+                targetStats: [.willpower],
+                trackingType: .screenTime
+            )
+            stopMonitoring(for: placeholderQuest)
+        }
+
+        syncActiveQuests()
+    }
+
+    func latestExtensionLog() -> String? {
+        (sharedDefaults?.array(forKey: SharedKeys.extensionLogs) as? [String])?.last
+    }
+
+    private func currentlyMonitoredQuestIDs() -> Set<UUID> {
+        let map = sharedDefaults?.dictionary(forKey: SharedKeys.monitoringQuests) as? [String: Data] ?? [:]
+        let ids = map.keys.compactMap(UUID.init(uuidString:))
+        return Set(ids)
     }
 }
 
