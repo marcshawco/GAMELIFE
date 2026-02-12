@@ -190,8 +190,8 @@ class QuestManager: ObservableObject {
     // MARK: - Quest Sync
 
     /// Sync all active ScreenTime quests with the extension
-    func syncActiveQuests() {
-        let screenTimeQuests = GameEngine.shared.dailyQuests.filter {
+    func syncActiveQuests(_ quests: [DailyQuest]) {
+        let screenTimeQuests = quests.filter {
             $0.trackingType == .screenTime && $0.status != .completed
         }
 
@@ -240,7 +240,7 @@ class QuestManager: ObservableObject {
             stopMonitoring(for: placeholderQuest)
         }
 
-        syncActiveQuests()
+        syncActiveQuests(quests)
     }
 
     func latestExtensionLog() -> String? {
