@@ -173,9 +173,9 @@ struct QuestFormSheet: View {
                 Section {
                     Picker("Tracking Method", selection: $trackingType) {
                         Text("Manual").tag(QuestTrackingType.manual)
-                        Text("HealthKit").tag(QuestTrackingType.healthKit)
-                        Text("Screen Time").tag(QuestTrackingType.screenTime)
-                        Text("Address").tag(QuestTrackingType.location)
+                        Text("Health").tag(QuestTrackingType.healthKit)
+                        Text("Usage").tag(QuestTrackingType.screenTime)
+                        Text("Location").tag(QuestTrackingType.location)
                     }
                     .pickerStyle(.segmented)
 

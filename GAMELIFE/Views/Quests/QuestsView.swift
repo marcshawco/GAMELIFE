@@ -62,6 +62,9 @@ struct QuestsView: View {
                         }
                         .padding(.bottom, SystemSpacing.lg)
                     }
+                    .refreshable {
+                        await refreshExternalTracking()
+                    }
                 }
             }
             .navigationTitle("Quests")
@@ -190,6 +193,24 @@ struct QuestsView: View {
                 dismissUndoBanner()
             }
         }
+    }
+
+    private func refreshExternalTracking() async {
+        locationManager.requestSingleLocationRefresh()
+        QuestManager.shared.checkExtensionCompletions()
+
+        if healthKitManager.isAuthorized {
+            await healthKitManager.refreshTodayData()
+        }
+
+        if screenTimeManager.isAuthorized {
+            screenTimeManager.refreshAuthorizationStatus()
+            screenTimeManager.startUsageMonitoring()
+        }
+
+        await gameEngine.updateHealthKitQuests()
+        await gameEngine.updateScreenTimeQuests()
+        gameEngine.save()
     }
 }
 
@@ -345,7 +366,7 @@ struct QuestRowView: View {
                         )
                     }
 
-                    if quest.trackingType.isAutomatic {
+                    if quest.trackingType.isAutomatic && quest.status != .completed {
                         QuestTrackingDiagnosticsRow(
                             quest: quest,
                             locationManager: locationManager,
@@ -531,7 +552,7 @@ private struct QuestTrackingDiagnosticsRow: View {
             let syncText = relativeTimestamp(healthKitManager.lastSyncDate)
             return (
                 "heart.text.square.fill",
-                "Detected \(current)/\(target) \(quest.unit) • Last sync \(syncText) • \(healthKitManager.lastDetectedEvent)",
+                "Detected \(current)/\(target) \(quest.unit) • Synced \(syncText)",
                 SystemTheme.primaryBlue
             )
 
@@ -555,7 +576,7 @@ private struct QuestTrackingDiagnosticsRow: View {
             }
             return (
                 "apps.iphone",
-                "Progress \(progressPct)% • Last sync \(syncText) • \(screenTimeManager.lastDetectedEvent)",
+                "Auto-tracking active • \(progressPct)% complete • Synced \(syncText)",
                 SystemTheme.primaryBlue
             )
 
@@ -595,7 +616,7 @@ private struct QuestTrackingDiagnosticsRow: View {
             Text(diagnostics.text)
                 .font(SystemTypography.captionSmall)
                 .foregroundStyle(diagnostics.color)
-                .lineLimit(2)
+                .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
     }

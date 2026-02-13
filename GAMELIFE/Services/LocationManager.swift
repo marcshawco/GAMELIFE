@@ -58,6 +58,12 @@ class LocationManager: NSObject, ObservableObject {
         locationManager.requestWhenInUseAuthorization()
     }
 
+    /// Trigger an on-demand location refresh (used by pull-to-refresh in Quests).
+    func requestSingleLocationRefresh() {
+        guard isAuthorized else { return }
+        locationManager.requestLocation()
+    }
+
     private func checkAuthorizationStatus() {
         authorizationStatus = locationManager.authorizationStatus
         isAuthorized = authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse

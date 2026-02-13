@@ -165,57 +165,60 @@ class HealthKitManager: ObservableObject {
     /// Fetch all relevant data for today
     func fetchAllTodayData() {
         Task {
-            async let steps = fetchTodaySteps()
-            async let sleep = fetchTodaySleep()
-            async let energy = fetchTodayActiveEnergy()
-            async let workouts = fetchTodayWorkoutMinutes()
-            async let mindful = fetchTodayMindfulMinutes()
-            async let distance = fetchTodayDistanceKM()
-            async let water = fetchTodayWaterGlasses()
-            async let standHours = fetchTodayStandHours()
-            async let weight = fetchLatestBodyWeightLB()
-            async let bodyFat = fetchLatestBodyFatPercent()
-
-            let (
-                stepsResult,
-                sleepResult,
-                energyResult,
-                workoutsResult,
-                mindfulResult,
-                distanceResult,
-                waterResult,
-                standHoursResult,
-                weightResult,
-                bodyFatResult
-            ) = await (
-                steps,
-                sleep,
-                energy,
-                workouts,
-                mindful,
-                distance,
-                water,
-                standHours,
-                weight,
-                bodyFat
-            )
-
-            await MainActor.run {
-                self.todaySteps = stepsResult
-                self.todaySleepHours = sleepResult
-                self.todayActiveEnergy = energyResult
-                self.todayWorkoutMinutes = workoutsResult
-                self.todayMindfulMinutes = mindfulResult
-                self.todayDistanceKM = distanceResult
-                self.todayWaterGlasses = waterResult
-                self.todayStandHours = standHoursResult
-                self.currentBodyWeightLB = weightResult
-                self.currentBodyFatPercent = bodyFatResult
-                self.recordSync(event: "Health metrics refreshed")
-            }
-
-            NotificationCenter.default.post(name: .healthKitDataDidUpdate, object: nil)
+            await refreshTodayData()
         }
+    }
+
+    /// Deterministic refresh entry point used by pull-to-refresh and observers.
+    func refreshTodayData() async {
+        async let steps = fetchTodaySteps()
+        async let sleep = fetchTodaySleep()
+        async let energy = fetchTodayActiveEnergy()
+        async let workouts = fetchTodayWorkoutMinutes()
+        async let mindful = fetchTodayMindfulMinutes()
+        async let distance = fetchTodayDistanceKM()
+        async let water = fetchTodayWaterGlasses()
+        async let standHours = fetchTodayStandHours()
+        async let weight = fetchLatestBodyWeightLB()
+        async let bodyFat = fetchLatestBodyFatPercent()
+
+        let (
+            stepsResult,
+            sleepResult,
+            energyResult,
+            workoutsResult,
+            mindfulResult,
+            distanceResult,
+            waterResult,
+            standHoursResult,
+            weightResult,
+            bodyFatResult
+        ) = await (
+            steps,
+            sleep,
+            energy,
+            workouts,
+            mindful,
+            distance,
+            water,
+            standHours,
+            weight,
+            bodyFat
+        )
+
+        todaySteps = stepsResult
+        todaySleepHours = sleepResult
+        todayActiveEnergy = energyResult
+        todayWorkoutMinutes = workoutsResult
+        todayMindfulMinutes = mindfulResult
+        todayDistanceKM = distanceResult
+        todayWaterGlasses = waterResult
+        todayStandHours = standHoursResult
+        currentBodyWeightLB = weightResult
+        currentBodyFatPercent = bodyFatResult
+        recordSync(event: "Health metrics refreshed")
+
+        NotificationCenter.default.post(name: .healthKitDataDidUpdate, object: nil)
     }
 
     // MARK: - Steps
