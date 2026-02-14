@@ -13,7 +13,7 @@ import SwiftUI
 
 enum AppFeatureFlags {
     // Temporary beta switch. Set true to re-enable Screen Time flows.
-    static let screenTimeEnabled = false
+    static let screenTimeEnabled = true
 }
 
 // MARK: - Quest Type
