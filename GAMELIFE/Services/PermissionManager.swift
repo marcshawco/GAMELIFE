@@ -172,7 +172,7 @@ class PermissionManager: ObservableObject {
     // MARK: - Location
 
     func checkLocationStatus() {
-        switch CLLocationManager.authorizationStatus() {
+        switch LocationManager.shared.authorizationStatus {
         case .authorizedAlways:
             locationStatus = .authorized
             locationEnabled = true

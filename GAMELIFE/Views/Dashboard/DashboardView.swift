@@ -1071,7 +1071,9 @@ class DashboardViewModel: ObservableObject {
 
         // Start timer
         dungeonTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            self?.handleDungeonTick()
+            Task { @MainActor [weak self] in
+                self?.handleDungeonTick()
+            }
         }
     }
 

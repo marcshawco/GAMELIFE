@@ -464,8 +464,8 @@ struct QuestFormSheet: View {
                     longitudinalMeters: max(400, locationRadiusMeters * 2.5)
                 )
 
-                Map(coordinateRegion: .constant(previewRegion), annotationItems: [previewPoint]) { point in
-                    MapAnnotation(coordinate: point.coordinate) {
+                Map(initialPosition: .region(previewRegion)) {
+                    Annotation("Target", coordinate: previewPoint.coordinate) {
                         VStack(spacing: 4) {
                             Image(systemName: "mappin.circle.fill")
                                 .font(.system(size: 22))
