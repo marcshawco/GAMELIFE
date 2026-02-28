@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor-primary.dia",
+    "emit-module-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor-primary-emit-module.dia",
+    "pch" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor-primary.swiftdeps"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFEMonitor/GAMELIFEMonitor.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphoneos/GAMELIFEMonitor.build/Objects-normal/arm64/GAMELIFEMonitor~partial.swiftmodule"
+  }
+}

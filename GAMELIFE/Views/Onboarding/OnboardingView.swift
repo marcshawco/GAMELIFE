@@ -806,7 +806,7 @@ struct SetupQuestsPhaseView: View {
                             .glow(color: SystemTheme.primaryPurple, radius: 8)
                     }
 
-                    Text("Connect GAMELIFE to your device for automatic tracking. These are optional but enhance your experience.")
+                    Text("Connect PRAXIS to your device for automatic tracking. These are optional but enhance your experience.")
                         .font(SystemTypography.caption)
                         .foregroundStyle(SystemTheme.textTertiary)
                         .multilineTextAlignment(.center)

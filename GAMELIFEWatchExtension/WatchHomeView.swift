@@ -69,7 +69,7 @@ struct WatchHomeView: View {
                     }
                 }
             }
-            .navigationTitle("GAMELIFE")
+            .navigationTitle("PRAXIS")
             .toolbar {
                 ToolbarItem {
                     Button {

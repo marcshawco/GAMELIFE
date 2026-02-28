@@ -96,6 +96,7 @@ class TrainingManager: ObservableObject {
         elapsedSeconds = 0
         isActive = true
         focusModeEnabled = true
+        HapticManager.shared.trainingStarted()
 
         // Start the timer
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -155,6 +156,7 @@ class TrainingManager: ObservableObject {
             "Training Complete",
             "+\(xp) XP, +\(gold) Gold earned."
         )
+        HapticManager.shared.trainingCompleted()
 
         // Reset state
         isActive = false
@@ -179,6 +181,7 @@ class TrainingManager: ObservableObject {
 
         // Show warning
         SystemMessageHelper.showWarning(warningMessage)
+        HapticManager.shared.trainingFailed()
 
         // Reset state
         isActive = false
@@ -198,6 +201,7 @@ class TrainingManager: ObservableObject {
     /// Toggle focus mode (screen dimming)
     func toggleFocusMode() {
         focusModeEnabled.toggle()
+        HapticManager.shared.selection()
     }
 
     /// Pause the session (for emergencies)

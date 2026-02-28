@@ -27,7 +27,7 @@ struct GAMELIFEApp: App {
         // [SYSTEM]: Configure app defaults
         SettingsManager.shared.setDefaults()
         _ = CloudKitSyncManager.shared
-        if WCSession.isSupported(), WCSession.default.isPaired {
+        if WCSession.isSupported() {
             _ = WatchConnectivityManager.shared
         }
 
@@ -152,7 +152,7 @@ struct SplashView: View {
                 }
 
                 if showTitle {
-                    Text("GAMELIFE")
+                    Text("PRAXIS")
                         .font(SystemTypography.titleLarge)
                         .foregroundStyle(SystemTheme.primaryBlue)
                         .glow(color: SystemTheme.primaryBlue, radius: 10)

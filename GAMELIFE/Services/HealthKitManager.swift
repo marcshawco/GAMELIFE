@@ -963,10 +963,16 @@ extension HealthKitManager {
         for i in quests.indices {
             if quests[i].trackingType == .healthKit {
                 let progress = await checkQuestProgress(for: quests[i])
-                quests[i].currentProgress = min(progress, 1.0)
+                let sanitizedProgress: Double
+                if progress.isFinite {
+                    sanitizedProgress = min(1.0, max(0.0, progress))
+                } else {
+                    sanitizedProgress = 0
+                }
+                quests[i].currentProgress = sanitizedProgress
 
                 // Auto-complete if progress >= 100%
-                if progress >= 1.0 && quests[i].status != .completed {
+                if sanitizedProgress >= 1.0 && quests[i].status != .completed {
                     quests[i].status = .completed
                 }
             }

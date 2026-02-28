@@ -30,6 +30,25 @@ struct QuestsView: View {
     @State private var undoBannerTitle = ""
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var isRefreshingExternalTracking = false
+    @State private var liveProgressTick = Date()
+
+    private var sortedQuests: [DailyQuest] {
+        gameEngine.dailyQuests.sorted { lhs, rhs in
+            let l = questPriorityScore(lhs)
+            let r = questPriorityScore(rhs)
+            if l == r {
+                return lhs.title < rhs.title
+            }
+            return l > r
+        }
+    }
+
+    private var nextUpQuests: [DailyQuest] {
+        sortedQuests
+            .filter { $0.status != .completed }
+            .prefix(3)
+            .map { $0 }
+    }
 
     // MARK: - Body
 
@@ -48,13 +67,27 @@ struct QuestsView: View {
                                 .padding(.horizontal)
                                 .padding(.top, SystemSpacing.sm)
 
-                            ForEach(gameEngine.dailyQuests) { quest in
+                            if !nextUpQuests.isEmpty {
+                                NextUpSection(
+                                    quests: nextUpQuests,
+                                    bossImpactText: bossImpactText(for:),
+                                    rewardImpactText: rewardImpactText(for:),
+                                    streakImpactText: streakImpactText(for:)
+                                )
+                                .padding(.horizontal)
+                            }
+
+                            ForEach(sortedQuests) { quest in
                                 QuestRowView(
                                     quest: quest,
                                     locationManager: locationManager,
                                     healthKitManager: healthKitManager,
                                     screenTimeManager: screenTimeManager,
                                     permissionManager: permissionManager,
+                                    liveProgressTick: liveProgressTick,
+                                    impactBossText: bossImpactText(for: quest),
+                                    impactRewardsText: rewardImpactText(for: quest),
+                                    impactStreakText: streakImpactText(for: quest),
                                     onComplete: { completeQuest(quest) },
                                     onShowActions: { questActionTarget = quest }
                                 )
@@ -65,6 +98,9 @@ struct QuestsView: View {
                     }
                     .refreshable {
                         await refreshExternalTracking()
+                    }
+                    .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
+                        liveProgressTick = now
                     }
                 }
             }
@@ -170,6 +206,9 @@ struct QuestsView: View {
                 }
                 scheduleUndoBannerAutoDismiss()
             }
+        } else {
+            HapticManager.shared.warning()
+            SystemMessageHelper.showWarning(result.message)
         }
     }
 
@@ -201,31 +240,81 @@ struct QuestsView: View {
         guard !isRefreshingExternalTracking else { return }
         isRefreshingExternalTracking = true
         defer {
-            // Ensure pull-to-refresh always exits promptly, even if a provider stalls.
             isRefreshingExternalTracking = false
         }
 
         locationManager.requestSingleLocationRefresh()
         QuestManager.shared.checkExtensionCompletions()
 
-        Task { @MainActor in
-            if healthKitManager.isAuthorized {
-                await healthKitManager.refreshTodayData()
-            }
-            await gameEngine.updateHealthKitQuests()
-            gameEngine.save()
+        await runWithTimeout(seconds: 20) {
+            await gameEngine.refreshExternalTrackingTransaction()
         }
+    }
 
-        if AppFeatureFlags.screenTimeEnabled {
-            Task { @MainActor in
-                if screenTimeManager.isAuthorized {
-                    screenTimeManager.refreshAuthorizationStatus()
-                    screenTimeManager.startUsageMonitoring()
-                }
-                await gameEngine.updateScreenTimeQuests()
-                gameEngine.save()
+    @MainActor
+    private func runWithTimeout(seconds: TimeInterval, _ operation: @escaping @Sendable () async -> Void) async {
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                await operation()
             }
+
+            group.addTask {
+                let nanos = UInt64(max(1, seconds) * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: nanos)
+            }
+
+            await group.next()
+            group.cancelAll()
         }
+    }
+
+    private func questPriorityScore(_ quest: DailyQuest) -> Double {
+        guard quest.status != .completed else { return -10_000 }
+
+        let now = Date()
+        let secondsLeft = max(60, quest.expiresAt.timeIntervalSince(now))
+        let dueSoonScore = 250_000 / secondsLeft
+
+        let bossImpact = Double(estimatedBossDamage(for: quest))
+        let streakRisk = (!quest.isOptional && quest.resolvedFrequency == .daily)
+            ? (1.0 - quest.normalizedProgress) * 40.0
+            : 0
+
+        let rewardValue = Double(quest.xpReward) + Double(quest.isOptional ? 0 : quest.goldReward * 3)
+        return dueSoonScore + (bossImpact * 1.6) + streakRisk + (rewardValue * 0.3)
+    }
+
+    private func estimatedBossDamage(for quest: DailyQuest) -> Int {
+        guard let linkedBossID = quest.linkedBossID,
+              let boss = gameEngine.activeBossFights.first(where: { $0.id == linkedBossID && !$0.isDefeated }) else {
+            return 0
+        }
+        let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: gameEngine.player.level)
+        let estimated = max(1, Int(Double(baseDamage) * 0.8))
+        return min(estimated, boss.currentHP)
+    }
+
+    private func bossImpactText(for quest: DailyQuest) -> String? {
+        guard let linkedBossID = quest.linkedBossID,
+              let boss = gameEngine.activeBossFights.first(where: { $0.id == linkedBossID && !$0.isDefeated }) else {
+            return nil
+        }
+        let damage = estimatedBossDamage(for: quest)
+        return "Deals \(damage) HP to \(boss.title)"
+    }
+
+    private func rewardImpactText(for quest: DailyQuest) -> String {
+        if quest.isOptional {
+            return "+\(quest.xpReward) XP (Optional)"
+        }
+        return "+\(quest.xpReward) XP, +\(quest.goldReward) Gold"
+    }
+
+    private func streakImpactText(for quest: DailyQuest) -> String {
+        if quest.isOptional {
+            return "Streak-safe (optional)"
+        }
+        return "Streak: \(gameEngine.player.currentStreak) days"
     }
 }
 
@@ -342,9 +431,12 @@ struct QuestRowView: View {
     @ObservedObject var healthKitManager: HealthKitManager
     @ObservedObject var screenTimeManager: ScreenTimeManager
     @ObservedObject var permissionManager: PermissionManager
+    let liveProgressTick: Date
+    let impactBossText: String?
+    let impactRewardsText: String
+    let impactStreakText: String
     let onComplete: () -> Void
     let onShowActions: () -> Void
-    @State private var progressTick = Date()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -375,10 +467,21 @@ struct QuestRowView: View {
                         .foregroundStyle(SystemTheme.textSecondary)
                         .lineLimit(1)
 
-                    if quest.trackingType == .location {
-                        LocationTrackingStatusRow(
-                            status: locationManager.questTrackingStatus(for: quest)
-                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let impactBossText {
+                            Text(impactBossText)
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.warningOrange)
+                                .lineLimit(1)
+                        }
+                        Text(impactRewardsText)
+                            .font(SystemTypography.captionSmall)
+                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .lineLimit(1)
+                        Text(impactStreakText)
+                            .font(SystemTypography.captionSmall)
+                            .foregroundStyle(SystemTheme.textSecondary)
+                            .lineLimit(1)
                     }
 
                     if quest.trackingType.isAutomatic && quest.status != .completed {
@@ -452,7 +555,7 @@ struct QuestRowView: View {
 
                     Spacer()
 
-                    Text("\(Int(displayedMetricValue))/\(Int(max(1, quest.targetValue))) \(quest.unit) • \(Int(displayedProgress * 100))%")
+                    Text("\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(displayedProgress * 100))%")
                         .font(SystemTypography.mono(10, weight: .semibold))
                         .foregroundStyle(quest.status == .completed ? SystemTheme.successGreen : SystemTheme.primaryBlue)
                         .lineLimit(1)
@@ -485,20 +588,12 @@ struct QuestRowView: View {
                     lineWidth: 1
                 )
         )
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
-            guard quest.trackingType.isAutomatic else { return }
-            if quest.trackingType == .location, quest.status != .completed {
-                progressTick = now
-            } else if Int(now.timeIntervalSince1970) % 15 == 0 {
-                progressTick = now
-            }
-        }
     }
 
     private var displayedProgress: Double {
         if quest.trackingType == .location {
-            _ = progressTick
-            return locationManager.liveLocationProgress(for: quest)
+            _ = liveProgressTick
+            return locationManager.liveLocationProgress(for: quest, now: liveProgressTick)
         }
         return quest.normalizedProgress
     }
@@ -506,6 +601,62 @@ struct QuestRowView: View {
     private var displayedMetricValue: Double {
         if quest.status == .completed { return max(1, quest.targetValue) }
         return min(max(0, displayedProgress * max(1, quest.targetValue)), max(1, quest.targetValue))
+    }
+}
+
+private struct NextUpSection: View {
+    let quests: [DailyQuest]
+    let bossImpactText: (DailyQuest) -> String?
+    let rewardImpactText: (DailyQuest) -> String
+    let streakImpactText: (DailyQuest) -> String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Next Up")
+                .font(SystemTypography.mono(14, weight: .bold))
+                .foregroundStyle(SystemTheme.primaryBlue)
+
+            VStack(spacing: 8) {
+                ForEach(Array(quests.enumerated()), id: \.element.id) { index, quest in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text("\(index + 1)")
+                            .font(SystemTypography.mono(11, weight: .bold))
+                            .foregroundStyle(SystemTheme.backgroundPrimary)
+                            .frame(width: 18, height: 18)
+                            .background(SystemTheme.primaryBlue)
+                            .clipShape(Circle())
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(quest.title)
+                                .font(SystemTypography.caption)
+                                .foregroundStyle(SystemTheme.textPrimary)
+                                .lineLimit(1)
+                            if let bossLine = bossImpactText(quest) {
+                                Text(bossLine)
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.warningOrange)
+                                    .lineLimit(1)
+                            }
+                            Text(rewardImpactText(quest))
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                                .lineLimit(1)
+                            Text(streakImpactText(quest))
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.textSecondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                    }
+                    if index < quests.count - 1 {
+                        Divider().overlay(SystemTheme.borderSecondary)
+                    }
+                }
+            }
+            .padding(10)
+            .background(SystemTheme.backgroundTertiary)
+            .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        }
     }
 }
 
@@ -520,49 +671,6 @@ private struct QuestStatIconChip: View {
             .background(stat.color.opacity(0.14))
             .clipShape(Circle())
             .accessibilityLabel(Text(stat.fullName))
-    }
-}
-
-private struct LocationTrackingStatusRow: View {
-    let status: LocationManager.QuestTrackingStatus
-
-    private var details: (icon: String, text: String, color: Color) {
-        switch status {
-        case .completed:
-            return ("checkmark.seal.fill", "Completed today", SystemTheme.successGreen)
-        case .permissionRequired:
-            return ("location.slash.fill", "Allow Always Location for background tracking", SystemTheme.warningOrange)
-        case .invalidAddress:
-            return ("mappin.slash", "Address needs validation", SystemTheme.warningOrange)
-        case .monitoringUnavailable:
-            return ("exclamationmark.triangle.fill", "Geofencing unavailable", SystemTheme.criticalRed)
-        case .notMonitoring:
-            return ("antenna.radiowaves.left.and.right.slash", "Tracking not active", SystemTheme.textTertiary)
-        case .monitoring(let locationName):
-            return ("location.circle.fill", "Tracking near \(compactLocation(locationName))", SystemTheme.primaryBlue)
-        case .inRange(let minutes, let requiredMinutes):
-            return ("timer.circle.fill", "In range \(minutes)/\(requiredMinutes) min", SystemTheme.successGreen)
-        }
-    }
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: details.icon)
-                .font(.system(size: 10, weight: .semibold))
-            Text(details.text)
-                .font(SystemTypography.captionSmall)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .foregroundStyle(details.color)
-    }
-
-    private func compactLocation(_ raw: String) -> String {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.count <= 28 {
-            return trimmed
-        }
-        return String(trimmed.prefix(27)) + "…"
     }
 }
 
@@ -622,6 +730,13 @@ private struct QuestTrackingDiagnosticsRow: View {
             let status = locationManager.questTrackingStatus(for: quest)
             switch status {
             case .permissionRequired:
+                if displayedProgress > 0 || quest.status == .inProgress {
+                    return (
+                        "location.circle.fill",
+                        "Foreground tracking active • Enable Always Location for background auto-complete.",
+                        SystemTheme.textSecondary
+                    )
+                }
                 return ("location.slash.fill", "Allow Always Location to keep auto-complete active in background.", SystemTheme.warningOrange)
             case .invalidAddress:
                 return ("mappin.slash", "Address not validated. Edit and validate with Apple Maps.", SystemTheme.warningOrange)

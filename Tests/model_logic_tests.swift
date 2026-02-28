@@ -24,6 +24,8 @@ struct ModelLogicTestsMain {
         testLinkedQuestBossDamage()
         testDynamicBossGoalTypeMetadata()
         testDynamicBossGoalProgressMath()
+        testQuestMetricProgressFormatting()
+        testQuestHistoryOverwriteRoundTrip()
         print("All model logic tests passed")
     }
 
@@ -246,5 +248,45 @@ struct ModelLogicTestsMain {
             lastUpdatedAt: nil
         )
         expect(abs(disciplineAtGoal.normalizedProgress - 1.0) < 0.0001, "Screen-time discipline should be 100% at target usage")
+    }
+
+    private static func testQuestMetricProgressFormatting() {
+        expect(QuestProgressFormatter.metricDisplay(0.0) == "0", "Metric formatter should preserve zero")
+        expect(QuestProgressFormatter.metricDisplay(0.04) == "0", "Metric formatter should round tiny values cleanly")
+        expect(QuestProgressFormatter.metricDisplay(0.12) == "0.1", "Metric formatter should keep one decimal for partial progress")
+        expect(QuestProgressFormatter.metricDisplay(2.0) == "2", "Metric formatter should render whole numbers as integers")
+        expect(QuestProgressFormatter.metricDisplay(2.56) == "2.6", "Metric formatter should round to one decimal place")
+    }
+
+    private static func testQuestHistoryOverwriteRoundTrip() {
+        let manager = QuestDataManager.shared
+        let originalHistory = manager.loadQuestHistory()
+
+        let testQuest = DailyQuest(
+            title: "History Test Quest",
+            description: "history",
+            difficulty: .easy,
+            targetStats: [.intelligence]
+        )
+
+        let expected = QuestHistoryRecord(
+            questId: testQuest.id,
+            questTitle: testQuest.title,
+            questType: testQuest.questType,
+            difficulty: testQuest.difficulty,
+            completedAt: Date(timeIntervalSince1970: 1_700_000_123),
+            xpAwarded: 11,
+            goldAwarded: 2
+        )
+
+        manager.overwriteQuestHistory([expected])
+        let loaded = manager.loadQuestHistory()
+
+        expect(loaded.count == 1, "Quest history overwrite should replace records")
+        expect(loaded[0].questId == expected.questId, "Quest history overwrite should preserve quest id")
+        expect(loaded[0].xpAwarded == expected.xpAwarded, "Quest history overwrite should preserve XP")
+        expect(loaded[0].goldAwarded == expected.goldAwarded, "Quest history overwrite should preserve gold")
+
+        manager.overwriteQuestHistory(originalHistory)
     }
 }

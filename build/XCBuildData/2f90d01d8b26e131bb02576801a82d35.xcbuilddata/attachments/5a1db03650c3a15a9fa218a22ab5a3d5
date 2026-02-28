@@ -1,0 +1,369 @@
+{
+  "" : {
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFE-primary.dia",
+    "emit-module-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFE-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFE-primary-emit-module.dia",
+    "pch" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFE-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFE-primary.swiftdeps"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/ContentView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ContentView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Design/SystemTheme.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemTheme~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/GAMELIFEApp.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GAMELIFEApp~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Models/ActivityLogModels.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ActivityLogModels~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Models/PlayerModels.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PlayerModels~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Models/QuestModels.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestModels~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/CloudKitSyncManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/CloudKitSyncManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/DataManagers.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DataManagers~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/GameEngine.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GameEngine~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/HapticManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HapticManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/HealthKitManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/HealthKitManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/LocationManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/LocationManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/MarketplaceManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MarketplaceManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/NotificationManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/NotificationManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/PenaltyManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PenaltyManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/PermissionManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/QuestManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/ScreenTimeManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/TrainingManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Services/WatchConnectivityManager.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/WatchConnectivityManager~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Bosses/BossesView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/BossesView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Components/RadarChartView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/RadarChartView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Components/SystemMessageBanner.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SystemMessageBanner~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Dashboard/DashboardView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/DashboardView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/MainTabView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/MainTabView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Onboarding/FirstLaunchSetupView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/FirstLaunchSetupView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Onboarding/OnboardingView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/OnboardingView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Quests/QuestFormSheet.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestFormSheet~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Quests/QuestsView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/QuestsView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Quests/ScreenTimeLinkSheet.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ScreenTimeLinkSheet~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Settings/PermissionManagerView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/PermissionManagerView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Settings/SettingsView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/SettingsView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Shop/ShopView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/ShopView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Status/StatusView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/StatusView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFE/Views/Training/TrainingView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/TrainingView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFE.build/Objects-normal/x86_64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

@@ -149,7 +149,7 @@ struct TrainingSelectionView: View {
                     .foregroundStyle(SystemTheme.primaryPurple)
             }
             .multilineTextAlignment(.center)
-            .padding(.bottom, SystemSpacing.xl)
+            .padding(.bottom, SystemSpacing.xxl)
         }
     }
 }

@@ -146,7 +146,7 @@ struct AuthorizationRequiredView: View {
                     .font(SystemTypography.systemMessage)
                     .foregroundStyle(SystemTheme.primaryBlue)
 
-                Text("To track app usage automatically, GAMELIFE needs access to Screen Time data.")
+                Text("To track app usage automatically, PRAXIS needs access to Screen Time data.")
                     .font(SystemTypography.caption)
                     .foregroundStyle(SystemTheme.textSecondary)
                     .multilineTextAlignment(.center)

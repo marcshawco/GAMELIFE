@@ -208,10 +208,12 @@ struct RadarDataPolygon: View {
         guard stats.count == 6 else { return [] }
 
         var points: [CGPoint] = []
+        let safeMaxValue = max(1.0, maxValue.isFinite ? maxValue : 1.0)
         for (index, stat) in stats.enumerated() {
             let angle = CGFloat(index) * (2 * .pi / 6) - .pi / 2
-            let value = min(Double(stat.totalValue), maxValue)
-            let normalizedValue = CGFloat(value / maxValue) * progress
+            let value = min(Double(stat.totalValue), safeMaxValue)
+            let ratio = max(0.0, min(1.0, value / safeMaxValue))
+            let normalizedValue = CGFloat(ratio) * progress
             let pointRadius = radius * normalizedValue
 
             let x = center.x + pointRadius * cos(angle)

@@ -1,0 +1,39 @@
+{
+  "" : {
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchExtension-primary-emit-module.dia",
+    "pch" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchExtension-primary.swiftdeps"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFEWatchExtension/GAMELIFEWatchApp.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/GAMELIFEWatchApp~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFEWatchExtension/WatchHomeView.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchHomeView~partial.swiftmodule"
+  },
+  "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/GAMELIFEWatchExtension/WatchSessionStore.swift" : {
+    "const-values" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.swiftconstvalues",
+    "dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.d",
+    "diagnostics" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.dia",
+    "index-unit-output-path" : "/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.o",
+    "llvm-bc" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.bc",
+    "object" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.o",
+    "swift-dependencies" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore.swiftdeps",
+    "swiftmodule" : "/Users/astral/Documents/PROJECTS/XCODE/GAMELIFE/build/GAMELIFE.build/Debug-iphonesimulator/GAMELIFEWatchExtension.build/Objects-normal/x86_64/WatchSessionStore~partial.swiftmodule"
+  }
+}

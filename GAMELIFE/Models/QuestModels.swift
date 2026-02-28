@@ -16,6 +16,16 @@ enum AppFeatureFlags {
     static let screenTimeEnabled = true
 }
 
+// MARK: - Numeric Safety
+
+private func finiteOrZero(_ value: Double) -> Double {
+    value.isFinite ? value : 0
+}
+
+private func clampedUnitProgress(_ value: Double) -> Double {
+    min(1.0, max(0.0, finiteOrZero(value)))
+}
+
 // MARK: - Quest Type
 
 /// The three pillars of the quest system
@@ -222,18 +232,24 @@ struct DynamicBossGoal: Codable {
 
     /// Generic normalized goal progress for increasing or decreasing goals.
     var normalizedProgress: Double {
-        let delta = targetValue - startValue
+        let start = finiteOrZero(startValue)
+        let target = finiteOrZero(targetValue)
+        let current = finiteOrZero(currentValue)
+        let delta = target - start
         guard abs(delta) > 0.000_001 else {
-            return currentValue == targetValue ? 1 : 0
+            return current == target ? 1 : 0
         }
-        return min(1, max(0, (currentValue - startValue) / delta))
+        return clampedUnitProgress((current - start) / delta)
     }
 
     var remainingAmount: Double {
-        let raw = targetValue - currentValue
+        let target = finiteOrZero(targetValue)
+        let start = finiteOrZero(startValue)
+        let current = finiteOrZero(currentValue)
+        let raw = target - current
         // Match directionality (decreasing goals report positive remaining amount).
-        if targetValue < startValue {
-            return max(0, currentValue - targetValue)
+        if target < start {
+            return max(0, current - target)
         }
         return max(0, raw)
     }
@@ -299,12 +315,14 @@ struct DailyQuest: QuestProtocol {
     }
 
     var progressPercentage: Int {
-        Int(currentProgress * 100)
+        Int(clampedUnitProgress(currentProgress) * 100)
     }
 
     var displayProgress: String {
-        let current = Int(currentProgress * targetValue)
-        let target = Int(targetValue)
+        let safeProgress = clampedUnitProgress(currentProgress)
+        let safeTarget = max(0, finiteOrZero(targetValue))
+        let current = Int(safeProgress * safeTarget)
+        let target = Int(safeTarget)
         return "\(current)/\(target) \(unit)"
     }
 
@@ -316,7 +334,7 @@ struct DailyQuest: QuestProtocol {
     /// UI-safe normalized progress value for inline bars.
     var normalizedProgress: Double {
         if status == .completed { return 1.0 }
-        return min(1.0, max(0.0, currentProgress))
+        return clampedUnitProgress(currentProgress)
     }
 
     init(
@@ -357,8 +375,8 @@ struct DailyQuest: QuestProtocol {
         self.frequency = frequency
         self.isOptional = isOptional
         self.trackingType = trackingType
-        self.currentProgress = min(1.0, max(0.0, currentProgress))
-        self.targetValue = targetValue
+        self.currentProgress = clampedUnitProgress(currentProgress)
+        self.targetValue = finiteOrZero(targetValue)
         self.unit = unit
 
         // Set expiry by quest frequency (defaults to daily for legacy quests)
@@ -421,8 +439,8 @@ struct DailyQuest: QuestProtocol {
         frequency = try container.decodeIfPresent(QuestFrequency.self, forKey: .frequency)
         isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
         trackingType = try container.decodeIfPresent(QuestTrackingType.self, forKey: .trackingType) ?? .manual
-        currentProgress = min(1.0, max(0.0, try container.decodeIfPresent(Double.self, forKey: .currentProgress) ?? 0))
-        targetValue = try container.decodeIfPresent(Double.self, forKey: .targetValue) ?? 1
+        currentProgress = clampedUnitProgress(try container.decodeIfPresent(Double.self, forKey: .currentProgress) ?? 0)
+        targetValue = finiteOrZero(try container.decodeIfPresent(Double.self, forKey: .targetValue) ?? 1)
         unit = try container.decodeIfPresent(String.self, forKey: .unit) ?? "times"
 
         expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
@@ -506,7 +524,8 @@ struct BossFight: QuestProtocol {
     var totalDamageDealt: Int
 
     var hpPercentage: Double {
-        Double(currentHP) / Double(maxHP)
+        guard maxHP > 0 else { return 0 }
+        return clampedUnitProgress(Double(max(0, currentHP)) / Double(maxHP))
     }
 
     var isDefeated: Bool {
@@ -574,6 +593,11 @@ struct BossFight: QuestProtocol {
         let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: playerLevel)
         let questDamage = max(1, Int(Double(baseDamage) * 0.8))
         return applyDamage(questDamage, isCritical: false)
+    }
+
+    /// Apply externally computed damage (used when engine passives modify damage output).
+    mutating func applyExternalDamage(_ amount: Int, isCritical: Bool = false) -> DamageResult {
+        applyDamage(max(1, amount), isCritical: isCritical)
     }
 
     private mutating func applyDamage(_ amount: Int, isCritical: Bool) -> DamageResult {
@@ -672,7 +696,8 @@ struct Dungeon: QuestProtocol {
     }
 
     var progress: Double {
-        Double(elapsedSeconds) / Double(totalSeconds)
+        guard totalSeconds > 0 else { return 0 }
+        return clampedUnitProgress(Double(elapsedSeconds) / Double(totalSeconds))
     }
 
     var isComplete: Bool {
@@ -900,6 +925,27 @@ enum LootItem: Codable {
         case .title: return "text.badge.star"
         case .statBoost: return "arrow.up.circle.fill"
         }
+    }
+}
+
+// MARK: - Quest Progress Formatting
+
+enum QuestProgressFormatter {
+    /// Formats quest metric values so the text track matches the live progress bar.
+    /// Values that are effectively whole numbers render as integers, otherwise
+    /// one decimal is retained for fractional progress (for example, 0.6 / 5 minutes).
+    static func metricDisplay(_ value: Double) -> String {
+        guard value.isFinite else { return "0" }
+
+        let clamped = max(0, value)
+        let roundedOneDecimal = (clamped * 10).rounded() / 10
+        let nearestInteger = roundedOneDecimal.rounded()
+
+        if abs(roundedOneDecimal - nearestInteger) < 0.000_1 {
+            return String(Int(nearestInteger))
+        }
+
+        return String(format: "%.1f", roundedOneDecimal)
     }
 }
 

@@ -24,6 +24,8 @@ class GameEngine: ObservableObject {
     private static let defaultQuestMigrationKey = "didMigrateDefaultQuestTemplates"
     private static let zeroStatBaselineMigrationKey = "didMigrateZeroStatBaseline"
     private static let deathMechanicEnabledKey = "deathMechanicEnabled"
+    private static let agilityDodgeDayKey = "agilityDodgeDay"
+    private static let agilityDodgesUsedKey = "agilityDodgesUsed"
 
     // MARK: - Published Properties
 
@@ -54,14 +56,23 @@ class GameEngine: ObservableObject {
     private var questCompletionUndoSnapshot: QuestCompletionUndoSnapshot?
     private var questCompletionUndoTask: Task<Void, Never>?
     private let questCompletionUndoWindow: TimeInterval = 20
+    private var agilityDodgeDay: Date?
+    private var agilityDodgesUsed = 0
+    private var externalRefreshToken: UInt64 = 0
+
+    private func sanitizeProgress(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(1.0, max(0.0, value))
+    }
 
     private struct QuestCompletionUndoSnapshot {
-        let player: Player
+        let encodedPlayer: Data
         let dailyQuests: [DailyQuest]
         let activeBossFights: [BossFight]
         let pendingLootBoxes: [LootBox]
         let pendingPenalties: [PenaltyQuest]
         let recentActivity: [ActivityLogEntry]
+        let questHistory: [QuestHistoryRecord]
         let createdAt: Date
         let questTitle: String
     }
@@ -139,7 +150,9 @@ class GameEngine: ObservableObject {
             // Generate loot box based on quest difficulty
             let rarity = determineLootBoxRarity(for: completedQuest.difficulty)
             lootBox = LootBox(rarity: rarity)
-            pendingLootBoxes.append(lootBox!)
+            if let lootBox {
+                pendingLootBoxes.append(lootBox)
+            }
         }
 
         // Award XP
@@ -182,6 +195,7 @@ class GameEngine: ObservableObject {
         // Save
         save()
         armQuestCompletionUndoWindow(for: completedQuest.title)
+        HapticManager.shared.questCompleted(isCritical: isCritical)
 
         return QuestCompletionResult(
             success: true,
@@ -203,14 +217,21 @@ class GameEngine: ObservableObject {
             return false
         }
 
-        player = snapshot.player
+        guard let restoredPlayer = try? JSONDecoder().decode(Player.self, from: snapshot.encodedPlayer) else {
+            clearQuestCompletionUndoSnapshot()
+            return false
+        }
+
+        player = restoredPlayer
         dailyQuests = snapshot.dailyQuests
         activeBossFights = snapshot.activeBossFights
         pendingLootBoxes = snapshot.pendingLootBoxes
         pendingPenalties = snapshot.pendingPenalties
         recentActivity = snapshot.recentActivity
+        QuestDataManager.shared.overwriteQuestHistory(snapshot.questHistory)
 
         save()
+        HapticManager.shared.questUndoApplied()
         SystemMessageHelper.showInfo("Undo Applied", "\"\(snapshot.questTitle)\" completion was reverted.")
         clearQuestCompletionUndoSnapshot()
         return true
@@ -370,6 +391,7 @@ class GameEngine: ObservableObject {
         )
 
         showLevelUpAlert = true
+        HapticManager.shared.levelUp()
 
         // Send notification
         NotificationManager.shared.sendLevelUpNotification(level: newLevel, rank: newRank)
@@ -456,13 +478,15 @@ class GameEngine: ObservableObject {
     func updateDynamicBossCurrentValue(bossId: UUID, currentValue: Double) {
         guard let index = activeBossFights.firstIndex(where: { $0.id == bossId }) else { return }
         let wasDefeated = activeBossFights[index].isDefeated
-        activeBossFights[index].updateDynamicGoalCurrentValue(currentValue)
+        let sanitizedValue = currentValue.isFinite ? currentValue : 0
+        activeBossFights[index].updateDynamicGoalCurrentValue(sanitizedValue)
 
         if let generatedQuestID = activeBossFights[index].dynamicGoal?.generatedQuestID,
            let questIndex = dailyQuests.firstIndex(where: { $0.id == generatedQuestID }) {
             if dailyQuests[questIndex].trackingType == .manual {
-                dailyQuests[questIndex].currentProgress = activeBossFights[index].dynamicGoal?.normalizedProgress ?? 0
-                dailyQuests[questIndex].status = dailyQuests[questIndex].currentProgress >= 1 ? .completed : .inProgress
+                let progress = sanitizeProgress(activeBossFights[index].dynamicGoal?.normalizedProgress ?? 0)
+                dailyQuests[questIndex].currentProgress = progress
+                dailyQuests[questIndex].status = progress >= 1 ? .completed : .inProgress
             }
         }
 
@@ -502,6 +526,8 @@ class GameEngine: ObservableObject {
         // Check if boss defeated
         if result.bossDefeated {
             handleBossDefeated(activeBossFights[bossIndex])
+        } else {
+            HapticManager.shared.bossHit(isCritical: result.isCritical)
         }
 
         save()
@@ -575,6 +601,7 @@ class GameEngine: ObservableObject {
 
         // Send notification
         NotificationManager.shared.sendBossDefeatedNotification(bossName: boss.title)
+        HapticManager.shared.bossDefeated()
     }
 
     // MARK: - Dungeon System
@@ -789,10 +816,27 @@ class GameEngine: ObservableObject {
 
         var didChange = false
         var missedQuestCount = 0
+        var missedQuestDamageWeight: Double = 0
+        var partialCreditXP: Int = 0
         for index in dailyQuests.indices {
             while referenceDate >= dailyQuests[index].expiresAt {
                 if dailyQuests[index].status != .completed && !dailyQuests[index].isOptional {
                     missedQuestCount += 1
+                    let progress = sanitizeProgress(dailyQuests[index].currentProgress)
+                    if progress >= 0.70 {
+                        // Partial credit: 70%+ still grants some XP and reduces missed-day damage.
+                        let questPartialXP = max(1, Int((Double(dailyQuests[index].xpReward) * progress * 0.5).rounded()))
+                        partialCreditXP += questPartialXP
+                        missedQuestDamageWeight += max(0.2, 1.0 - progress)
+
+                        logActivity(
+                            type: .questCompleted,
+                            title: "\(dailyQuests[index].title) (Partial)",
+                            detail: "+\(questPartialXP) XP • \(Int((progress * 100).rounded()))% progress carried"
+                        )
+                    } else {
+                        missedQuestDamageWeight += 1.0
+                    }
                 }
                 dailyQuests[index].status = .available
                 dailyQuests[index].currentProgress = 0
@@ -801,8 +845,23 @@ class GameEngine: ObservableObject {
             }
         }
 
+        if partialCreditXP > 0 {
+            _ = awardXP(partialCreditXP)
+            HapticManager.shared.success()
+            NotificationManager.shared.sendSystemAlert(
+                title: "Partial Credit",
+                message: "Progress recognized. +\(partialCreditXP) XP awarded."
+            )
+            didChange = true
+        }
+
         if missedQuestCount > 0 {
-            applyMissedQuestDamage(for: missedQuestCount)
+            let usedStreakShield = consumeStreakShieldIfNeeded()
+            applyMissedQuestDamage(
+                for: missedQuestCount,
+                damageWeight: missedQuestDamageWeight,
+                preserveStreak: usedStreakShield
+            )
             didChange = true
         }
 
@@ -811,22 +870,46 @@ class GameEngine: ObservableObject {
         }
     }
 
-    private func applyMissedQuestDamage(for missedQuestCount: Int) {
-        player.currentStreak = 0
+    private func applyMissedQuestDamage(for missedQuestCount: Int, damageWeight: Double, preserveStreak: Bool) {
+        if !preserveStreak {
+            player.currentStreak = 0
+        }
 
-        let damage = GameFormulas.penaltyDamage(missedQuests: missedQuestCount)
+        let safeWeight = max(0, damageWeight)
+        let damage = max(1, Int((Double(GameFormulas.penaltyDamage(missedQuests: 1)) * safeWeight).rounded()))
         player.currentHP = max(0, player.currentHP - damage)
+
+        if preserveStreak {
+            SystemMessageHelper.showInfo("Streak Shield Used", "Your streak was protected this cycle.")
+            NotificationManager.shared.sendSystemAlert(
+                title: "Streak Shield Activated",
+                message: "A missed day was absorbed. Streak remains intact."
+            )
+        }
 
         if player.currentHP == 0 {
             applyPenalty(reason: .missedDailyQuests(count: missedQuestCount))
             if isDeathMechanicEnabled {
                 deathPenaltySummary = applyDeathConsequences(missedQuestCount: missedQuestCount)
+                HapticManager.shared.deathPenaltyApplied()
                 SystemMessageHelper.showWarning("You were defeated. Death penalties applied.")
             } else {
                 player.currentHP = player.maxHP
+                HapticManager.shared.warning()
                 SystemMessageHelper.showWarning("HP depleted. Death penalties are disabled.")
             }
         }
+    }
+
+    private func consumeStreakShieldIfNeeded() -> Bool {
+        guard player.currentStreak > 0, player.streakShieldCharges > 0 else { return false }
+        player.streakShieldCharges -= 1
+        logActivity(
+            type: .rewardConsumed,
+            title: "Streak Shield",
+            detail: "Protected streak from one missed cycle. Remaining: \(player.streakShieldCharges)"
+        )
+        return true
     }
 
     private var isDeathMechanicEnabled: Bool {
@@ -1275,26 +1358,30 @@ class GameEngine: ObservableObject {
         screenTimeManager: ScreenTimeManager
     ) async -> Double? {
         guard let goal = boss.dynamicGoal else { return nil }
+        let rawValue: Double?
 
         switch goal.type {
         case .weight:
             guard healthManager.isAuthorized else { return nil }
-            return healthManager.currentBodyWeightLB > 0 ? healthManager.currentBodyWeightLB : nil
+            rawValue = healthManager.currentBodyWeightLB > 0 ? healthManager.currentBodyWeightLB : nil
         case .bodyFat:
             guard healthManager.isAuthorized else { return nil }
-            return healthManager.currentBodyFatPercent > 0 ? healthManager.currentBodyFatPercent : nil
+            rawValue = healthManager.currentBodyFatPercent > 0 ? healthManager.currentBodyFatPercent : nil
         case .savings:
-            return goal.currentValue
+            rawValue = goal.currentValue
         case .workoutConsistency:
             guard healthManager.isAuthorized else { return nil }
             let start = cadenceStartDate(for: goal.cadence)
             let workouts = await healthManager.fetchWorkoutCount(from: start, to: Date())
-            return Double(workouts)
+            rawValue = Double(workouts)
         case .screenTimeDiscipline:
             guard AppFeatureFlags.screenTimeEnabled else { return nil }
             guard screenTimeManager.isAuthorized else { return nil }
-            return Double(max(0, screenTimeManager.socialMediaMinutesToday))
+            rawValue = Double(max(0, screenTimeManager.socialMediaMinutesToday))
         }
+
+        guard let rawValue, rawValue.isFinite else { return nil }
+        return rawValue
     }
 
     private func cadenceStartDate(for cadence: GoalCadence, now: Date = Date()) -> Date {
@@ -1348,7 +1435,7 @@ class GameEngine: ObservableObject {
             if let generatedQuestID = activeBossFights[bossIndex].dynamicGoal?.generatedQuestID,
                let questIndex = dailyQuests.firstIndex(where: { $0.id == generatedQuestID }),
                dailyQuests[questIndex].trackingType == .manual {
-                let progress = activeBossFights[bossIndex].dynamicGoal?.normalizedProgress ?? 0
+                let progress = sanitizeProgress(activeBossFights[bossIndex].dynamicGoal?.normalizedProgress ?? 0)
                 dailyQuests[questIndex].currentProgress = progress
                 dailyQuests[questIndex].status = progress >= 1 ? .completed : .inProgress
                 didChange = true
@@ -1372,8 +1459,44 @@ class GameEngine: ObservableObject {
         }
     }
 
-    func updateScreenTimeQuests() async {
+    private func beginExternalRefreshCycle() -> UInt64 {
+        externalRefreshToken &+= 1
+        return externalRefreshToken
+    }
+
+    private func isExternalRefreshTokenCurrent(_ token: UInt64?) -> Bool {
+        guard let token else { return true }
+        return token == externalRefreshToken
+    }
+
+    @MainActor
+    func refreshExternalTrackingTransaction() async {
+        let token = beginExternalRefreshCycle()
+
+        if HealthKitManager.shared.isAuthorized {
+            await HealthKitManager.shared.refreshTodayData()
+        }
+        guard isExternalRefreshTokenCurrent(token) else { return }
+
+        await updateHealthKitQuests(refreshToken: token)
+        guard isExternalRefreshTokenCurrent(token) else { return }
+
+        if AppFeatureFlags.screenTimeEnabled {
+            let screenTimeManager = ScreenTimeManager.shared
+            if screenTimeManager.isAuthorized {
+                screenTimeManager.refreshAuthorizationStatus()
+                screenTimeManager.startUsageMonitoring()
+            }
+            await updateScreenTimeQuests(refreshToken: token)
+        }
+        guard isExternalRefreshTokenCurrent(token) else { return }
+
+        save()
+    }
+
+    func updateScreenTimeQuests(refreshToken: UInt64? = nil) async {
         guard AppFeatureFlags.screenTimeEnabled else { return }
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
         let screenTimeManager = ScreenTimeManager.shared
         var autoCompletedRewards: [(title: String, xp: Int, gold: Int)] = []
         QuestManager.shared.checkExtensionCompletions()
@@ -1384,16 +1507,17 @@ class GameEngine: ObservableObject {
             .map(\.id)
 
         for questID in screenTimeQuestIDs {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
             guard let questIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
             let questSnapshot = dailyQuests[questIndex]
 
             let reportedProgress = extensionProgress[questID] ?? 0
             let sampledProgress = screenTimeManager.checkQuestProgress(for: questSnapshot)
-            let progress = max(reportedProgress, sampledProgress)
+            let progress = sanitizeProgress(max(reportedProgress, sampledProgress))
 
             guard let latestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
 
-            dailyQuests[latestIndex].currentProgress = min(progress, 1.0)
+            dailyQuests[latestIndex].currentProgress = progress
 
             if progress >= 1.0 && dailyQuests[latestIndex].status != .completed {
                 let completedTitle = dailyQuests[latestIndex].title
@@ -1409,11 +1533,13 @@ class GameEngine: ObservableObject {
         }
 
         if let extensionLog = QuestManager.shared.latestExtensionLog() {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
             screenTimeManager.lastDetectedEvent = extensionLog
             screenTimeManager.lastSyncDate = Date()
         }
 
         for reward in autoCompletedRewards {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
             SystemMessageHelper.showQuestComplete(
                 title: reward.title,
                 xp: reward.xp,
@@ -1421,6 +1547,7 @@ class GameEngine: ObservableObject {
             )
         }
 
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
         await syncDynamicBossGoals()
     }
 
@@ -1473,7 +1600,8 @@ class GameEngine: ObservableObject {
     }
 
     /// Update quest progress from HealthKit
-    func updateHealthKitQuests() async {
+    func updateHealthKitQuests(refreshToken: UInt64? = nil) async {
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
         let healthManager = HealthKitManager.shared
         var autoCompletedRewards: [(title: String, xp: Int, gold: Int)] = []
 
@@ -1482,16 +1610,19 @@ class GameEngine: ObservableObject {
             .map(\.id)
 
         for questID in healthKitQuestIDs {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
             guard let questIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
             let questSnapshot = dailyQuests[questIndex]
 
             let progress = await healthManager.checkQuestProgress(for: questSnapshot)
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+            let sanitizedProgress = sanitizeProgress(progress)
 
             guard let latestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
-            dailyQuests[latestIndex].currentProgress = min(progress, 1.0)
+            dailyQuests[latestIndex].currentProgress = sanitizedProgress
 
             // Auto-complete if 100%
-            if progress >= 1.0 && dailyQuests[latestIndex].status != .completed {
+            if sanitizedProgress >= 1.0 && dailyQuests[latestIndex].status != .completed {
                 let completedTitle = dailyQuests[latestIndex].title
                 let completionResult = completeQuest(dailyQuests[latestIndex])
                 if completionResult.success {
@@ -1505,6 +1636,7 @@ class GameEngine: ObservableObject {
         }
 
         for reward in autoCompletedRewards {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
             SystemMessageHelper.showQuestComplete(
                 title: reward.title,
                 xp: reward.xp,
@@ -1512,6 +1644,7 @@ class GameEngine: ObservableObject {
             )
         }
 
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
         await syncDynamicBossGoals()
     }
 
@@ -1548,7 +1681,9 @@ class GameEngine: ObservableObject {
             // Skip watch snapshot publishes in simulator builds.
             #else
             let session = WCSession.default
-            if session.isPaired, session.activationState == .activated, session.isWatchAppInstalled {
+            if session.activationState == .activated,
+               session.isPaired,
+               session.isWatchAppInstalled {
                 WatchConnectivityManager.shared.publishSnapshot(
                     player: player,
                     quests: dailyQuests,
@@ -1575,13 +1710,19 @@ class GameEngine: ObservableObject {
 
     private func prepareUndoSnapshot(for questTitle: String) {
         questCompletionUndoTask?.cancel()
+        guard let encodedPlayer = try? JSONEncoder().encode(player) else {
+            clearQuestCompletionUndoSnapshot()
+            return
+        }
+
         questCompletionUndoSnapshot = QuestCompletionUndoSnapshot(
-            player: player,
+            encodedPlayer: encodedPlayer,
             dailyQuests: dailyQuests,
             activeBossFights: activeBossFights,
             pendingLootBoxes: pendingLootBoxes,
             pendingPenalties: pendingPenalties,
             recentActivity: recentActivity,
+            questHistory: QuestDataManager.shared.loadQuestHistory(),
             createdAt: Date(),
             questTitle: questTitle
         )

@@ -362,7 +362,10 @@ class ScreenTimeManager: ObservableObject {
 
     /// Check reading app usage
     func checkReadingProgress(targetMinutes: Int) -> Double {
-        return Double(readingMinutesToday) / Double(targetMinutes)
+        guard targetMinutes > 0 else { return 0 }
+        let progress = Double(readingMinutesToday) / Double(targetMinutes)
+        guard progress.isFinite else { return 0 }
+        return min(1.0, max(0.0, progress))
     }
 
     /// Calculate INT XP based on productive app usage

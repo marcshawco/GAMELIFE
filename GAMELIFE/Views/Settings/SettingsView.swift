@@ -7,6 +7,8 @@
 //
 
 import SwiftUI
+import Combine
+import UIKit
 
 // MARK: - Settings View
 
@@ -19,10 +21,13 @@ struct SettingsView: View {
     @AppStorage("defaultTab") private var defaultTab: Int = 0
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
+    @AppStorage("hapticEnabled") private var hapticEnabled = true
     @AppStorage("questCompletionNotificationMode") private var questCompletionNotificationMode = NotificationManager.QuestCompletionNotificationMode.immediate.rawValue
     @AppStorage("deathMechanicEnabled") private var deathMechanicEnabled = true
+    @StateObject private var appIconManager = AppIconManager.shared
     @State private var showResetConfirmation = false
     @State private var showDeleteConfirmation = false
+    @State private var showDeathMechanicInfo = false
 
     // MARK: - Body
 
@@ -77,6 +82,13 @@ struct SettingsView: View {
                     Toggle("Dark Mode", isOn: $preferDarkMode)
                 }
 
+                Toggle("Haptic Feedback", isOn: $hapticEnabled)
+                    .onChange(of: hapticEnabled) { _, isEnabled in
+                        if isEnabled {
+                            HapticManager.shared.selection()
+                        }
+                    }
+
                 Picker("Quest Completion Alerts", selection: $questCompletionNotificationMode) {
                     ForEach(NotificationManager.QuestCompletionNotificationMode.allCases) { mode in
                         Text(mode.displayName).tag(mode.rawValue)
@@ -87,11 +99,35 @@ struct SettingsView: View {
                     NotificationManager.shared.questCompletionNotificationMode = mode
                 }
 
-                Toggle("Death Mechanic Penalties", isOn: $deathMechanicEnabled)
+                NavigationLink {
+                    AppIconPickerView()
+                } label: {
+                    HStack {
+                        Label("App Icon", systemImage: "app.badge")
+                            .foregroundStyle(SystemTheme.textPrimary)
+                        Spacer()
+                        Text(appIconManager.currentOption.displayName)
+                            .foregroundStyle(SystemTheme.textSecondary)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Toggle("Death Mechanic Penalties", isOn: $deathMechanicEnabled)
+
+                    Button {
+                        showDeathMechanicInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(SystemTheme.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Death mechanic info")
+                }
             } header: {
                 Text("Preferences")
             } footer: {
-                Text("Set your default tab, appearance, alerts, and death penalties in one place. Turning off death penalties does not stop HP loss.")
+                Text("Set your default tab, appearance, app icon, alerts, and death penalties in one place. Turning off death penalties does not stop HP loss.")
             }
 
             // Neural Links Section
@@ -112,7 +148,7 @@ struct SettingsView: View {
             } header: {
                 Text("Data Connections")
             } footer: {
-                Text("Connect GAMELIFE to health and location data")
+                Text("Connect PRAXIS to health and location data")
             }
 
             // Statistics Section
@@ -158,7 +194,7 @@ struct SettingsView: View {
 
                 if let aboutURL = URL(string: "https://gamelife.app") {
                     Link(destination: aboutURL) {
-                        Label("About GAMELIFE", systemImage: "info.circle")
+                        Label("About PRAXIS", systemImage: "info.circle")
                     }
                 }
 
@@ -188,6 +224,17 @@ struct SettingsView: View {
             }
         } message: {
             Text("This will permanently delete your player profile, all quests, bosses, and progress. This action cannot be undone.")
+        }
+        .alert("Death Mechanic Penalties", isPresented: $showDeathMechanicInfo) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(
+                """
+                When HP reaches 0:
+                • If enabled: rank may drop by 1 tier, stats are reduced based on your current rank, 20% Gold is lost, HP resets to full, and a death summary appears.
+                • If disabled: HP still drops to 0 from missed required quests, but no rank/stat/gold penalties are applied; HP resets to full.
+                """
+            )
         }
     }
 
@@ -267,6 +314,279 @@ struct StatRow: View {
             Text(value)
                 .font(SystemTypography.mono(14, weight: .semibold))
                 .foregroundStyle(SystemTheme.textPrimary)
+        }
+    }
+}
+
+// MARK: - App Icon Support
+
+enum AppIconOption: String, CaseIterable, Identifiable {
+    case systemDefault
+    case phoenixDark
+    case phoenixIvory
+    case phoenixWhite
+
+    var id: String { rawValue }
+
+    var iconName: String? {
+        switch self {
+        case .systemDefault: return nil
+        case .phoenixDark: return "AppIconPhoenixDarkV2"
+        case .phoenixIvory: return "AppIconPhoenixIvoryV2"
+        case .phoenixWhite: return "AppIconPhoenixWhiteV2"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .systemDefault: return "Default (Black)"
+        case .phoenixDark: return "Phoenix (Navy)"
+        case .phoenixIvory: return "Phoenix (Ivory)"
+        case .phoenixWhite: return "Phoenix (White)"
+        }
+    }
+
+    var previewAssetName: String {
+        switch self {
+        case .systemDefault: return "AppIconPreviewDefault"
+        case .phoenixDark: return "AppIconPreviewDark"
+        case .phoenixIvory: return "AppIconPreviewIvory"
+        case .phoenixWhite: return "AppIconPreviewWhite"
+        }
+    }
+
+    init?(iconName: String?) {
+        switch iconName {
+        case nil: self = .systemDefault
+        case "AppIconPhoenixDark", "AppIconPhoenixDarkV2": self = .phoenixDark
+        case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .phoenixIvory
+        case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .phoenixWhite
+        default: return nil
+        }
+    }
+}
+
+@MainActor
+final class AppIconManager: ObservableObject {
+    static let shared = AppIconManager()
+
+    @Published private(set) var currentOption: AppIconOption = .systemDefault
+    @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
+    @Published private(set) var hasLegacyIconOverride = false
+    @Published private(set) var hasPendingIconChange = false
+    @Published private(set) var pendingIconDisplayName: String?
+    private let requestedIconKey = "requestedIconName"
+    private var cancellables = Set<AnyCancellable>()
+
+    private init() {
+        normalizeLegacyIconIfNeeded()
+        refreshCurrentIcon()
+        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.reconcileRequestedIconIfNeeded()
+            }
+            .store(in: &cancellables)
+    }
+
+    func refreshCurrentIcon() {
+        isSupported = UIApplication.shared.supportsAlternateIcons
+        guard isSupported else {
+            currentOption = .systemDefault
+            hasLegacyIconOverride = false
+            return
+        }
+        let currentName = UIApplication.shared.alternateIconName
+        currentOption = AppIconOption(iconName: currentName) ?? .systemDefault
+        hasLegacyIconOverride = (currentName != nil && AppIconOption(iconName: currentName) == nil)
+        reconcilePendingState(currentName: currentName)
+    }
+
+    func setIcon(_ option: AppIconOption) {
+        guard isSupported else {
+            SystemMessageHelper.showWarning("Alternate app icons are not supported on this device.")
+            return
+        }
+        normalizeLegacyIconIfNeeded()
+
+        let targetIconName = option.iconName
+        let currentIconName = UIApplication.shared.alternateIconName
+        guard currentIconName != targetIconName else { return }
+        UserDefaults.standard.set(targetIconName, forKey: requestedIconKey)
+        hasPendingIconChange = true
+        pendingIconDisplayName = option.displayName
+
+        let applyRequestedIcon: () -> Void = { [weak self] in
+            UIApplication.shared.setAlternateIconName(targetIconName) { error in
+                if let error {
+                    SystemMessageHelper.showWarning("Could not change app icon: \(error.localizedDescription)")
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    self?.refreshCurrentIcon()
+                    self?.reconcileRequestedIconIfNeeded()
+                }
+            }
+        }
+
+        // iOS can occasionally ignore direct alternate->alternate changes.
+        // Force a reset to primary first, then apply the requested icon.
+        if currentIconName != nil, targetIconName != nil {
+            UIApplication.shared.setAlternateIconName(nil) { [weak self] resetError in
+                if let resetError {
+                    SystemMessageHelper.showWarning("Could not reset icon state: \(resetError.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self?.refreshCurrentIcon()
+                    }
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    applyRequestedIcon()
+                }
+            }
+            return
+        }
+
+        applyRequestedIcon()
+    }
+
+    private func normalizeLegacyIconIfNeeded() {
+        guard UIApplication.shared.supportsAlternateIcons else { return }
+        guard let currentName = UIApplication.shared.alternateIconName else { return }
+        guard AppIconOption(iconName: currentName) == nil else { return }
+
+        UIApplication.shared.setAlternateIconName(nil) { [weak self] error in
+            if let error {
+                SystemMessageHelper.showWarning("Legacy icon reset failed: \(error.localizedDescription)")
+            }
+            DispatchQueue.main.async {
+                self?.refreshCurrentIcon()
+            }
+        }
+    }
+
+    private func reconcilePendingState(currentName: String?) {
+        guard let requestedName = UserDefaults.standard.object(forKey: requestedIconKey) as? String? else {
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+            return
+        }
+
+        if currentName == requestedName {
+            UserDefaults.standard.removeObject(forKey: requestedIconKey)
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+        } else {
+            hasPendingIconChange = true
+            pendingIconDisplayName = AppIconOption(iconName: requestedName)?.displayName
+        }
+    }
+
+    private func reconcileRequestedIconIfNeeded() {
+        guard isSupported else { return }
+        let currentName = UIApplication.shared.alternateIconName
+        guard let requestedName = UserDefaults.standard.object(forKey: requestedIconKey) as? String? else {
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+            return
+        }
+
+        if currentName == requestedName {
+            UserDefaults.standard.removeObject(forKey: requestedIconKey)
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+            return
+        }
+
+        UIApplication.shared.setAlternateIconName(requestedName) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                self?.refreshCurrentIcon()
+            }
+        }
+    }
+}
+
+struct AppIconPickerView: View {
+    @StateObject private var appIconManager = AppIconManager.shared
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                ForEach(AppIconOption.allCases) { option in
+                    let isSelected = appIconManager.currentOption == option
+
+                    Button {
+                        appIconManager.setIcon(option)
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(option.previewAssetName)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 54, height: 54)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(SystemTheme.textTertiary.opacity(0.25), lineWidth: 1)
+                                )
+
+                            Text(option.displayName)
+                                .font(SystemTypography.body)
+                                .foregroundStyle(SystemTheme.textPrimary)
+
+                            Spacer(minLength: 0)
+
+                            if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundStyle(SystemTheme.primaryBlue)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(SystemTheme.backgroundTertiary)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(
+                                    isSelected
+                                        ? SystemTheme.primaryBlue.opacity(0.5)
+                                        : SystemTheme.textTertiary.opacity(0.15),
+                                    lineWidth: isSelected ? 1.5 : 1
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .disabled(!appIconManager.isSupported)
+                }
+
+                Text(
+                    appIconManager.isSupported
+                        ? "Changes apply immediately on your home screen."
+                        : "Alternate app icons are not supported on this device."
+                )
+                .font(SystemTypography.caption)
+                .foregroundStyle(SystemTheme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
+
+                if appIconManager.hasPendingIconChange {
+                    Text("Pending icon sync: \(appIconManager.pendingIconDisplayName ?? "Selected icon"). iOS may apply this after returning to the home screen.")
+                        .font(SystemTypography.captionSmall)
+                        .foregroundStyle(SystemTheme.warningOrange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(SystemTheme.backgroundPrimary.ignoresSafeArea())
+        .navigationTitle("App Icon")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            appIconManager.refreshCurrentIcon()
         }
     }
 }

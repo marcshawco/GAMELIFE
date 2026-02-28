@@ -94,6 +94,9 @@ struct MainTabView: View {
         .onChange(of: defaultTab) { _, newValue in
             selectedTab = newValue
         }
+        .onChange(of: selectedTab) { _, _ in
+            HapticManager.shared.selection()
+        }
         .sheet(item: $gameEngine.deathPenaltySummary) { summary in
             DeathPenaltySummaryView(summary: summary)
         }

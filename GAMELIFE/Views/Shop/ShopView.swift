@@ -171,6 +171,7 @@ struct CustomRewardSheet: View {
             title: "Reward Added",
             message: "\(name) is now available in the shop"
         ))
+        HapticManager.shared.success()
 
         dismiss()
     }

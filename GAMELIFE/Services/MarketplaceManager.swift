@@ -98,6 +98,14 @@ class MarketplaceManager: ObservableObject {
                 healthRestore: 25
             ),
             MarketplaceReward(
+                name: "Streak Shield",
+                description: "Protect your streak from one missed day.",
+                cost: 120,
+                category: .item,
+                icon: "shield.fill",
+                streakShieldCharges: 1
+            ),
+            MarketplaceReward(
                 name: "Movie Night",
                 description: "Watch a full movie of your choice.",
                 cost: 150,
@@ -173,6 +181,7 @@ class MarketplaceManager: ObservableObject {
     func purchaseReward(_ reward: MarketplaceReward, player: inout Player) -> PurchaseResult {
         // Check if player has enough gold
         guard player.gold >= reward.cost else {
+            HapticManager.shared.purchaseFailed()
             return PurchaseResult(
                 success: false,
                 message: "Insufficient gold. You need \(reward.cost - player.gold) more."
@@ -180,6 +189,7 @@ class MarketplaceManager: ObservableObject {
         }
 
         if let healthRestore = reward.healthRestore, healthRestore > 0, player.currentHP >= player.maxHP {
+            HapticManager.shared.warning()
             return PurchaseResult(
                 success: false,
                 message: "HP is already full. Use this when you need healing."
@@ -217,6 +227,7 @@ class MarketplaceManager: ObservableObject {
                     ? "+\(restoredAmount) HP restored"
                     : "HP already full"
             )
+            HapticManager.shared.purchaseSucceeded()
 
             return PurchaseResult(
                 success: true,
@@ -227,11 +238,36 @@ class MarketplaceManager: ObservableObject {
             )
         }
 
+        if let shieldCharges = reward.streakShieldCharges, shieldCharges > 0 {
+            player.streakShieldCharges += shieldCharges
+            purchase.isRedeemed = true
+            purchase.redeemedDate = Date()
+            if let historyIndex = purchaseHistory.firstIndex(where: { $0.id == purchase.id }) {
+                purchaseHistory[historyIndex] = purchase
+            }
+
+            savePurchaseHistory()
+
+            GameEngine.shared.recordExternalActivity(
+                type: .rewardConsumed,
+                title: reward.name,
+                detail: "+\(shieldCharges) streak protection charge"
+            )
+            HapticManager.shared.purchaseSucceeded()
+
+            return PurchaseResult(
+                success: true,
+                message: "Streak shield ready. Charges: \(player.streakShieldCharges).",
+                purchase: purchase
+            )
+        }
+
         unredeemedRewards.append(purchase)
 
         // Save
         savePurchaseHistory()
         GameEngine.shared.save()
+        HapticManager.shared.purchaseSucceeded()
 
         return PurchaseResult(
             success: true,
@@ -259,6 +295,7 @@ class MarketplaceManager: ObservableObject {
             title: purchase.reward.name,
             detail: "Shop reward redeemed"
         )
+        HapticManager.shared.rewardRedeemed()
 
         savePurchaseHistory()
     }
@@ -350,6 +387,7 @@ struct MarketplaceReward: Codable, Identifiable {
     let icon: String
     var isCustom: Bool
     var healthRestore: Int?
+    var streakShieldCharges: Int?
 
     init(
         name: String,
@@ -358,7 +396,8 @@ struct MarketplaceReward: Codable, Identifiable {
         category: RewardCategory,
         icon: String,
         isCustom: Bool = false,
-        healthRestore: Int? = nil
+        healthRestore: Int? = nil,
+        streakShieldCharges: Int? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -368,6 +407,7 @@ struct MarketplaceReward: Codable, Identifiable {
         self.icon = icon
         self.isCustom = isCustom
         self.healthRestore = healthRestore
+        self.streakShieldCharges = streakShieldCharges
     }
 }
 

@@ -61,6 +61,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         guard WCSession.isSupported() else { return }
         guard !isRunningInSimulator else { return }
         let session = WCSession.default
+        guard session.activationState == .activated else {
+            requestActivationIfNeeded()
+            lastSyncEvent = "Watch session not yet activated."
+            return
+        }
         guard session.isPaired else {
             isPaired = false
             isWatchAppInstalled = false
@@ -389,15 +394,6 @@ private extension WatchConnectivityManager {
         guard !activationRequested else { return }
 
         let session = WCSession.default
-        guard session.isPaired else {
-            isPaired = false
-            isWatchAppInstalled = false
-            isReachable = false
-            suppressContextPushUntilStateChange = true
-            lastSyncEvent = "No paired Apple Watch detected."
-            return
-        }
-
         activationRequested = true
         session.delegate = self
         session.activate()

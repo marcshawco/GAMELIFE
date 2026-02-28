@@ -189,6 +189,7 @@ class Player: Codable {
     var currentStreak: Int
     var longestStreak: Int
     var lastActiveDate: Date?
+    var streakShieldCharges: Int
 
     // Achievements & Collections
     var unlockedTitles: [String]
@@ -262,6 +263,7 @@ class Player: Codable {
         self.currentStreak = 0
         self.longestStreak = 0
         self.lastActiveDate = nil
+        self.streakShieldCharges = 0
 
         self.unlockedTitles = ["Awakened"]
         self.shadowSoldiers = []
@@ -283,6 +285,7 @@ class Player: Codable {
         case level, currentXP, totalXP, gold
         case stats
         case currentStreak, longestStreak, lastActiveDate
+        case streakShieldCharges
         case unlockedTitles, shadowSoldiers
         case completedQuestCount, defeatedBossCount, dungeonsClearedCount
         case maxHP, currentHP
@@ -304,6 +307,7 @@ class Player: Codable {
         currentStreak = try container.decode(Int.self, forKey: .currentStreak)
         longestStreak = try container.decode(Int.self, forKey: .longestStreak)
         lastActiveDate = try container.decodeIfPresent(Date.self, forKey: .lastActiveDate)
+        streakShieldCharges = max(0, try container.decodeIfPresent(Int.self, forKey: .streakShieldCharges) ?? 0)
         unlockedTitles = try container.decode([String].self, forKey: .unlockedTitles)
         shadowSoldiers = try container.decode([ShadowSoldier].self, forKey: .shadowSoldiers)
         completedQuestCount = try container.decode(Int.self, forKey: .completedQuestCount)
@@ -332,6 +336,7 @@ class Player: Codable {
         try container.encode(currentStreak, forKey: .currentStreak)
         try container.encode(longestStreak, forKey: .longestStreak)
         try container.encode(lastActiveDate, forKey: .lastActiveDate)
+        try container.encode(streakShieldCharges, forKey: .streakShieldCharges)
         try container.encode(unlockedTitles, forKey: .unlockedTitles)
         try container.encode(shadowSoldiers, forKey: .shadowSoldiers)
         try container.encode(completedQuestCount, forKey: .completedQuestCount)
