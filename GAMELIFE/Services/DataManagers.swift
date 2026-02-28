@@ -440,6 +440,157 @@ class ActivityLogDataManager {
     }
 }
 
+// MARK: - Runtime Cache Manager
+
+/// Centralized local-first cache layer used to keep derived/UI data snappy
+/// between app launches and during heavy refresh cycles.
+final class RuntimeCacheManager {
+
+    static let shared = RuntimeCacheManager()
+
+    private enum Keys {
+        static let questOrdering = "praxis_cache_quest_ordering"
+        static let healthDailySnapshot = "praxis_cache_health_daily_snapshot"
+        static let locationRuntimeSnapshot = "praxis_cache_location_runtime_snapshot"
+        static let achievementProgressSnapshot = "praxis_cache_achievement_progress"
+        static let marketplaceCatalogSnapshot = "praxis_cache_marketplace_catalog"
+        static let statusUISnapshot = "praxis_cache_status_ui_snapshot"
+    }
+
+    struct QuestOrderingSnapshot: Codable {
+        let digest: Int
+        let orderedQuestIDs: [UUID]
+        let nextUpQuestIDs: [UUID]
+        let savedAt: Date
+    }
+
+    struct HealthDailySnapshot: Codable {
+        let dayKey: String
+        let steps: Int
+        let sleepHours: Double
+        let activeEnergy: Double
+        let workoutMinutes: Int
+        let workoutCount: Int
+        let standHours: Int
+        let mindfulMinutes: Int
+        let distanceKM: Double
+        let waterGlasses: Double
+        let bodyWeightLB: Double
+        let bodyFatPercent: Double
+        let lastSyncDate: Date?
+        let lastDetectedEvent: String
+    }
+
+    struct LocationRuntimeSnapshot: Codable {
+        let regionEntryTimes: [String: Date]
+        let lastTrackingEventDate: Date?
+        let lastTrackingEventMessage: String
+    }
+
+    struct AchievementProgressSnapshot: Codable {
+        let values: [String: Int]
+        let savedAt: Date
+    }
+
+    struct MarketplaceCatalogSnapshot: Codable {
+        let rewards: [MarketplaceReward]
+        let savedAt: Date
+    }
+
+    struct StatusUISnapshot: Codable {
+        let playerLevel: Int
+        let currentXP: Int
+        let maxXP: Int
+        let rank: String
+        let hp: Int
+        let maxHP: Int
+        let gold: Int
+        let streak: Int
+        let stats: [Stat]
+        let recentActivity: [ActivityLogEntry]
+        let savedAt: Date
+    }
+
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    private init() {}
+
+    func saveQuestOrdering(_ snapshot: QuestOrderingSnapshot) {
+        save(snapshot, forKey: Keys.questOrdering)
+    }
+
+    func loadQuestOrdering() -> QuestOrderingSnapshot? {
+        load(QuestOrderingSnapshot.self, forKey: Keys.questOrdering)
+    }
+
+    func saveHealthDailySnapshot(_ snapshot: HealthDailySnapshot) {
+        save(snapshot, forKey: Keys.healthDailySnapshot)
+    }
+
+    func loadHealthDailySnapshot() -> HealthDailySnapshot? {
+        load(HealthDailySnapshot.self, forKey: Keys.healthDailySnapshot)
+    }
+
+    func saveLocationRuntimeSnapshot(_ snapshot: LocationRuntimeSnapshot) {
+        save(snapshot, forKey: Keys.locationRuntimeSnapshot)
+    }
+
+    func loadLocationRuntimeSnapshot() -> LocationRuntimeSnapshot? {
+        load(LocationRuntimeSnapshot.self, forKey: Keys.locationRuntimeSnapshot)
+    }
+
+    func saveAchievementProgressSnapshot(_ snapshot: AchievementProgressSnapshot) {
+        save(snapshot, forKey: Keys.achievementProgressSnapshot)
+    }
+
+    func loadAchievementProgressSnapshot() -> AchievementProgressSnapshot? {
+        load(AchievementProgressSnapshot.self, forKey: Keys.achievementProgressSnapshot)
+    }
+
+    func saveMarketplaceCatalogSnapshot(_ snapshot: MarketplaceCatalogSnapshot) {
+        save(snapshot, forKey: Keys.marketplaceCatalogSnapshot)
+    }
+
+    func loadMarketplaceCatalogSnapshot(maxAge: TimeInterval = 86_400) -> MarketplaceCatalogSnapshot? {
+        guard let snapshot = load(MarketplaceCatalogSnapshot.self, forKey: Keys.marketplaceCatalogSnapshot) else {
+            return nil
+        }
+        guard Date().timeIntervalSince(snapshot.savedAt) <= maxAge else { return nil }
+        return snapshot
+    }
+
+    func saveStatusUISnapshot(_ snapshot: StatusUISnapshot) {
+        save(snapshot, forKey: Keys.statusUISnapshot)
+    }
+
+    func loadStatusUISnapshot(maxAge: TimeInterval = 900) -> StatusUISnapshot? {
+        guard let snapshot = load(StatusUISnapshot.self, forKey: Keys.statusUISnapshot) else {
+            return nil
+        }
+        guard Date().timeIntervalSince(snapshot.savedAt) <= maxAge else { return nil }
+        return snapshot
+    }
+
+    private func save<T: Codable>(_ value: T, forKey key: String) {
+        do {
+            let data = try encoder.encode(value)
+            UserDefaults.standard.set(data, forKey: key)
+        } catch {
+            print("[SYSTEM] Failed to cache \(key): \(error)")
+        }
+    }
+
+    private func load<T: Codable>(_ type: T.Type, forKey key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            return nil
+        }
+    }
+}
+
 // MARK: - Settings Manager
 
 /// Manages app settings

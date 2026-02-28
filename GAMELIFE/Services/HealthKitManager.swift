@@ -64,6 +64,7 @@ class HealthKitManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
+        loadCachedDailySnapshotIfAvailable()
         Task {
             await refreshAuthorizationStatus()
         }
@@ -222,6 +223,7 @@ class HealthKitManager: ObservableObject {
         currentBodyWeightLB = weightResult
         currentBodyFatPercent = bodyFatResult
         recordSync(event: "Health metrics refreshed")
+        cacheCurrentDailySnapshot()
 
         NotificationCenter.default.post(name: .healthKitDataDidUpdate, object: nil)
     }
@@ -648,6 +650,7 @@ class HealthKitManager: ObservableObject {
     private func recordSync(event: String) {
         lastSyncDate = Date()
         lastDetectedEvent = event
+        cacheCurrentDailySnapshot()
     }
 
     // MARK: - Quest Progress Checking
@@ -659,8 +662,12 @@ class HealthKitManager: ObservableObject {
             return 0
         }
 
-        let predicate = createPredicate(for: quest)
         let targetValue = max(1, quest.targetValue)
+        if quest.resolvedFrequency == .daily {
+            return cachedDailyProgress(identifier: identifier, targetValue: targetValue)
+        }
+
+        let predicate = createPredicate(for: quest)
 
         switch identifier {
         case "HKQuantityTypeIdentifierStepCount":
@@ -727,6 +734,31 @@ class HealthKitManager: ObservableObject {
             )
             return minutes / targetValue
 
+        default:
+            return 0
+        }
+    }
+
+    private func cachedDailyProgress(identifier: String, targetValue: Double) -> Double {
+        switch identifier {
+        case "HKQuantityTypeIdentifierStepCount":
+            return Double(todaySteps) / targetValue
+        case "HKQuantityTypeIdentifierDistanceWalkingRunning":
+            return todayDistanceKM / targetValue
+        case "HKCategoryTypeIdentifierSleepAnalysis":
+            return todaySleepHours / targetValue
+        case "HKQuantityTypeIdentifierActiveEnergyBurned":
+            return todayActiveEnergy / targetValue
+        case "HKQuantityTypeIdentifierAppleExerciseTime":
+            return Double(todayWorkoutMinutes) / targetValue
+        case "HKWorkoutType":
+            return Double(todayWorkoutCount) / targetValue
+        case "HKCategoryTypeIdentifierAppleStandHour":
+            return Double(todayStandHours) / targetValue
+        case "HKQuantityTypeIdentifierDietaryWater":
+            return todayWaterGlasses / targetValue
+        case "HKCategoryTypeIdentifierMindfulSession":
+            return Double(todayMindfulMinutes) / targetValue
         default:
             return 0
         }
@@ -921,6 +953,52 @@ class HealthKitManager: ObservableObject {
             return false
         }
         return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func loadCachedDailySnapshotIfAvailable() {
+        guard let snapshot = RuntimeCacheManager.shared.loadHealthDailySnapshot(),
+              snapshot.dayKey == dayKey(for: Date()) else { return }
+        todaySteps = snapshot.steps
+        todaySleepHours = snapshot.sleepHours
+        todayActiveEnergy = snapshot.activeEnergy
+        todayWorkoutMinutes = snapshot.workoutMinutes
+        todayWorkoutCount = snapshot.workoutCount
+        todayStandHours = snapshot.standHours
+        todayMindfulMinutes = snapshot.mindfulMinutes
+        todayDistanceKM = snapshot.distanceKM
+        todayWaterGlasses = snapshot.waterGlasses
+        currentBodyWeightLB = snapshot.bodyWeightLB
+        currentBodyFatPercent = snapshot.bodyFatPercent
+        lastSyncDate = snapshot.lastSyncDate
+        lastDetectedEvent = snapshot.lastDetectedEvent
+    }
+
+    private func cacheCurrentDailySnapshot() {
+        let snapshot = RuntimeCacheManager.HealthDailySnapshot(
+            dayKey: dayKey(for: Date()),
+            steps: todaySteps,
+            sleepHours: todaySleepHours,
+            activeEnergy: todayActiveEnergy,
+            workoutMinutes: todayWorkoutMinutes,
+            workoutCount: todayWorkoutCount,
+            standHours: todayStandHours,
+            mindfulMinutes: todayMindfulMinutes,
+            distanceKM: todayDistanceKM,
+            waterGlasses: todayWaterGlasses,
+            bodyWeightLB: currentBodyWeightLB,
+            bodyFatPercent: currentBodyFatPercent,
+            lastSyncDate: lastSyncDate,
+            lastDetectedEvent: lastDetectedEvent
+        )
+        RuntimeCacheManager.shared.saveHealthDailySnapshot(snapshot)
+    }
+
+    private func dayKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }
 

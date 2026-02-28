@@ -50,6 +50,7 @@ class LocationManager: NSObject, ObservableObject {
         locationManager.pausesLocationUpdatesAutomatically = false
         locationManager.showsBackgroundLocationIndicator = false
         locationManager.activityType = .fitness
+        loadRuntimeSnapshot()
 
         checkAuthorizationStatus()
         startLocationUpdatesIfAuthorized()
@@ -220,6 +221,7 @@ class LocationManager: NSObject, ObservableObject {
         geofenceRegions.removeAll()
         activeGeofences.removeAll()
         regionEntryTimes.removeAll()
+        persistRuntimeSnapshot()
         startLocationUpdatesIfAuthorized()
     }
 
@@ -430,6 +432,7 @@ extension LocationManager: CLLocationManagerDelegate {
         Task { @MainActor in
             // Record entry time
             self.regionEntryTimes[circularRegion.identifier] = Date()
+            self.persistRuntimeSnapshot()
 
             // Find the tracked location
             if let trackedLocation = self.activeGeofences.first(where: { $0.id.uuidString == circularRegion.identifier }) {
@@ -478,6 +481,7 @@ extension LocationManager: CLLocationManagerDelegate {
 
             // Clear entry time
             self.regionEntryTimes.removeValue(forKey: circularRegion.identifier)
+            self.persistRuntimeSnapshot()
         }
     }
 
@@ -537,6 +541,7 @@ extension LocationManager: CLLocationManagerDelegate {
                 regionEntryTimes[regionIdentifier] = Date()
                 recordTrackingEvent("In range: \(trackedLocation.name)")
                 NotificationCenter.default.post(name: .geofenceEntered, object: trackedLocation)
+                persistRuntimeSnapshot()
                 continue
             }
 
@@ -553,6 +558,7 @@ extension LocationManager: CLLocationManagerDelegate {
 
             // Prevent duplicate completions while the user remains inside.
             regionEntryTimes.removeValue(forKey: regionIdentifier)
+            persistRuntimeSnapshot()
             await handleSuccessfulVisit(visit)
         }
     }
@@ -564,6 +570,7 @@ extension LocationManager: CLLocationManagerDelegate {
     private func recordTrackingEvent(_ message: String) {
         lastTrackingEventDate = Date()
         lastTrackingEventMessage = message
+        persistRuntimeSnapshot()
     }
 
     /// Avoid noisy UI jumps from tiny GPS drift while still evaluating geofence logic.
@@ -612,6 +619,24 @@ extension LocationManager: CLLocationManagerDelegate {
         #else
         false
         #endif
+    }
+
+    private func loadRuntimeSnapshot() {
+        guard let snapshot = RuntimeCacheManager.shared.loadLocationRuntimeSnapshot() else { return }
+        regionEntryTimes = snapshot.regionEntryTimes
+        lastTrackingEventDate = snapshot.lastTrackingEventDate
+        if !snapshot.lastTrackingEventMessage.isEmpty {
+            lastTrackingEventMessage = snapshot.lastTrackingEventMessage
+        }
+    }
+
+    private func persistRuntimeSnapshot() {
+        let snapshot = RuntimeCacheManager.LocationRuntimeSnapshot(
+            regionEntryTimes: regionEntryTimes,
+            lastTrackingEventDate: lastTrackingEventDate,
+            lastTrackingEventMessage: lastTrackingEventMessage
+        )
+        RuntimeCacheManager.shared.saveLocationRuntimeSnapshot(snapshot)
     }
 }
 
