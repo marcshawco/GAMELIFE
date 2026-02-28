@@ -164,6 +164,7 @@ struct QuestFormSheet: View {
 
                 Section {
                     ForEach(StatType.allCases) { stat in
+                        let isSelected = selectedStats.contains(stat)
                         Button {
                             toggleStat(stat)
                         } label: {
@@ -177,12 +178,39 @@ struct QuestFormSheet: View {
                                     .font(SystemTypography.mono(12, weight: .semibold))
                                     .foregroundStyle(stat.color)
                                 Spacer()
-                                if selectedStats.contains(stat) {
+                                if isSelected {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundStyle(SystemTheme.primaryBlue)
                                 }
                             }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(
+                                        isSelected
+                                        ? stat.color.opacity(0.16)
+                                        : SystemTheme.backgroundSecondary.opacity(0.45)
+                                    )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(
+                                        isSelected
+                                        ? stat.color.opacity(0.95)
+                                        : SystemTheme.borderSecondary.opacity(0.45),
+                                        lineWidth: isSelected ? 1.6 : 1
+                                    )
+                            )
+                            .shadow(
+                                color: isSelected ? stat.color.opacity(0.28) : .clear,
+                                radius: isSelected ? 8 : 0,
+                                x: 0,
+                                y: 0
+                            )
                         }
+                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
                     }
                 } header: {
                     Text("Target Stats (Select 1-3)")
