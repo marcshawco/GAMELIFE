@@ -8,15 +8,41 @@
 
 import SwiftUI
 
+enum StatusStatDisplayMode: String, CaseIterable {
+    case radar
+    case grid
+}
+
+enum StatusDashboardTab: String, CaseIterable {
+    case activity
+    case achievements
+}
+
 // MARK: - Status View
 
 /// Tab 1: Player profile with compact radar chart, stats, and recent activity.
 /// Designed to fit on-screen without vertical scrolling.
+@MainActor
 struct StatusView: View {
 
     @EnvironmentObject var gameEngine: GameEngine
-    @State private var isActivityLogExpanded = false
     @State private var showTrophyRoom = false
+    @AppStorage("statusStatDisplayMode") private var statDisplayModeRaw = StatusStatDisplayMode.radar.rawValue
+    @AppStorage("statusDashboardTab") private var dashboardTabRaw = StatusDashboardTab.activity.rawValue
+
+    private var statDisplayModeBinding: Binding<StatusStatDisplayMode> {
+        Binding(
+            get: { StatusStatDisplayMode(rawValue: statDisplayModeRaw) ?? .radar },
+            set: { statDisplayModeRaw = $0.rawValue }
+        )
+    }
+
+    private var dashboardTabBinding: Binding<StatusDashboardTab> {
+        Binding(
+            get: { StatusDashboardTab(rawValue: dashboardTabRaw) ?? .activity },
+            set: { dashboardTabRaw = $0.rawValue }
+        )
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,9 +55,9 @@ struct StatusView: View {
 
                 let stackSpacing = isCompactHeight ? 10.0 : (isLargeHeight ? 18.0 : 14.0)
                 let headerHeight = max(82, min(availableHeight * (isCompactHeight ? 0.15 : 0.165), isLargeHeight ? 136 : 124))
-                let radarHeight = max(168, min(availableHeight * (isCompactHeight ? 0.31 : 0.36), isLargeHeight ? 336 : 302))
+                let statModuleHeight = max(196, min(availableHeight * (isCompactHeight ? 0.39 : 0.42), isLargeHeight ? 382 : 338))
                 let bottomPadding = isCompactHeight ? 8.0 : 12.0
-                let remainingBottomHeight = availableHeight - headerHeight - radarHeight - (stackSpacing * 2) - bottomPadding
+                let remainingBottomHeight = availableHeight - headerHeight - statModuleHeight - (stackSpacing * 2) - bottomPadding
                 let bottomSectionHeight = max(0, remainingBottomHeight)
                 VStack(spacing: stackSpacing) {
                     CompactHeaderView(player: gameEngine.player, isCompact: isCompactHeight)
@@ -40,25 +66,25 @@ struct StatusView: View {
                         }
                         .frame(height: headerHeight)
 
-                    RadarChartView(stats: gameEngine.player.statArray)
-                        .frame(height: radarHeight)
-                        .padding(.horizontal, SystemSpacing.md)
-
-                    StatusBottomSection(
+                    StatusStatModule(
                         stats: gameEngine.player.statArray,
+                        isCompact: isCompactHeight,
+                        isLargeHeight: isLargeHeight,
+                        containerHeight: statModuleHeight,
+                        displayMode: statDisplayModeBinding
+                    )
+                    .frame(height: statModuleHeight)
+                    .padding(.horizontal, SystemSpacing.md)
+
+                    StatusTabbedBottomSection(
                         recentAchievements: recentUnlockedAchievements,
                         activities: gameEngine.recentActivity,
                         isCompact: isCompactHeight,
                         isLargeHeight: isLargeHeight,
                         containerHeight: bottomSectionHeight,
-                        isActivityLogExpanded: isActivityLogExpanded,
+                        selectedTab: dashboardTabBinding,
                         onOpenTrophyRoom: {
                             showTrophyRoom = true
-                        },
-                        onToggleActivityLog: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isActivityLogExpanded.toggle()
-                            }
                         }
                     )
                     .frame(height: bottomSectionHeight, alignment: .top)
@@ -204,6 +230,234 @@ struct CompactHeaderView: View {
                 glowIntensity = 1.0
             }
         }
+    }
+}
+
+// MARK: - Stat Module
+
+struct StatusStatModule: View {
+    let stats: [Stat]
+    let isCompact: Bool
+    let isLargeHeight: Bool
+    let containerHeight: CGFloat
+    @Binding var displayMode: StatusStatDisplayMode
+
+    var body: some View {
+        let cardPadding = isCompact ? SystemSpacing.sm : SystemSpacing.md
+        let headerHeight: CGFloat = isCompact ? 28 : 32
+        let contentHeight = max(100, containerHeight - (cardPadding * 2) - headerHeight - 4)
+
+        VStack(alignment: .leading, spacing: isCompact ? 8 : 10) {
+            HStack {
+                Text("Attributes")
+                    .font(SystemTypography.mono(isCompact ? 12 : 13, weight: .bold))
+                    .foregroundStyle(SystemTheme.primaryBlue)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    StatusToggleChip(
+                        icon: "hexagon",
+                        isSelected: displayMode == .radar
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            displayMode = .radar
+                        }
+                    }
+
+                    StatusToggleChip(
+                        icon: "list.bullet.rectangle",
+                        isSelected: displayMode == .grid
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            displayMode = .grid
+                        }
+                    }
+                }
+            }
+
+            Group {
+                if displayMode == .radar {
+                    HStack {
+                        Spacer(minLength: 0)
+                        RadarChartView(stats: stats)
+                            .frame(maxWidth: contentHeight * 1.05)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                } else {
+                    let rowSpacing = isCompact ? SystemSpacing.xs : SystemSpacing.sm
+                    let maxRowHeight: CGFloat = isCompact ? 54 : (isLargeHeight ? 60 : 56)
+                    let minRowHeight: CGFloat = isCompact ? 38 : 42
+                    let computedRowHeight = (contentHeight - (rowSpacing * 2)) / 3
+                    let rowHeight = max(minRowHeight, min(maxRowHeight, computedRowHeight))
+
+                    CompactAttributeGrid(
+                        stats: stats,
+                        isCompact: isCompact,
+                        rowHeight: rowHeight
+                    )
+                    .frame(maxHeight: contentHeight)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+        }
+        .padding(cardPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(SystemTheme.backgroundTertiary)
+        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+    }
+}
+
+private struct StatusToggleChip: View {
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(isSelected ? SystemTheme.backgroundPrimary : SystemTheme.textSecondary)
+                .frame(width: 30, height: 24)
+                .background(isSelected ? SystemTheme.primaryBlue : SystemTheme.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Tabbed Bottom Section
+
+struct StatusTabbedBottomSection: View {
+    let recentAchievements: [AchievementDefinition]
+    let activities: [ActivityLogEntry]
+    let isCompact: Bool
+    let isLargeHeight: Bool
+    let containerHeight: CGFloat
+    @Binding var selectedTab: StatusDashboardTab
+    let onOpenTrophyRoom: () -> Void
+
+    var body: some View {
+        let verticalPadding = isCompact ? SystemSpacing.xs : SystemSpacing.sm
+        let cardPadding = isCompact ? SystemSpacing.sm : SystemSpacing.md
+        let innerHeight = max(0, containerHeight - (verticalPadding * 2))
+        let contentHeight = max(0, innerHeight - (cardPadding * 2) - (isCompact ? 30 : 34))
+        let maxActivityRows = isCompact ? 2 : (isLargeHeight ? 4 : 3)
+
+        VStack(alignment: .leading, spacing: isCompact ? 8 : 10) {
+            HStack(spacing: 8) {
+                StatusTabChip(
+                    title: "Activity Log",
+                    isSelected: selectedTab == .activity
+                ) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        selectedTab = .activity
+                    }
+                }
+
+                StatusTabChip(
+                    title: "Achievements",
+                    isSelected: selectedTab == .achievements
+                ) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        selectedTab = .achievements
+                    }
+                }
+
+                Spacer()
+
+                if selectedTab == .achievements {
+                    Button("View All") {
+                        onOpenTrophyRoom()
+                    }
+                    .font(SystemTypography.caption)
+                    .foregroundStyle(SystemTheme.accentCyan)
+                }
+            }
+
+            Group {
+                if selectedTab == .activity {
+                    if activities.isEmpty {
+                        Text("No recent activity yet. Complete a quest to populate your log.")
+                            .font(SystemTypography.captionSmall)
+                            .foregroundStyle(SystemTheme.textTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        VStack(alignment: .leading, spacing: isCompact ? 6 : SystemSpacing.xs) {
+                            ForEach(Array(activities.prefix(maxActivityRows))) { entry in
+                                ActivityRow(entry: entry, isCompact: isCompact)
+                            }
+                        }
+                    }
+                } else {
+                    if recentAchievements.isEmpty {
+                        Text("No badges unlocked yet. Complete quests and boss fights to earn your first trophy.")
+                            .font(SystemTypography.captionSmall)
+                            .foregroundStyle(SystemTheme.textSecondary)
+                            .lineLimit(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(recentAchievements.prefix(isCompact ? 4 : 6)) { achievement in
+                                    HStack(spacing: 6) {
+                                        Image(systemName: achievement.icon)
+                                            .font(.system(size: isCompact ? 12 : 13, weight: .bold))
+                                        Text(achievement.title)
+                                            .font(SystemTypography.captionSmall)
+                                            .lineLimit(1)
+                                    }
+                                    .foregroundStyle(achievement.rarity.color)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(SystemTheme.backgroundSecondary.opacity(0.6))
+                                    .clipShape(Capsule())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: contentHeight, alignment: .topLeading)
+        }
+        .padding(cardPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(SystemTheme.backgroundTertiary)
+        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+        .padding(.horizontal, SystemSpacing.md)
+        .padding(.vertical, verticalPadding)
+    }
+}
+
+private struct StatusTabChip: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(SystemTypography.mono(11, weight: .bold))
+                .foregroundStyle(isSelected ? SystemTheme.primaryBlue : SystemTheme.textSecondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(isSelected ? SystemTheme.backgroundSecondary : Color.clear)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(isSelected ? SystemTheme.borderSecondary : Color.clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

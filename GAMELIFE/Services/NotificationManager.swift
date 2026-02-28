@@ -657,9 +657,9 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
                 lastQuestCompletionNotificationDate = Date()
             }
         }
-        // Show system banners even while the app is in the foreground so
-        // quest completions feel like real notifications, not only in-app UI.
-        return [.banner, .sound, .badge, .list]
+        // Suppress OS banner/list while app is foregrounded to avoid UI overlap.
+        // In-app system messaging remains the primary foreground feedback channel.
+        return []
     }
 
     nonisolated func userNotificationCenter(

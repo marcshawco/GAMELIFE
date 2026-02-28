@@ -1,108 +1,145 @@
-# GAMELIFE
+# PRAXIS (Project: GAMELIFE)
 
-GAMELIFE is an iOS-first productivity RPG that turns real-world discipline into game progression.
+PRAXIS is an iOS-first productivity RPG that turns real-world discipline into visible game progression.
 
-Instead of a plain habit app, the user gets:
-- clear quests
-- instant XP/Gold feedback
-- long-term "Boss" goals with HP
-- automatic completion from Apple data sources when possible
+User-facing brand is **PRAXIS**. Internal project/target names still use `GAMELIFE` for build/signing continuity.
 
-The design language is inspired by a "system HUD" style (Solo Leveling influence), but the engine is practical: stateful models, explicit reward formulas, local persistence, and optional cloud/watch sync.
+## Product Purpose
 
-## Product Intent
+PRAXIS applies game UX to real-life behavior:
+- clear objectives (quests)
+- immediate feedback (XP, Gold, stat growth)
+- long-loop goals (bosses)
+- loss/recovery loops (HP + penalties)
+- passive automation when Apple data is available
 
-GAMELIFE is built around one thesis:
-
-> Real life has bad UX. Games have better UX.
-
-So the app maps daily behavior into game systems:
-- **Daily Quests** = low-friction repeatable actions
-- **Boss Fights** = larger projects/goals broken into progress over time
-- **Training** = deep-work sessions with stakes
-- **Shop** = real-life rewards purchased with in-app gold
-- **Status** = a visible identity layer (stats, level, activity log)
-
-## Core Gameplay Model
+## Core Systems
 
 ### Player progression
-- Player starts at **Level 1** with all six stats at **0**.
-- Stats: `STR`, `INT`, `AGI`, `VIT`, `WIL`, `SPI`.
-- Completing quests grants XP + gold + stat XP.
-- Rank/title derive from level/rules in player models.
-- HP is part of the loss-aversion loop and penalty mechanics.
+- Starts at Level 1 with six stats at 0: `STR`, `INT`, `AGI`, `VIT`, `WIL`, `SPI`.
+- Quests grant XP and stat growth.
+- Gold is granted for non-optional quests.
+- Rank/title derives from progression rules.
+- HP drives consequences for missed daily behavior.
 
 ### Quest system
-- `DailyQuest` supports:
+- Tracking types:
   - `manual`
   - `healthKit`
   - `screenTime`
   - `location`
   - `timer`
-- Frequency options: hourly/daily/semi-weekly/weekly/monthly.
-- Metric quests can show incremental progress bars.
-- Reminders are integrated into schedule behavior.
+- Frequency supports hourly/daily/semi-weekly/weekly/monthly.
+- Optional quests supported:
+  - grant XP/stats
+  - grant no Gold
+  - do not trigger missed-quest HP damage
+- Metric-based quests can show incremental progress bars.
+- Supports reminders and in-app completion flow.
 
 ### Boss system
-- Classic boss: fixed HP, chipped away by linked quest completions.
-- Dynamic boss: HP derives from real metrics (`DynamicBossGoal`):
-  - weight
-  - body fat
-  - savings
+- Standard bosses: fixed HP, damaged by linked quest completions.
+- Dynamic bosses support metric-driven HP modeling:
+  - weight goal
+  - body-fat goal
+  - savings goal
   - workout consistency
   - screen-time discipline
-- Dynamic bosses can auto-generate linked quests aligned to cadence.
+- Dynamic bosses can auto-generate linked quests to match cadence/targets.
 
 ### Training
-- Focus timer with app-exit fail behavior.
-- Can integrate Screen Time blocking during session (when enabled/authorized).
+- Focus timer with completion/failure outcomes.
+- Rewards and progression hooks integrated with engine.
+
+### Death mechanic
+- Configurable toggle in Settings: **Death Mechanic Penalties**.
+- If enabled and HP hits 0:
+  - rank can demote by 1 tier
+  - stats are reduced by rank-scaled penalties
+  - 20% Gold loss
+  - HP reset to full
+  - death report UI is shown
+- If disabled:
+  - HP can still deplete
+  - death penalties are not applied
+
+### Achievements / Trophy Room
+- Achievement catalog with rarity and category model.
+- Unlock rewards can include XP, Gold, and titles.
+- Recent achievements strip on Status.
+- Trophy Room view with unlock/progress states.
+
+### Shop / economy
+- Marketplace rewards with purchase history.
+- Includes streak protection and health potion style rewards.
+- Purchase + redemption flows update engine state and activity log.
 
 ## Integrations (Neural Links)
 
 ### HealthKit
-- Auto-tracks eligible quests (e.g. steps, workouts, stand minutes, etc.).
-- Quest progress can auto-complete when target reached.
-- Health data updates trigger quest sync and UI updates.
+- Reads eligible activity/health metrics for auto-progress.
+- Can auto-complete quests when thresholds are reached.
+- Sync diagnostics available per quest.
 
 ### Core Location
-- Address/location quests use geofences + dwell-time progression.
-- Location progress can fill live while user remains in range.
-- Status API exposes whether quest is monitoring, in-range, invalid address, etc.
+- Address validation and geofence tracking.
+- Dwell-time progress support for location quests.
+- Auto-complete available when in-radius for required duration.
 
 ### Screen Time (FamilyControls + DeviceActivity)
-- Tracks selected apps/categories for usage-based quests.
-- DeviceActivity monitor extension can report threshold completions in background.
-- Can optionally support focus blocking workflows.
-
-Important for distribution:
-- FamilyControls **distribution** entitlement must be approved by Apple for production/TestFlight behavior.
-- Development entitlement may work locally but is not sufficient for broad distribution.
+- Usage-based quest tracking via selected apps/categories.
+- Extension-driven background threshold events.
+- Requires FamilyControls distribution entitlement for production behavior.
 
 ### Notifications
-- Quest completions send OS notifications (immediate or digest mode).
-- Reminder notifications support action flows.
-- Screen Time extension can emit completion notifications.
+- Quest completion notifications (immediate/digest style).
+- Reminder notifications.
+- In-app + OS-level messaging paths.
 
-### CloudKit sync
-- Uses private CloudKit DB to sync game snapshot across Apple devices.
-- No Sign in with Apple implementation is required for private CloudKit.
-- Requires user signed into iCloud with CloudKit available.
+### CloudKit
+- Private database sync for cross-device state.
+- No Sign in with Apple flow required for private CloudKit usage.
 
-### Apple Watch
-- watchOS app + extension included.
-- Watch receives snapshot (player + quests + activity summary).
-- User can complete quests from watch; completion is relayed back to phone.
+### watchOS
+- Watch app and extension present.
+- Snapshot relay and quest completion relay supported via WatchConnectivity.
 
-## Current App Flow
+## Performance and Caching
+
+PRAXIS now uses local runtime caching to reduce expensive re-fetches and speed up UI hydration:
+
+- `RuntimeCacheManager` (`GAMELIFE/Services/DataManagers.swift`)
+  - quest ordering snapshot
+  - health daily snapshot
+  - location runtime snapshot
+  - achievement progress snapshot
+  - marketplace catalog snapshot
+  - status UI snapshot
+
+Implemented paths currently wired:
+- HealthKit daily snapshot load/save (`HealthKitManager`)
+- Local-first daily progress checks for HealthKit daily quests (`HealthKitManager`)
+- Location runtime state load/save (`LocationManager`)
+
+## UI / Settings Features
+
+- Default tab picker
+- Appearance controls (system/dark)
+- App icon picker with multiple icon variants
+- Haptic feedback toggle (multi-strength usage across interactions)
+- Quest completion alert mode
+- Death mechanic penalties toggle + explanatory info
+
+## App Flow
 
 1. Splash
-2. First-launch onboarding (`FirstLaunchSetupView`):
-   - Name
-   - Permission linking
-   - Boss creation (skippable)
-   - Quest creation
-   - Stats explanation
-   - Shop explanation
+2. First launch onboarding:
+   - name
+   - permission linking
+   - boss creation (skippable)
+   - quest creation
+   - stats explanation
+   - shop explanation
 3. Main tabs:
    - Status
    - Quests
@@ -110,43 +147,37 @@ Important for distribution:
    - Bosses
    - Shop
 
-## Architecture Overview
+## Architecture
 
 ### Core engine
-- `GameEngine` is the central state + logic orchestrator (`@MainActor`, singleton).
-- Owns player, quests, bosses, dungeon, penalties, loot, recent activity.
-- Applies rewards, leveling, stat updates, boss damage, penalties, sync hooks.
-
-### Data + persistence
-- Data managers serialize/load models locally.
-- App state is saved frequently and synced outward (CloudKit/watch) from engine.
+- `GameEngine` is `@MainActor` orchestrator and source of truth.
+- Owns player, quests, bosses, penalties, training state, recent activity.
+- Handles rewards, level-ups, boss damage, quest undo, penalties, sync hooks, achievements.
 
 ### Managers
 - `HealthKitManager`
 - `LocationManager`
 - `ScreenTimeManager`
-- `QuestManager` (DeviceActivity scheduling and extension bridge)
+- `QuestManager`
 - `NotificationManager`
 - `CloudKitSyncManager`
 - `WatchConnectivityManager`
-- `PenaltyManager`, `TrainingManager`, `MarketplaceManager`
+- `PenaltyManager`
+- `TrainingManager`
+- `MarketplaceManager`
+- `HapticManager`
 
-### UI layers
-- Views are grouped by feature (`Status`, `Quests`, `Training`, `Bosses`, `Shop`, `Settings`, `Onboarding`).
-- Shared visual system in `Design/SystemTheme.swift`.
-
-## Project Structure
-
-- `GAMELIFE/` main iOS app source
+### Project layout
+- `GAMELIFE/` main iOS app
 - `GAMELIFEMonitor/` DeviceActivity monitor extension
-- `GAMELIFEWatch/` watch app container
-- `GAMELIFEWatchExtension/` watch app logic/UI
-- `Tests/` model tests + regression shell script
-- `GAMELIFE.xcodeproj/` Xcode project
+- `GAMELIFEWatch/` watch app target
+- `GAMELIFEWatchExtension/` watch extension
+- `Tests/` tests + regression scripts
+- `GAMELIFE.xcodeproj/` project
 
-## Build and Run
+## Build and Test
 
-### Recommended local simulator build
+### Simulator build (recommended)
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
@@ -162,84 +193,31 @@ xcodebuild -project GAMELIFE.xcodeproj \
 bash Tests/run_regression_checks.sh
 ```
 
-Note:
-- The script currently builds with `generic/platform=iOS Simulator`, which can fail when watch targets are present depending on local toolchain resolution.
-- Use explicit simulator destination for reliable local verification.
-
-## Configuration and Capabilities Checklist
+## Capabilities Checklist
 
 ### iOS target (`GAMELIFE`)
 - iCloud + CloudKit
-- HealthKit (+ background delivery)
+- HealthKit
 - App Groups (`group.com.gamelife.shared`)
-- Family Controls (if Screen Time feature enabled)
-- Location usage descriptions (When In Use / Always+When In Use)
-- Health usage descriptions (`NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`)
+- Family Controls (if Screen Time features are enabled)
+- Location usage strings (`When In Use`, `Always and When In Use`)
+- Health usage strings (`NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`)
 
 ### Monitor extension (`GAMELIFEMonitor`)
-- Extension point: `com.apple.deviceactivity.monitor-extension`
-- App group shared with main app
-- Family Controls entitlement when screen-time monitoring active
-- `CFBundleDisplayName` should be present in extension plist for archive/upload validation
+- `com.apple.deviceactivity.monitor-extension`
+- Shared app group
+- Family Controls entitlement for screen-time monitoring
+- Valid extension plist metadata (`CFBundleDisplayName`, version alignment)
 
-## Feature Flag for Beta
+## Release / Beta Notes
 
-`AppFeatureFlags.screenTimeEnabled` lives in:
-- `GAMELIFE/Models/QuestModels.swift`
+- If FamilyControls distribution approval is missing, Screen Time features may work only in limited/dev contexts.
+- Simulator output includes many non-actionable platform noise logs (LaunchServices, haptic library, watch pairing, etc.). Validate critical behavior primarily on physical devices.
+- Alternate app icon changes can lag in notification banner history due to iOS cache behavior.
 
-Use this to temporarily disable Screen Time flows during beta if entitlement/review timing blocks release.
+## Privacy Summary
 
-When disabled, app should:
-- hide Screen Time tracking options in UI
-- skip Screen Time authorization/monitor wiring
-- migrate existing screen-time quests/goals to safe fallback paths
-
-## Known Operational Caveats
-
-1. **FamilyControls distribution approval**
-- Screen Time production behavior may be limited without Apple approval for distribution capability.
-
-2. **Simulator realism limits**
-- HealthKit, Screen Time, and geofencing behaviors differ from physical-device behavior.
-- Treat simulator as UI/dev validation, not final integration truth.
-
-3. **CloudKit availability**
-- Sync requires iCloud account + CloudKit availability; manager exposes status/events.
-
-## Recent Stability Hardening
-
-To prevent refresh-time crashes:
-- Pull-to-refresh in Quests is guarded against reentrancy.
-- Async update loops now use ID snapshots + index re-lookup before mutation.
-- This avoids stale-index crashes when arrays change during `await` points.
-
-## Recommended Beta Test Scope
-
-1. Manual quest lifecycle (create/edit/complete/reset)
-2. HealthKit auto-complete and quest progress bars
-3. Location address quest validation + dwell-time progress
-4. Boss linking and dynamic-goal HP behavior
-5. Reminder notifications + completion notifications
-6. Cross-device sync (CloudKit)
-7. Watch quest completion round-trip
-8. Light/dark appearance and layout scaling across iPhone sizes
-
-## Privacy / Data Summary
-
-- Health and location data are used for quest progress automation.
+- Health and location data are used for automation only.
 - Screen Time data (when enabled) is used for usage-based quests.
-- Data is stored locally and optionally synced via user private CloudKit.
-- App-group shared storage is used between main app and monitor extension.
-
-## Quick Start for New Developers
-
-1. Open `GAMELIFE.xcodeproj`.
-2. Confirm signing team and capabilities for all targets.
-3. Verify app group + iCloud container IDs match your environment.
-4. Build and run iOS app target.
-5. Run regression checks.
-6. Validate at least one quest flow per tracking type you plan to ship.
-
----
-
-If you are shipping a beta quickly, keep Screen Time behind the feature flag until entitlement/distribution approval is confirmed end-to-end.
+- Data persists locally and can sync through private CloudKit.
+- App-group storage is used for app/extension coordination.
