@@ -192,6 +192,7 @@ class Player: Codable {
     var streakShieldCharges: Int
 
     // Achievements & Collections
+    var unlockedAchievements: [UnlockedAchievement]
     var unlockedTitles: [String]
     var shadowSoldiers: [ShadowSoldier]
     var completedQuestCount: Int
@@ -266,6 +267,7 @@ class Player: Codable {
         self.streakShieldCharges = 0
 
         self.unlockedTitles = ["Awakened"]
+        self.unlockedAchievements = []
         self.shadowSoldiers = []
         self.completedQuestCount = 0
         self.defeatedBossCount = 0
@@ -286,7 +288,7 @@ class Player: Codable {
         case stats
         case currentStreak, longestStreak, lastActiveDate
         case streakShieldCharges
-        case unlockedTitles, shadowSoldiers
+        case unlockedAchievements, unlockedTitles, shadowSoldiers
         case completedQuestCount, defeatedBossCount, dungeonsClearedCount
         case maxHP, currentHP
         case penaltyCount, inPenaltyZone
@@ -308,6 +310,7 @@ class Player: Codable {
         longestStreak = try container.decode(Int.self, forKey: .longestStreak)
         lastActiveDate = try container.decodeIfPresent(Date.self, forKey: .lastActiveDate)
         streakShieldCharges = max(0, try container.decodeIfPresent(Int.self, forKey: .streakShieldCharges) ?? 0)
+        unlockedAchievements = try container.decodeIfPresent([UnlockedAchievement].self, forKey: .unlockedAchievements) ?? []
         unlockedTitles = try container.decode([String].self, forKey: .unlockedTitles)
         shadowSoldiers = try container.decode([ShadowSoldier].self, forKey: .shadowSoldiers)
         completedQuestCount = try container.decode(Int.self, forKey: .completedQuestCount)
@@ -337,6 +340,7 @@ class Player: Codable {
         try container.encode(longestStreak, forKey: .longestStreak)
         try container.encode(lastActiveDate, forKey: .lastActiveDate)
         try container.encode(streakShieldCharges, forKey: .streakShieldCharges)
+        try container.encode(unlockedAchievements, forKey: .unlockedAchievements)
         try container.encode(unlockedTitles, forKey: .unlockedTitles)
         try container.encode(shadowSoldiers, forKey: .shadowSoldiers)
         try container.encode(completedQuestCount, forKey: .completedQuestCount)
@@ -346,6 +350,236 @@ class Player: Codable {
         try container.encode(currentHP, forKey: .currentHP)
         try container.encode(penaltyCount, forKey: .penaltyCount)
         try container.encode(inPenaltyZone, forKey: .inPenaltyZone)
+    }
+}
+
+// MARK: - Achievement System
+
+enum AchievementRarity: String, Codable, CaseIterable {
+    case common
+    case rare
+    case epic
+    case legendary
+
+    var displayName: String {
+        switch self {
+        case .common: return "Common"
+        case .rare: return "Rare"
+        case .epic: return "Epic"
+        case .legendary: return "Legendary"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .common: return Color(hex: "B08D57")
+        case .rare: return Color(hex: "C0C0C0")
+        case .epic: return SystemTheme.goldColor
+        case .legendary: return Color(hex: "E5E4E2")
+        }
+    }
+}
+
+enum AchievementCategory: String, Codable, CaseIterable, Identifiable {
+    case grind
+    case arena
+    case scholar
+    case vault
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .grind: return "The Grind"
+        case .arena: return "The Arena"
+        case .scholar: return "The Scholar"
+        case .vault: return "The Vault"
+        }
+    }
+}
+
+struct AchievementReward {
+    let xp: Int
+    let gold: Int
+    let title: String?
+}
+
+struct AchievementDefinition: Identifiable {
+    let id: String
+    let title: String
+    let description: String
+    let requirementText: String
+    let category: AchievementCategory
+    let rarity: AchievementRarity
+    let icon: String
+    let targetValue: Int
+    let reward: AchievementReward
+}
+
+struct UnlockedAchievement: Codable, Identifiable {
+    let id: String
+    let unlockedAt: Date
+}
+
+struct AchievementProgress {
+    let current: Int
+    let target: Int
+
+    var fraction: Double {
+        guard target > 0 else { return 0 }
+        return min(1, max(0, Double(current) / Double(target)))
+    }
+}
+
+enum AchievementCatalog {
+    static let all: [AchievementDefinition] = [
+        AchievementDefinition(
+            id: "grind_streak_3",
+            title: "Momentum Initiated",
+            description: "Start the consistency engine.",
+            requirementText: "Reach a 3-day streak.",
+            category: .grind,
+            rarity: .common,
+            icon: "flame.fill",
+            targetValue: 3,
+            reward: AchievementReward(xp: 20, gold: 5, title: nil)
+        ),
+        AchievementDefinition(
+            id: "grind_streak_14",
+            title: "The Unbroken",
+            description: "Two weeks without breaking stride.",
+            requirementText: "Reach a 14-day streak.",
+            category: .grind,
+            rarity: .rare,
+            icon: "flame.circle.fill",
+            targetValue: 14,
+            reward: AchievementReward(xp: 120, gold: 25, title: "The Unbroken")
+        ),
+        AchievementDefinition(
+            id: "grind_streak_30",
+            title: "Discipline Engine",
+            description: "One full month of execution.",
+            requirementText: "Reach a 30-day streak.",
+            category: .grind,
+            rarity: .epic,
+            icon: "calendar.badge.checkmark",
+            targetValue: 30,
+            reward: AchievementReward(xp: 250, gold: 60, title: nil)
+        ),
+        AchievementDefinition(
+            id: "arena_first_boss",
+            title: "First Blood",
+            description: "Your first boss has fallen.",
+            requirementText: "Defeat 1 boss.",
+            category: .arena,
+            rarity: .common,
+            icon: "bolt.shield.fill",
+            targetValue: 1,
+            reward: AchievementReward(xp: 60, gold: 15, title: nil)
+        ),
+        AchievementDefinition(
+            id: "arena_boss_10",
+            title: "Giant Slayer",
+            description: "Battle-tested against major goals.",
+            requirementText: "Defeat 10 bosses.",
+            category: .arena,
+            rarity: .epic,
+            icon: "crown.fill",
+            targetValue: 10,
+            reward: AchievementReward(xp: 300, gold: 80, title: "Giant Slayer")
+        ),
+        AchievementDefinition(
+            id: "scholar_training_5",
+            title: "Focus Cadet",
+            description: "You entered deep work mode repeatedly.",
+            requirementText: "Complete 5 training sessions.",
+            category: .scholar,
+            rarity: .common,
+            icon: "timer",
+            targetValue: 5,
+            reward: AchievementReward(xp: 70, gold: 15, title: nil)
+        ),
+        AchievementDefinition(
+            id: "scholar_training_25",
+            title: "Deep Work Adept",
+            description: "Sustained concentration forged.",
+            requirementText: "Complete 25 training sessions.",
+            category: .scholar,
+            rarity: .rare,
+            icon: "brain.head.profile",
+            targetValue: 25,
+            reward: AchievementReward(xp: 180, gold: 40, title: nil)
+        ),
+        AchievementDefinition(
+            id: "vault_purchase_1",
+            title: "First Loot",
+            description: "You converted effort into reward.",
+            requirementText: "Purchase 1 shop reward.",
+            category: .vault,
+            rarity: .common,
+            icon: "cart.fill.badge.plus",
+            targetValue: 1,
+            reward: AchievementReward(xp: 40, gold: 0, title: nil)
+        ),
+        AchievementDefinition(
+            id: "vault_purchase_10",
+            title: "Quartermaster",
+            description: "You consistently reinvest your grind.",
+            requirementText: "Purchase 10 shop rewards.",
+            category: .vault,
+            rarity: .rare,
+            icon: "shippingbox.fill",
+            targetValue: 10,
+            reward: AchievementReward(xp: 120, gold: 30, title: nil)
+        ),
+        AchievementDefinition(
+            id: "vault_spend_1000",
+            title: "Golden Circuit",
+            description: "Serious economy throughput.",
+            requirementText: "Spend 1000 Gold in the shop.",
+            category: .vault,
+            rarity: .epic,
+            icon: "banknote.fill",
+            targetValue: 1000,
+            reward: AchievementReward(xp: 220, gold: 50, title: nil)
+        ),
+        AchievementDefinition(
+            id: "quests_complete_25",
+            title: "Questline Initiated",
+            description: "First major milestone reached.",
+            requirementText: "Complete 25 quests.",
+            category: .grind,
+            rarity: .common,
+            icon: "checkmark.circle.fill",
+            targetValue: 25,
+            reward: AchievementReward(xp: 80, gold: 20, title: nil)
+        ),
+        AchievementDefinition(
+            id: "quests_complete_100",
+            title: "System Veteran",
+            description: "Relentless completion pressure applied.",
+            requirementText: "Complete 100 quests.",
+            category: .grind,
+            rarity: .legendary,
+            icon: "medal.fill",
+            targetValue: 100,
+            reward: AchievementReward(xp: 500, gold: 120, title: "System Veteran")
+        ),
+        AchievementDefinition(
+            id: "legend_max_stat_100",
+            title: "Apex Build",
+            description: "A stat crossed elite threshold.",
+            requirementText: "Reach 100 in any one stat.",
+            category: .arena,
+            rarity: .legendary,
+            icon: "hexagon.fill",
+            targetValue: 100,
+            reward: AchievementReward(xp: 600, gold: 150, title: "Apex Hunter")
+        )
+    ]
+
+    static func definition(for id: String) -> AchievementDefinition? {
+        all.first(where: { $0.id == id })
     }
 }
 

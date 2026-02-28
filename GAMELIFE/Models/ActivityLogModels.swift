@@ -12,12 +12,14 @@ enum ActivityLogType: String, Codable {
     case questCompleted
     case bossDefeated
     case rewardConsumed
+    case achievementUnlocked
 
     var icon: String {
         switch self {
         case .questCompleted: return "checkmark.seal.fill"
         case .bossDefeated: return "bolt.shield.fill"
         case .rewardConsumed: return "gift.fill"
+        case .achievementUnlocked: return "trophy.fill"
         }
     }
 
@@ -26,6 +28,7 @@ enum ActivityLogType: String, Codable {
         case .questCompleted: return SystemTheme.successGreen
         case .bossDefeated: return SystemTheme.criticalRed
         case .rewardConsumed: return SystemTheme.goldColor
+        case .achievementUnlocked: return SystemTheme.primaryBlue
         }
     }
 }

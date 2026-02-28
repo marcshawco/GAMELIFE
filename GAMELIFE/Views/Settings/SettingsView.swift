@@ -159,6 +159,7 @@ struct SettingsView: View {
                 StatRow(label: "Current Streak", value: "\(gameEngine.player.currentStreak) days")
                 StatRow(label: "Longest Streak", value: "\(gameEngine.player.longestStreak) days")
                 StatRow(label: "Total XP Earned", value: "\(gameEngine.player.totalXP)")
+                StatRow(label: "Achievements", value: "\(gameEngine.player.unlockedAchievements.count)")
             } header: {
                 Text("Statistics")
             }

@@ -115,6 +115,7 @@ class GameEngine: ObservableObject {
         Task { @MainActor [weak self] in
             await self?.syncDynamicBossGoals()
         }
+        evaluateAchievementsIfNeeded()
     }
 
     // MARK: - Quest Completion
@@ -191,6 +192,7 @@ class GameEngine: ObservableObject {
 
         // Check all quests completed for streak
         checkDailyQuestStreak()
+        evaluateAchievementsIfNeeded()
 
         // Save
         save()
@@ -602,6 +604,7 @@ class GameEngine: ObservableObject {
         // Send notification
         NotificationManager.shared.sendBossDefeatedNotification(bossName: boss.title)
         HapticManager.shared.bossDefeated()
+        evaluateAchievementsIfNeeded()
     }
 
     // MARK: - Dungeon System
@@ -675,6 +678,7 @@ class GameEngine: ObservableObject {
         // Clear state
         activeDungeon?.complete()
         isInDungeon = false
+        evaluateAchievementsIfNeeded()
 
         save()
 
@@ -1706,6 +1710,103 @@ class GameEngine: ObservableObject {
         if recentActivity.count > 100 {
             recentActivity = Array(recentActivity.prefix(100))
         }
+    }
+
+    // MARK: - Achievement System
+
+    func achievementProgress(for achievementID: String) -> AchievementProgress {
+        switch achievementID {
+        case "grind_streak_3":
+            return AchievementProgress(current: player.longestStreak, target: 3)
+        case "grind_streak_14":
+            return AchievementProgress(current: player.longestStreak, target: 14)
+        case "grind_streak_30":
+            return AchievementProgress(current: player.longestStreak, target: 30)
+        case "arena_first_boss":
+            return AchievementProgress(current: player.defeatedBossCount, target: 1)
+        case "arena_boss_10":
+            return AchievementProgress(current: player.defeatedBossCount, target: 10)
+        case "scholar_training_5":
+            return AchievementProgress(current: player.dungeonsClearedCount, target: 5)
+        case "scholar_training_25":
+            return AchievementProgress(current: player.dungeonsClearedCount, target: 25)
+        case "vault_purchase_1":
+            return AchievementProgress(current: MarketplaceManager.shared.purchaseHistory.count, target: 1)
+        case "vault_purchase_10":
+            return AchievementProgress(current: MarketplaceManager.shared.purchaseHistory.count, target: 10)
+        case "vault_spend_1000":
+            let spent = MarketplaceManager.shared.purchaseHistory.reduce(0) { partial, purchase in
+                partial + purchase.reward.cost
+            }
+            return AchievementProgress(current: spent, target: 1000)
+        case "quests_complete_25":
+            return AchievementProgress(current: player.completedQuestCount, target: 25)
+        case "quests_complete_100":
+            return AchievementProgress(current: player.completedQuestCount, target: 100)
+        case "legend_max_stat_100":
+            let maxStatValue = player.stats.values.map(\.totalValue).max() ?? 0
+            return AchievementProgress(current: maxStatValue, target: 100)
+        default:
+            return AchievementProgress(current: 0, target: 1)
+        }
+    }
+
+    func evaluateAchievementsIfNeeded() {
+        var unlockedSet = Set(player.unlockedAchievements.map(\.id))
+        var unlockedThisPass: [AchievementDefinition] = []
+
+        for achievement in AchievementCatalog.all where !unlockedSet.contains(achievement.id) {
+            let progress = achievementProgress(for: achievement.id)
+            if progress.current >= progress.target {
+                player.unlockedAchievements.append(UnlockedAchievement(id: achievement.id, unlockedAt: Date()))
+                unlockedSet.insert(achievement.id)
+                unlockedThisPass.append(achievement)
+                applyAchievementReward(achievement)
+            }
+        }
+
+        guard !unlockedThisPass.isEmpty else { return }
+
+        player.unlockedAchievements.sort { $0.unlockedAt > $1.unlockedAt }
+        HapticManager.shared.success()
+    }
+
+    private func applyAchievementReward(_ achievement: AchievementDefinition) {
+        if achievement.reward.xp > 0 {
+            _ = awardXP(achievement.reward.xp)
+        }
+
+        if achievement.reward.gold > 0 {
+            player.gold += achievement.reward.gold
+        }
+
+        if let title = achievement.reward.title, !player.unlockedTitles.contains(title) {
+            player.unlockedTitles.append(title)
+        }
+
+        var rewardSegments: [String] = []
+        if achievement.reward.xp > 0 {
+            rewardSegments.append("+\(achievement.reward.xp) XP")
+        }
+        if achievement.reward.gold > 0 {
+            rewardSegments.append("+\(achievement.reward.gold) Gold")
+        }
+        if let title = achievement.reward.title {
+            rewardSegments.append("Title: \(title)")
+        }
+        let rewardText = rewardSegments.isEmpty ? "Reward claimed." : rewardSegments.joined(separator: " • ")
+
+        logActivity(
+            type: .achievementUnlocked,
+            title: achievement.title,
+            detail: rewardText
+        )
+
+        NotificationManager.shared.sendSystemAlert(
+            title: "[SYSTEM] Achievement Unlocked",
+            message: "\(achievement.title) • \(rewardText)"
+        )
+        SystemMessageHelper.showInfo("Achievement Unlocked", achievement.title)
     }
 
     private func prepareUndoSnapshot(for questTitle: String) {

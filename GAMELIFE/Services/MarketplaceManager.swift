@@ -227,6 +227,7 @@ class MarketplaceManager: ObservableObject {
                     ? "+\(restoredAmount) HP restored"
                     : "HP already full"
             )
+            GameEngine.shared.evaluateAchievementsIfNeeded()
             HapticManager.shared.purchaseSucceeded()
 
             return PurchaseResult(
@@ -253,6 +254,7 @@ class MarketplaceManager: ObservableObject {
                 title: reward.name,
                 detail: "+\(shieldCharges) streak protection charge"
             )
+            GameEngine.shared.evaluateAchievementsIfNeeded()
             HapticManager.shared.purchaseSucceeded()
 
             return PurchaseResult(
@@ -267,6 +269,7 @@ class MarketplaceManager: ObservableObject {
         // Save
         savePurchaseHistory()
         GameEngine.shared.save()
+        GameEngine.shared.evaluateAchievementsIfNeeded()
         HapticManager.shared.purchaseSucceeded()
 
         return PurchaseResult(

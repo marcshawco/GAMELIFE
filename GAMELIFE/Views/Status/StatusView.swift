@@ -16,6 +16,7 @@ struct StatusView: View {
 
     @EnvironmentObject var gameEngine: GameEngine
     @State private var isActivityLogExpanded = false
+    @State private var showTrophyRoom = false
 
     var body: some View {
         NavigationStack {
@@ -34,6 +35,9 @@ struct StatusView: View {
                 let bottomSectionHeight = max(0, remainingBottomHeight)
                 VStack(spacing: stackSpacing) {
                     CompactHeaderView(player: gameEngine.player, isCompact: isCompactHeight)
+                        .onTapGesture {
+                            showTrophyRoom = true
+                        }
                         .frame(height: headerHeight)
 
                     RadarChartView(stats: gameEngine.player.statArray)
@@ -42,11 +46,15 @@ struct StatusView: View {
 
                     StatusBottomSection(
                         stats: gameEngine.player.statArray,
+                        recentAchievements: recentUnlockedAchievements,
                         activities: gameEngine.recentActivity,
                         isCompact: isCompactHeight,
                         isLargeHeight: isLargeHeight,
                         containerHeight: bottomSectionHeight,
                         isActivityLogExpanded: isActivityLogExpanded,
+                        onOpenTrophyRoom: {
+                            showTrophyRoom = true
+                        },
                         onToggleActivityLog: {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 isActivityLogExpanded.toggle()
@@ -69,7 +77,19 @@ struct StatusView: View {
             }
             .toolbarBackground(SystemTheme.backgroundPrimary, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .navigationDestination(isPresented: $showTrophyRoom) {
+                TrophyRoomView()
+                    .environmentObject(gameEngine)
+            }
         }
+    }
+
+    private var recentUnlockedAchievements: [AchievementDefinition] {
+        let unlockedIDs = gameEngine.player.unlockedAchievements
+            .sorted(by: { $0.unlockedAt > $1.unlockedAt })
+            .map(\.id)
+        let recentIDs = Array(unlockedIDs.prefix(5))
+        return recentIDs.compactMap(AchievementCatalog.definition(for:))
     }
 }
 
@@ -191,24 +211,27 @@ struct CompactHeaderView: View {
 
 struct StatusBottomSection: View {
     let stats: [Stat]
+    let recentAchievements: [AchievementDefinition]
     let activities: [ActivityLogEntry]
     let isCompact: Bool
     let isLargeHeight: Bool
     let containerHeight: CGFloat
     let isActivityLogExpanded: Bool
+    let onOpenTrophyRoom: () -> Void
     let onToggleActivityLog: () -> Void
 
     var body: some View {
         let sectionSpacing = isCompact ? SystemSpacing.sm : (isLargeHeight ? SystemSpacing.md : SystemSpacing.sm)
         let verticalPadding = isCompact ? SystemSpacing.xs : SystemSpacing.sm
         let innerHeight = max(0, containerHeight - (verticalPadding * 2))
+        let achievementsHeight: CGFloat = isCompact ? 72 : 86
         let collapsedActivityHeight: CGFloat = isCompact ? 56 : 64
         let minGridHeight: CGFloat = isCompact ? 148 : 176
-        let preferredExpandedHeight = innerHeight * (isCompact ? 0.42 : 0.46)
-        let maxExpandedHeight = max(collapsedActivityHeight, innerHeight - minGridHeight - sectionSpacing)
+        let preferredExpandedHeight = innerHeight * (isCompact ? 0.34 : 0.38)
+        let maxExpandedHeight = max(collapsedActivityHeight, innerHeight - minGridHeight - (sectionSpacing * 2) - achievementsHeight)
         let expandedActivityHeight = min(maxExpandedHeight, preferredExpandedHeight)
         let activityHeight = isActivityLogExpanded ? max(collapsedActivityHeight, expandedActivityHeight) : collapsedActivityHeight
-        let gridHeight = max(0, innerHeight - activityHeight - sectionSpacing)
+        let gridHeight = max(0, innerHeight - activityHeight - achievementsHeight - (sectionSpacing * 2))
 
         let rowSpacing = isCompact ? SystemSpacing.xs : SystemSpacing.sm
         let maxRowHeight: CGFloat = isCompact ? 54 : (isLargeHeight ? 60 : 56)
@@ -223,6 +246,13 @@ struct StatusBottomSection: View {
             )
                 .frame(height: gridHeight)
                 .clipped()
+
+            RecentAchievementsStrip(
+                achievements: recentAchievements,
+                isCompact: isCompact,
+                onOpenTrophyRoom: onOpenTrophyRoom
+            )
+            .frame(height: achievementsHeight)
 
             RecentActivityLogCard(
                 entries: activities,
@@ -418,6 +448,222 @@ struct ActivityRow: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
+    }
+}
+
+// MARK: - Achievements
+
+struct RecentAchievementsStrip: View {
+    let achievements: [AchievementDefinition]
+    let isCompact: Bool
+    let onOpenTrophyRoom: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
+            HStack {
+                Text("Recent Achievements")
+                    .font(SystemTypography.mono(isCompact ? 12 : 13, weight: .bold))
+                    .foregroundStyle(SystemTheme.primaryBlue)
+
+                Spacer()
+
+                Button("View All") {
+                    onOpenTrophyRoom()
+                }
+                .font(SystemTypography.caption)
+                .foregroundStyle(SystemTheme.accentCyan)
+            }
+
+            if achievements.isEmpty {
+                Text("No badges unlocked yet. Complete quests and boss fights to earn your first trophy.")
+                    .font(SystemTypography.captionSmall)
+                    .foregroundStyle(SystemTheme.textSecondary)
+                    .lineLimit(2)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(achievements) { achievement in
+                            HStack(spacing: 6) {
+                                Image(systemName: achievement.icon)
+                                    .font(.system(size: isCompact ? 12 : 13, weight: .bold))
+                                Text(achievement.title)
+                                    .font(SystemTypography.captionSmall)
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(achievement.rarity.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(SystemTheme.backgroundSecondary.opacity(0.6))
+                            .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+        }
+        .padding(isCompact ? 10 : 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SystemTheme.backgroundTertiary)
+        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+    }
+}
+
+struct TrophyRoomView: View {
+    @EnvironmentObject private var gameEngine: GameEngine
+    @State private var selectedDefinition: AchievementDefinition?
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    private var unlockedSet: Set<String> {
+        Set(gameEngine.player.unlockedAchievements.map(\.id))
+    }
+
+    private var unlockedCount: Int {
+        unlockedSet.count
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Trophy Room")
+                    .font(SystemTypography.titleSmall)
+                    .foregroundStyle(SystemTheme.textPrimary)
+
+                Text("\(unlockedCount)/\(AchievementCatalog.all.count) unlocked")
+                    .font(SystemTypography.caption)
+                    .foregroundStyle(SystemTheme.textSecondary)
+
+                ForEach(AchievementCategory.allCases) { category in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(category.title)
+                            .font(SystemTypography.headline)
+                            .foregroundStyle(SystemTheme.textPrimary)
+
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(AchievementCatalog.all.filter { $0.category == category }) { achievement in
+                                let unlocked = unlockedSet.contains(achievement.id)
+                                let progress = gameEngine.achievementProgress(for: achievement.id)
+
+                                Button {
+                                    selectedDefinition = achievement
+                                } label: {
+                                    TrophyBadgeCell(
+                                        achievement: achievement,
+                                        unlocked: unlocked,
+                                        progress: progress
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(SystemSpacing.md)
+        }
+        .background(SystemTheme.backgroundPrimary.ignoresSafeArea())
+        .navigationTitle("Trophies")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert(item: $selectedDefinition) { achievement in
+            let progress = gameEngine.achievementProgress(for: achievement.id)
+            let unlocked = unlockedSet.contains(achievement.id)
+
+            return Alert(
+                title: Text(achievement.title),
+                message: Text(
+                    unlocked
+                    ? "\(achievement.description)\n\nUnlocked."
+                    : "\(achievement.description)\n\n\(achievement.requirementText)\nProgress: \(progress.current)/\(progress.target)"
+                ),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+}
+
+private struct TrophyBadgeCell: View {
+    let achievement: AchievementDefinition
+    let unlocked: Bool
+    let progress: AchievementProgress
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Hexagon()
+                    .fill(
+                        unlocked
+                        ? achievement.rarity.color.opacity(0.18)
+                        : SystemTheme.backgroundSecondary.opacity(0.6)
+                    )
+                    .overlay(
+                        Hexagon()
+                            .stroke(
+                                unlocked ? achievement.rarity.color : SystemTheme.textTertiary.opacity(0.4),
+                                lineWidth: unlocked ? 2 : 1
+                            )
+                    )
+                    .frame(width: 78, height: 84)
+
+                Image(systemName: achievement.icon)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(unlocked ? achievement.rarity.color : SystemTheme.textTertiary)
+            }
+
+            Text(achievement.title)
+                .font(SystemTypography.captionSmall)
+                .foregroundStyle(unlocked ? SystemTheme.textPrimary : SystemTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity)
+
+            if unlocked {
+                Text(achievement.rarity.displayName)
+                    .font(SystemTypography.mono(10, weight: .bold))
+                    .foregroundStyle(achievement.rarity.color)
+            } else {
+                Text("\(progress.current)/\(progress.target)")
+                    .font(SystemTypography.mono(10, weight: .semibold))
+                    .foregroundStyle(SystemTheme.textTertiary)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, minHeight: 148)
+        .background(SystemTheme.backgroundTertiary)
+        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+    }
+}
+
+private struct Hexagon: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        let points = [
+            CGPoint(x: 0.5 * w, y: 0),
+            CGPoint(x: w, y: 0.25 * h),
+            CGPoint(x: w, y: 0.75 * h),
+            CGPoint(x: 0.5 * w, y: h),
+            CGPoint(x: 0, y: 0.75 * h),
+            CGPoint(x: 0, y: 0.25 * h)
+        ]
+
+        var path = Path()
+        path.move(to: points[0])
+        for point in points.dropFirst() {
+            path.addLine(to: point)
+        }
+        path.closeSubpath()
+        return path
     }
 }
 
