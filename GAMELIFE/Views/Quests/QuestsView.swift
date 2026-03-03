@@ -31,6 +31,7 @@ struct QuestsView: View {
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var isRefreshingExternalTracking = false
     @State private var liveProgressTick = Date()
+    @AppStorage("quests.nextUpCollapsed") private var isNextUpCollapsed = false
 
     private var sortedQuests: [DailyQuest] {
         gameEngine.dailyQuests.sorted { lhs, rhs in
@@ -72,7 +73,8 @@ struct QuestsView: View {
                                     quests: nextUpQuests,
                                     bossImpactText: bossImpactText(for:),
                                     rewardImpactText: rewardImpactText(for:),
-                                    streakImpactText: streakImpactText(for:)
+                                    streakImpactText: streakImpactText(for:),
+                                    isCollapsed: $isNextUpCollapsed
                                 )
                                 .padding(.horizontal)
                             }
@@ -609,53 +611,75 @@ private struct NextUpSection: View {
     let bossImpactText: (DailyQuest) -> String?
     let rewardImpactText: (DailyQuest) -> String
     let streakImpactText: (DailyQuest) -> String
+    @Binding var isCollapsed: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Next Up")
-                .font(SystemTypography.mono(14, weight: .bold))
-                .foregroundStyle(SystemTheme.primaryBlue)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCollapsed.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Next Up")
+                        .font(SystemTypography.mono(14, weight: .bold))
+                        .foregroundStyle(SystemTheme.primaryBlue)
 
-            VStack(spacing: 8) {
-                ForEach(Array(quests.enumerated()), id: \.element.id) { index, quest in
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("\(index + 1)")
-                            .font(SystemTypography.mono(11, weight: .bold))
-                            .foregroundStyle(SystemTheme.backgroundPrimary)
-                            .frame(width: 18, height: 18)
-                            .background(SystemTheme.primaryBlue)
-                            .clipShape(Circle())
+                    Spacer()
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(quest.title)
-                                .font(SystemTypography.caption)
-                                .foregroundStyle(SystemTheme.textPrimary)
-                                .lineLimit(1)
-                            if let bossLine = bossImpactText(quest) {
-                                Text(bossLine)
+                    Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(SystemTheme.primaryBlue)
+                        .padding(6)
+                        .background(SystemTheme.backgroundTertiary)
+                        .clipShape(Circle())
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if !isCollapsed {
+                VStack(spacing: 8) {
+                    ForEach(Array(quests.enumerated()), id: \.element.id) { index, quest in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(index + 1)")
+                                .font(SystemTypography.mono(11, weight: .bold))
+                                .foregroundStyle(SystemTheme.backgroundPrimary)
+                                .frame(width: 18, height: 18)
+                                .background(SystemTheme.primaryBlue)
+                                .clipShape(Circle())
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(quest.title)
+                                    .font(SystemTypography.caption)
+                                    .foregroundStyle(SystemTheme.textPrimary)
+                                    .lineLimit(1)
+                                if let bossLine = bossImpactText(quest) {
+                                    Text(bossLine)
+                                        .font(SystemTypography.captionSmall)
+                                        .foregroundStyle(SystemTheme.warningOrange)
+                                        .lineLimit(1)
+                                }
+                                Text(rewardImpactText(quest))
                                     .font(SystemTypography.captionSmall)
-                                    .foregroundStyle(SystemTheme.warningOrange)
+                                    .foregroundStyle(SystemTheme.primaryBlue)
+                                    .lineLimit(1)
+                                Text(streakImpactText(quest))
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textSecondary)
                                     .lineLimit(1)
                             }
-                            Text(rewardImpactText(quest))
-                                .font(SystemTypography.captionSmall)
-                                .foregroundStyle(SystemTheme.primaryBlue)
-                                .lineLimit(1)
-                            Text(streakImpactText(quest))
-                                .font(SystemTypography.captionSmall)
-                                .foregroundStyle(SystemTheme.textSecondary)
-                                .lineLimit(1)
+                            Spacer()
                         }
-                        Spacer()
-                    }
-                    if index < quests.count - 1 {
-                        Divider().overlay(SystemTheme.borderSecondary)
+                        if index < quests.count - 1 {
+                            Divider().overlay(SystemTheme.borderSecondary)
+                        }
                     }
                 }
+                .padding(10)
+                .background(SystemTheme.backgroundTertiary)
+                .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
             }
-            .padding(10)
-            .background(SystemTheme.backgroundTertiary)
-            .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
         }
     }
 }
