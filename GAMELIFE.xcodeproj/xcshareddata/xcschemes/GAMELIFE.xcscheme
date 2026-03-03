@@ -21,6 +21,34 @@
                ReferencedContainer = "container:GAMELIFE.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3177A3B89971EE49CEC017C3"
+               BuildableName = "GAMELIFEWatch.app"
+               BlueprintName = "GAMELIFEWatch"
+               ReferencedContainer = "container:GAMELIFE.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C68C6AF788FBEB1E56191941"
+               BuildableName = "GAMELIFEWatchExtension.appex"
+               BlueprintName = "GAMELIFEWatchExtension"
+               ReferencedContainer = "container:GAMELIFE.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
