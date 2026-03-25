@@ -723,6 +723,7 @@ class SettingsManager {
     private enum Keys {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let defaultTab = "defaultTab"
+        static let preferredLanguageCode = "preferredLanguageCode"
         static let soundEnabled = "soundEnabled"
         static let hapticEnabled = "hapticEnabled"
         static let useCustomAppFont = "useCustomAppFont"
@@ -747,6 +748,14 @@ class SettingsManager {
     var defaultTab: Int {
         get { UserDefaults.standard.object(forKey: Keys.defaultTab) as? Int ?? 0 }
         set { UserDefaults.standard.set(newValue, forKey: Keys.defaultTab) }
+    }
+
+    var preferredLanguageCode: String {
+        get { UserDefaults.standard.string(forKey: Keys.preferredLanguageCode) ?? AppLanguage.system.rawValue }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Keys.preferredLanguageCode)
+            sharedDefaults?.set(newValue, forKey: Keys.preferredLanguageCode)
+        }
     }
 
     // MARK: - Sound & Haptics
@@ -828,14 +837,24 @@ class SettingsManager {
 
     // MARK: - Reset
 
+    private let sharedAppGroupID = "group.com.gamelife.shared"
+    private lazy var sharedDefaults: UserDefaults? = {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedAppGroupID) != nil else {
+            return nil
+        }
+        return UserDefaults(suiteName: sharedAppGroupID)
+    }()
+
     func resetAllSettings() {
         guard let domain = Bundle.main.bundleIdentifier else { return }
         UserDefaults.standard.removePersistentDomain(forName: domain)
+        sharedDefaults?.removeObject(forKey: Keys.preferredLanguageCode)
     }
 
     func setDefaults() {
         let defaults: [String: Any] = [
             Keys.defaultTab: 0,
+            Keys.preferredLanguageCode: AppLanguage.system.rawValue,
             Keys.soundEnabled: true,
             Keys.hapticEnabled: true,
             Keys.useCustomAppFont: false,
@@ -850,6 +869,9 @@ class SettingsManager {
         ]
 
         UserDefaults.standard.register(defaults: defaults)
+        if sharedDefaults?.object(forKey: Keys.preferredLanguageCode) == nil {
+            sharedDefaults?.set(AppLanguage.system.rawValue, forKey: Keys.preferredLanguageCode)
+        }
     }
 }
 

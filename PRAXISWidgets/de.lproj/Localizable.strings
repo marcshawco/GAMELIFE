@@ -1,0 +1,15 @@
+"Boss" = "Boss";
+"Boss Widget" = "Boss-Widget";
+"Choose which boss this widget should track." = "Wähle aus, welchen Boss dieses Widget verfolgen soll.";
+"Hunter Status" = "Jägerstatus";
+"See level, HP, streak, gold, and today’s completion status at a glance." = "Sieh Level, HP, Serie, Gold und den heutigen Abschlussstatus auf einen Blick.";
+"Next Up" = "Als Nächstes";
+"Shows the most important quests to tackle next based on urgency, rewards, and boss impact." = "Zeigt die wichtigsten Quests als Nächstes basierend auf Dringlichkeit, Belohnungen und Boss-Einfluss.";
+"Boss Progress" = "Boss-Fortschritt";
+"Track a specific boss fight or let PRAXIS choose the most urgent one." = "Verfolge einen bestimmten Bosskampf oder lass PRAXIS den dringendsten wählen.";
+"OPTIONAL" = "OPTIONAL";
+"All clear. No unfinished quests right now." = "Alles frei. Im Moment gibt es keine offenen Quests.";
+"Boss Battle" = "Bosskampf";
+"No active bosses" = "Keine aktiven Bosse";
+"Best next move" = "Bester nächster Schritt";
+"Create a boss to track long-term progress here." = "Erstelle einen Boss, um hier den langfristigen Fortschritt zu verfolgen.";

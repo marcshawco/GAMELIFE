@@ -40,35 +40,35 @@ struct MainTabView: View {
                 // Tab 0: Status (Player Profile & Stats)
                 StatusView()
                     .tabItem {
-                        Label("Status", systemImage: "person.fill")
+                        Label(LocalizedStringKey("Status"), systemImage: "person.fill")
                     }
                     .tag(0)
 
                 // Tab 1: Quests (Daily/Micro Tasks)
                 QuestsView()
                     .tabItem {
-                        Label("Quests", systemImage: "list.bullet.rectangle")
+                        Label(LocalizedStringKey("Quests"), systemImage: "list.bullet.rectangle")
                     }
                     .tag(1)
 
                 // Tab 2: Training (Focus Timer - formerly Dungeon)
                 TrainingView()
                     .tabItem {
-                        Label("Training", systemImage: "timer")
+                        Label(LocalizedStringKey("Training"), systemImage: "timer")
                     }
                     .tag(2)
 
                 // Tab 3: Bosses (Projects & Long-term Goals)
                 BossesView()
                     .tabItem {
-                        Label("Bosses", systemImage: "bolt.shield.fill")
+                        Label(LocalizedStringKey("Bosses"), systemImage: "bolt.shield.fill")
                     }
                     .tag(3)
 
                 // Tab 4: Shop (Rewards Marketplace)
                 ShopView()
                     .tabItem {
-                        Label("Shop", systemImage: "bag.fill")
+                        Label(LocalizedStringKey("Shop"), systemImage: "bag.fill")
                     }
                     .tag(4)
             }

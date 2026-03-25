@@ -57,6 +57,19 @@ class NotificationManager: NSObject, ObservableObject {
     private var lastReminderPlanSignature: String?
     private var reminderPlanRefreshWorkItem: DispatchWorkItem?
 
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
+    }
+
+    private func localizedFormat(_ key: String, _ arguments: CVarArg...) -> String {
+        let locale = AppLanguage(rawValue: SettingsManager.shared.preferredLanguageCode)?.locale ?? .autoupdatingCurrent
+        return String(format: localized(key), locale: locale, arguments: arguments)
+    }
+
+    private func systemTitle(_ value: String) -> String {
+        localizedFormat("[SYSTEM] %@", value)
+    }
+
     enum QuestCompletionNotificationMode: String, CaseIterable, Identifiable {
         case immediate
         case digest
@@ -65,8 +78,8 @@ class NotificationManager: NSObject, ObservableObject {
 
         var displayName: String {
             switch self {
-            case .immediate: return "Immediate"
-            case .digest: return "Digest (1 min)"
+            case .immediate: return NSLocalizedString("Immediate", comment: "")
+            case .digest: return NSLocalizedString("Digest (1 min)", comment: "")
             }
         }
     }
@@ -144,7 +157,7 @@ class NotificationManager: NSObject, ObservableObject {
         // Quest complete actions
         let completeQuestAction = UNNotificationAction(
             identifier: completeQuestActionIdentifier,
-            title: "Complete Quest",
+            title: localized("Complete Quest"),
             options: []
         )
 
@@ -163,7 +176,7 @@ class NotificationManager: NSObject, ObservableObject {
         // Penalty actions
         let completePenaltyAction = UNNotificationAction(
             identifier: "COMPLETE_PENALTY",
-            title: "Complete Now",
+            title: localized("Complete Now"),
             options: .foreground
         )
 
@@ -176,7 +189,7 @@ class NotificationManager: NSObject, ObservableObject {
         // Dungeon actions
         let startDungeonAction = UNNotificationAction(
             identifier: "START_DUNGEON",
-            title: "Enter Dungeon",
+            title: localized("Enter Dungeon"),
             options: .foreground
         )
 
@@ -208,7 +221,7 @@ class NotificationManager: NSObject, ObservableObject {
 
         switch questCompletionNotificationMode {
         case .immediate:
-            sendImmediateQuestCompleteNotification(title: "Quest Complete", body: messageBody)
+            sendImmediateQuestCompleteNotification(title: localized("Quest Complete"), body: messageBody)
         case .digest:
             enqueueQuestCompletionDigest(questTitle: questTitle, xp: xp, gold: gold)
         }
@@ -216,7 +229,7 @@ class NotificationManager: NSObject, ObservableObject {
 
     private func sendImmediateQuestCompleteNotification(title: String, body: String) {
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] \(title)"
+        content.title = systemTitle(title)
         content.body = body
         content.sound = .default
         content.categoryIdentifier = "QUEST_COMPLETE"
@@ -260,13 +273,13 @@ class NotificationManager: NSObject, ObservableObject {
         let totalGold = queue.reduce(0) { $0 + $1.gold }
 
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] Quest Digest"
+        content.title = systemTitle(localized("Quest Digest"))
         if queue.count == 1, let only = queue.first {
             content.body = questCompletionBody(title: only.title, xp: only.xp, gold: only.gold)
         } else {
             content.body = totalGold > 0
-                ? "\(queue.count) quests completed • +\(totalXP) XP • +\(totalGold) Gold."
-                : "\(queue.count) quests completed • +\(totalXP) XP (optional quests grant XP only)."
+                ? localizedFormat("%d quests completed • +%d XP • +%d Gold.", queue.count, totalXP, totalGold)
+                : localizedFormat("%d quests completed • +%d XP (optional quests grant XP only).", queue.count, totalXP)
         }
         content.sound = .default
         content.categoryIdentifier = "QUEST_COMPLETE"
@@ -308,9 +321,9 @@ class NotificationManager: NSObject, ObservableObject {
 
     private func questCompletionBody(title: String, xp: Int, gold: Int) -> String {
         if gold > 0 {
-            return "\(title) finished. +\(xp) XP, +\(gold) Gold."
+            return localizedFormat("%@ finished. +%d XP, +%d Gold.", title, xp, gold)
         }
-        return "\(title) finished. +\(xp) XP (optional quest: no gold)."
+        return localizedFormat("%@ finished. +%d XP (optional quest: no gold).", title, xp)
     }
 
     private func updateQueuedDigestCount() {
@@ -327,8 +340,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send evening reminder for incomplete quests
     func scheduleEveningReminder(incompleteCount: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] Quests Incomplete"
-        content.body = "You have \(incompleteCount) quest\(incompleteCount == 1 ? "" : "s") remaining. Complete them to avoid penalties."
+        content.title = systemTitle(localized("Quests Incomplete"))
+        content.body = localizedFormat("You have %d quest(s) remaining. Complete them to avoid penalties.", incompleteCount)
         content.sound = .default
         content.categoryIdentifier = "DAILY_REMINDER"
 
@@ -361,8 +374,8 @@ class NotificationManager: NSObject, ObservableObject {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] Quest Reminder"
-        content.body = "Time to complete: \(quest.title)"
+        content.title = systemTitle(localized("Quest Reminder"))
+        content.body = localizedFormat("Time to complete: %@", quest.title)
         content.sound = .default
         content.categoryIdentifier = questReminderCategoryIdentifier
         content.userInfo = [
@@ -571,35 +584,35 @@ class NotificationManager: NSObject, ObservableObject {
 
         if let urgentQuest, let activeBoss {
             return (
-                title: "[SYSTEM] Return Window Detected",
-                body: "\(urgentQuest.title) is your best next move. Push back against \(activeBoss.title) before it stalls your progress."
+                title: systemTitle(localized("Return Window Detected")),
+                body: localizedFormat("%@ is your best next move. Push back against %@ before it stalls your progress.", urgentQuest.title, activeBoss.title)
             )
         }
 
         if let urgentQuest {
             return (
-                title: "[SYSTEM] Your Momentum Window Is Open",
-                body: "\(urgentQuest.title) is still waiting. A short session now keeps your streak and XP pipeline alive."
+                title: systemTitle(localized("Your Momentum Window Is Open")),
+                body: localizedFormat("%@ is still waiting. A short session now keeps your streak and XP pipeline alive.", urgentQuest.title)
             )
         }
 
         if let activeBoss {
             return (
-                title: "[SYSTEM] Boss Pressure Rising",
-                body: "\(activeBoss.title) is still standing. Log in and chip away before the system loses your rhythm."
+                title: systemTitle(localized("Boss Pressure Rising")),
+                body: localizedFormat("%@ is still standing. Log in and chip away before the system loses your rhythm.", activeBoss.title)
             )
         }
 
         return (
-            title: "[SYSTEM] Check-In Opportunity",
-            body: "Your build is quiet right now. Log in, review your board, and set the next chain of progress in motion."
+            title: systemTitle(localized("Check-In Opportunity")),
+            body: localized("Your build is quiet right now. Log in, review your board, and set the next chain of progress in motion.")
         )
     }
 
     private func scheduleInactivityShutdownNotification(triggerDate: Date?, body: String) {
         guard let triggerDate else { return }
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] Transmission Ending"
+        content.title = systemTitle(localized("Transmission Ending"))
         content.body = body
         content.sound = .default
         content.categoryIdentifier = "DAILY_REMINDER"
@@ -640,9 +653,9 @@ class NotificationManager: NSObject, ObservableObject {
 
     private func inactivityShutdownBody() -> String {
         if let boss = currentBossTarget(from: GameEngine.shared.activeBossFights) {
-            return "No activity detected for 7 days. PRAXIS is standing down for now. \(boss.title) remains undefeated."
+            return localizedFormat("No activity detected for 7 days. PRAXIS is standing down for now. %@ remains undefeated.", boss.title)
         }
-        return "No activity detected for 7 days. PRAXIS is standing down for now. Reopen the app whenever you're ready to resume the climb."
+        return localized("No activity detected for 7 days. PRAXIS is standing down for now. Reopen the app whenever you're ready to resume the climb.")
     }
 
     private func mostUrgentQuest(from quests: [DailyQuest], playerLevel: Int, bosses: [BossFight]) -> DailyQuest? {
@@ -699,8 +712,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send level up notification
     func sendLevelUpNotification(level: Int, rank: PlayerRank) {
         let content = UNMutableNotificationContent()
-        content.title = "⬆️ LEVEL UP!"
-        content.body = "You have reached Level \(level). Rank: \(rank.title)"
+        content.title = localized("⬆️ LEVEL UP!")
+        content.body = localizedFormat("You have reached Level %d. Rank: %@", level, rank.title)
         content.sound = .default
         content.categoryIdentifier = "LEVEL_UP"
 
@@ -719,8 +732,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send rank up notification (special version)
     func sendRankUpNotification(newRank: PlayerRank) {
         let content = UNMutableNotificationContent()
-        content.title = "🎖️ RANK UP!"
-        content.body = "You have achieved the rank of \(newRank.title)!"
+        content.title = localized("🎖️ RANK UP!")
+        content.body = localizedFormat("You have achieved the rank of %@!", newRank.title)
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "LEVEL_UP"
         content.interruptionLevel = .timeSensitive
@@ -739,8 +752,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Schedule notification for dungeon completion
     func scheduleDungeonEndNotification(in minutes: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] DUNGEON CLEARED!"
-        content.body = "You have conquered the dungeon. Claim your rewards."
+        content.title = systemTitle(localized("DUNGEON CLEARED!"))
+        content.body = localized("You have conquered the dungeon. Claim your rewards.")
         content.sound = .default
         content.categoryIdentifier = "DUNGEON"
 
@@ -761,8 +774,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send dungeon cleared celebration
     func sendDungeonClearedNotification(dungeonName: String, xp: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "🏰 DUNGEON CLEARED"
-        content.body = "\(dungeonName) conquered! +\(xp) XP earned."
+        content.title = localized("🏰 DUNGEON CLEARED")
+        content.body = localizedFormat("%@ conquered! +%d XP earned.", dungeonName, xp)
         content.sound = .default
         content.categoryIdentifier = "DUNGEON"
 
@@ -787,8 +800,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send boss defeated notification
     func sendBossDefeatedNotification(bossName: String) {
         let content = UNMutableNotificationContent()
-        content.title = "💀 BOSS DEFEATED"
-        content.body = "You have slain \(bossName)! Epic rewards await."
+        content.title = localized("💀 BOSS DEFEATED")
+        content.body = localizedFormat("You have slain %@! Epic rewards await.", bossName)
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "BOSS_DEFEATED"
         content.interruptionLevel = .timeSensitive
@@ -810,8 +823,8 @@ class NotificationManager: NSObject, ObservableObject {
         guard warningTime > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "⚠️ BOSS DEADLINE APPROACHING"
-        content.body = "\(bossName) must be defeated within 24 hours!"
+        content.title = localized("⚠️ BOSS DEADLINE APPROACHING")
+        content.body = localizedFormat("%@ must be defeated within 24 hours!", bossName)
         content.sound = .default
         content.categoryIdentifier = "BOSS_DEFEATED"
 
@@ -834,8 +847,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send streak milestone notification
     func sendStreakMilestoneNotification(streak: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "🔥 STREAK MILESTONE"
-        content.body = "\(streak) day streak! Your power grows with each passing day."
+        content.title = localized("🔥 STREAK MILESTONE")
+        content.body = localizedFormat("%d day streak! Your power grows with each passing day.", streak)
         content.sound = .default
         content.categoryIdentifier = "STREAK"
 
@@ -856,8 +869,8 @@ class NotificationManager: NSObject, ObservableObject {
         dateComponents.minute = 0
 
         let content = UNMutableNotificationContent()
-        content.title = "🔥 STREAK AT RISK"
-        content.body = "Complete your daily quests before midnight to maintain your streak!"
+        content.title = localized("🔥 STREAK AT RISK")
+        content.body = localized("Complete your daily quests before midnight to maintain your streak!")
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "STREAK"
         content.interruptionLevel = .timeSensitive
@@ -881,8 +894,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send location arrival notification
     func sendLocationArrivalNotification(location: TrackedLocation) {
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] LOCATION DETECTED"
-        content.body = "You have arrived at \(location.name). Quest tracking active."
+        content.title = systemTitle(localized("LOCATION DETECTED"))
+        content.body = localizedFormat("You have arrived at %@. Quest tracking active.", location.name)
         content.sound = .default
         content.categoryIdentifier = "LOCATION"
 

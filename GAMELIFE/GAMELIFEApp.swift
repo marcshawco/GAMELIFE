@@ -21,6 +21,7 @@ struct GAMELIFEApp: App {
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
     @AppStorage("useCustomAppFont") private var useCustomAppFont = false
+    @AppStorage("preferredLanguageCode") private var preferredLanguageCode = AppLanguage.system.rawValue
 
     // MARK: - Environment
 
@@ -43,7 +44,8 @@ struct GAMELIFEApp: App {
                 .environmentObject(gameEngine)
                 .environmentObject(deepLinkManager)
                 .preferredColorScheme(resolvedColorScheme)
-                .id(useCustomAppFont)
+                .environment(\.locale, resolvedLocale)
+                .id("\(useCustomAppFont)-\(preferredLanguageCode)")
                 .onOpenURL { url in
                     deepLinkManager.handle(url)
                 }
@@ -61,6 +63,10 @@ struct GAMELIFEApp: App {
     private var resolvedColorScheme: ColorScheme? {
         guard !useSystemAppearance else { return nil }
         return preferDarkMode ? .dark : .light
+    }
+
+    private var resolvedLocale: Locale {
+        AppLanguage(rawValue: preferredLanguageCode)?.locale ?? .autoupdatingCurrent
     }
 
     // MARK: - Configuration

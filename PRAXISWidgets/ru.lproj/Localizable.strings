@@ -1,0 +1,15 @@
+"Boss" = "Босс";
+"Boss Widget" = "Виджет босса";
+"Choose which boss this widget should track." = "Выберите, какого босса должен отслеживать этот виджет.";
+"Hunter Status" = "Статус охотника";
+"See level, HP, streak, gold, and today’s completion status at a glance." = "Смотрите уровень, HP, серию, золото и статус выполнения за сегодня одним взглядом.";
+"Next Up" = "Дальше";
+"Shows the most important quests to tackle next based on urgency, rewards, and boss impact." = "Показывает самые важные квесты для следующего шага с учётом срочности, наград и влияния на босса.";
+"Boss Progress" = "Прогресс босса";
+"Track a specific boss fight or let PRAXIS choose the most urgent one." = "Следите за конкретным боем с боссом или позвольте PRAXIS выбрать самый срочный.";
+"OPTIONAL" = "НЕОБЯЗАТЕЛЬНО";
+"All clear. No unfinished quests right now." = "Всё чисто. Сейчас нет незавершённых квестов.";
+"Boss Battle" = "Битва с боссом";
+"No active bosses" = "Нет активных боссов";
+"Best next move" = "Лучший следующий ход";
+"Create a boss to track long-term progress here." = "Создайте босса, чтобы отслеживать здесь долгосрочный прогресс.";

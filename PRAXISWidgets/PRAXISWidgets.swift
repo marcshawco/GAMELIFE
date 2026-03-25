@@ -7,6 +7,21 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
+private enum WidgetLanguageSupport {
+    static let appGroupID = "group.com.gamelife.shared"
+    static let preferredLanguageKey = "preferredLanguageCode"
+
+    static var locale: Locale {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil,
+              let defaults = UserDefaults(suiteName: appGroupID),
+              let code = defaults.string(forKey: preferredLanguageKey),
+              code != "system" else {
+            return .autoupdatingCurrent
+        }
+        return Locale(identifier: code)
+    }
+}
+
 struct PRAXISWidgetEntry: TimelineEntry {
     let date: Date
     let payload: WidgetSnapshotPayload
@@ -134,6 +149,7 @@ struct StatusWidgetView: View {
                 defaultBody
             }
         }
+        .environment(\.locale, WidgetLanguageSupport.locale)
         .widgetURL(URL(string: "praxis://status"))
     }
 
@@ -268,6 +284,7 @@ struct NextUpWidgetView: View {
         .containerBackground(for: .widget) {
             LinearGradient(colors: [Color(red: 0.09, green: 0.08, blue: 0.05), Color(red: 0.16, green: 0.12, blue: 0.07)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
+        .environment(\.locale, WidgetLanguageSupport.locale)
         .widgetURL(nextUpURL)
     }
 
@@ -371,6 +388,7 @@ struct BossWidgetView: View {
         .containerBackground(for: .widget) {
             LinearGradient(colors: [Color(red: 0.16, green: 0.05, blue: 0.08), Color(red: 0.24, green: 0.08, blue: 0.10)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
+        .environment(\.locale, WidgetLanguageSupport.locale)
         .widgetURL(bossURL)
     }
 

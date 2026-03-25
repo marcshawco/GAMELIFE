@@ -19,6 +19,7 @@ struct SettingsView: View {
 
     @EnvironmentObject var gameEngine: GameEngine
     @AppStorage("defaultTab") private var defaultTab: Int = 0
+    @AppStorage("preferredLanguageCode") private var preferredLanguageCode = AppLanguage.system.rawValue
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
     @AppStorage("hapticEnabled") private var hapticEnabled = true
@@ -71,9 +72,21 @@ struct SettingsView: View {
             }
 
             Section {
+                Picker("App Language", selection: $preferredLanguageCode) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
+                }
+            } header: {
+                Text("Language")
+            } footer: {
+                Text("Change the app language without leaving PRAXIS. Widgets and notifications follow this setting where supported.")
+            }
+
+            Section {
                 Picker("Open App To", selection: $defaultTab) {
                     ForEach(GameTab.allCases, id: \.rawValue) { tab in
-                        Text(tab.title).tag(tab.rawValue)
+                        Text(tab.localizedTitle).tag(tab.rawValue)
                     }
                 }
             } header: {
@@ -289,6 +302,10 @@ struct SettingsView: View {
         }
         .onChange(of: defaultTab) { _, _ in
             AnalyticsManager.shared.trackFeature("settings_changed_default_tab")
+        }
+        .onChange(of: preferredLanguageCode) { _, newValue in
+            SettingsManager.shared.preferredLanguageCode = newValue
+            AnalyticsManager.shared.trackFeature("settings_changed_language_\(newValue)")
         }
         .onChange(of: useSystemAppearance) { _, isEnabled in
             AnalyticsManager.shared.trackFeature(isEnabled ? "settings_enabled_system_appearance" : "settings_disabled_system_appearance")
