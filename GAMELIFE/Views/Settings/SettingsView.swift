@@ -93,7 +93,7 @@ struct SettingsView: View {
                         }
                     }
 
-                Toggle("Use Good Times Font", isOn: $useCustomAppFont)
+                Toggle("PRAXIS FONT", isOn: $useCustomAppFont)
 
                 Toggle("Show Quest Completion Grid", isOn: $showQuestCompletionGrid)
 
@@ -439,7 +439,6 @@ final class AppIconManager: ObservableObject {
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
     @Published private(set) var pendingIconDisplayName: String?
-    private let requestedIconKey = "requestedIconName"
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -447,7 +446,7 @@ final class AppIconManager: ObservableObject {
         refreshCurrentIcon()
         NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
-                self?.reconcileRequestedIconIfNeeded()
+                self?.refreshCurrentIcon()
             }
             .store(in: &cancellables)
     }
@@ -475,41 +474,23 @@ final class AppIconManager: ObservableObject {
         let targetIconName = option.iconName
         let currentIconName = UIApplication.shared.alternateIconName
         guard currentIconName != targetIconName else { return }
-        UserDefaults.standard.set(targetIconName, forKey: requestedIconKey)
+
         hasPendingIconChange = true
         pendingIconDisplayName = option.displayName
 
-        let applyRequestedIcon: () -> Void = { [weak self] in
-            UIApplication.shared.setAlternateIconName(targetIconName) { error in
-                if let error {
+        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self?.refreshCurrentIcon()
+            }
+
+            if let error {
+                DispatchQueue.main.async {
+                    self?.hasPendingIconChange = false
+                    self?.pendingIconDisplayName = nil
                     SystemMessageHelper.showWarning("Could not change app icon: \(error.localizedDescription)")
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    self?.refreshCurrentIcon()
-                    self?.reconcileRequestedIconIfNeeded()
-                }
             }
         }
-
-        // iOS can occasionally ignore direct alternate->alternate changes.
-        // Force a reset to primary first, then apply the requested icon.
-        if currentIconName != nil, targetIconName != nil {
-            UIApplication.shared.setAlternateIconName(nil) { [weak self] resetError in
-                if let resetError {
-                    SystemMessageHelper.showWarning("Could not reset icon state: \(resetError.localizedDescription)")
-                    DispatchQueue.main.async {
-                        self?.refreshCurrentIcon()
-                    }
-                    return
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    applyRequestedIcon()
-                }
-            }
-            return
-        }
-
-        applyRequestedIcon()
     }
 
     private func normalizeLegacyIconIfNeeded() {
@@ -528,42 +509,20 @@ final class AppIconManager: ObservableObject {
     }
 
     private func reconcilePendingState(currentName: String?) {
-        guard let requestedName = UserDefaults.standard.object(forKey: requestedIconKey) as? String? else {
+        guard hasPendingIconChange else {
+            pendingIconDisplayName = nil
+            return
+        }
+
+        guard let pendingName = pendingIconDisplayName else {
             hasPendingIconChange = false
             pendingIconDisplayName = nil
             return
         }
 
-        if currentName == requestedName {
-            UserDefaults.standard.removeObject(forKey: requestedIconKey)
+        if AppIconOption(iconName: currentName)?.displayName == pendingName {
             hasPendingIconChange = false
             pendingIconDisplayName = nil
-        } else {
-            hasPendingIconChange = true
-            pendingIconDisplayName = AppIconOption(iconName: requestedName)?.displayName
-        }
-    }
-
-    private func reconcileRequestedIconIfNeeded() {
-        guard isSupported else { return }
-        let currentName = UIApplication.shared.alternateIconName
-        guard let requestedName = UserDefaults.standard.object(forKey: requestedIconKey) as? String? else {
-            hasPendingIconChange = false
-            pendingIconDisplayName = nil
-            return
-        }
-
-        if currentName == requestedName {
-            UserDefaults.standard.removeObject(forKey: requestedIconKey)
-            hasPendingIconChange = false
-            pendingIconDisplayName = nil
-            return
-        }
-
-        UIApplication.shared.setAlternateIconName(requestedName) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                self?.refreshCurrentIcon()
-            }
         }
     }
 }

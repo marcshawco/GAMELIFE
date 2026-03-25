@@ -18,6 +18,8 @@ class PlayerDataManager {
     private let playerKey = "gamelife_player"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var cachedPlayer: Player?
+    private var cachedPlayerData: Data?
 
     private init() {}
 
@@ -27,7 +29,13 @@ class PlayerDataManager {
     func savePlayer(_ player: Player) {
         do {
             let data = try encoder.encode(player)
+            if data == cachedPlayerData {
+                cachedPlayer = player
+                return
+            }
             UserDefaults.standard.set(data, forKey: playerKey)
+            cachedPlayer = player
+            cachedPlayerData = data
         } catch {
             print("[SYSTEM] Failed to save player: \(error)")
         }
@@ -35,12 +43,19 @@ class PlayerDataManager {
 
     /// Load player from UserDefaults
     func loadPlayer() -> Player? {
+        if let cachedPlayer {
+            return cachedPlayer
+        }
+
         guard let data = UserDefaults.standard.data(forKey: playerKey) else {
             return nil
         }
 
         do {
-            return try decoder.decode(Player.self, from: data)
+            let player = try decoder.decode(Player.self, from: data)
+            cachedPlayer = player
+            cachedPlayerData = data
+            return player
         } catch {
             print("[SYSTEM] Failed to load player: \(error)")
             return nil
@@ -50,6 +65,8 @@ class PlayerDataManager {
     /// Delete player data
     func deletePlayer() {
         UserDefaults.standard.removeObject(forKey: playerKey)
+        cachedPlayer = nil
+        cachedPlayerData = nil
     }
 
     /// Check if player exists
@@ -100,6 +117,14 @@ class QuestDataManager {
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var cachedDailyQuests: [DailyQuest]?
+    private var cachedDailyQuestsData: Data?
+    private var cachedBossFights: [BossFight]?
+    private var cachedBossFightsData: Data?
+    private var cachedQuestHistory: [QuestHistoryRecord]?
+    private var cachedQuestHistoryData: Data?
+    private var cachedValidatedLocationCache: ValidatedLocationCache?
+    private var cachedValidatedLocationCacheData: Data?
 
     private init() {}
 
@@ -114,7 +139,11 @@ class QuestDataManager {
     func saveDailyQuests(_ quests: [DailyQuest]) {
         do {
             let data = try encoder.encode(quests)
-            UserDefaults.standard.set(data, forKey: dailyQuestsKey)
+            if data != cachedDailyQuestsData {
+                UserDefaults.standard.set(data, forKey: dailyQuestsKey)
+                cachedDailyQuestsData = data
+            }
+            cachedDailyQuests = quests
             persistValidatedLocationCache(from: quests)
         } catch {
             print("[SYSTEM] Failed to save daily quests: \(error)")
@@ -123,6 +152,10 @@ class QuestDataManager {
 
     /// Load daily quests
     func loadDailyQuests() -> [DailyQuest]? {
+        if let cachedDailyQuests {
+            return cachedDailyQuests
+        }
+
         guard let data = UserDefaults.standard.data(forKey: dailyQuestsKey) else {
             return nil
         }
@@ -133,12 +166,18 @@ class QuestDataManager {
             if repairedCount > 0 {
                 do {
                     let repairedData = try encoder.encode(quests)
-                    UserDefaults.standard.set(repairedData, forKey: dailyQuestsKey)
+                    if repairedData != cachedDailyQuestsData {
+                        UserDefaults.standard.set(repairedData, forKey: dailyQuestsKey)
+                    }
+                    cachedDailyQuestsData = repairedData
                 } catch {
                     print("[SYSTEM] Failed to persist repaired location quests: \(error)")
                 }
                 print("[SYSTEM] Restored \(repairedCount) validated location quest(s) from cache")
+            } else {
+                cachedDailyQuestsData = data
             }
+            cachedDailyQuests = quests
             return quests
         } catch {
             print("[SYSTEM] Failed to load daily quests: \(error)")
@@ -183,7 +222,13 @@ class QuestDataManager {
     func saveBossFights(_ bossFights: [BossFight]) {
         do {
             let data = try encoder.encode(bossFights)
+            if data == cachedBossFightsData {
+                cachedBossFights = bossFights
+                return
+            }
             UserDefaults.standard.set(data, forKey: bossFightsKey)
+            cachedBossFights = bossFights
+            cachedBossFightsData = data
         } catch {
             print("[SYSTEM] Failed to save boss fights: \(error)")
         }
@@ -238,11 +283,18 @@ class QuestDataManager {
     }
 
     private func loadValidatedLocationCache() -> ValidatedLocationCache {
+        if let cachedValidatedLocationCache {
+            return cachedValidatedLocationCache
+        }
+
         guard let data = UserDefaults.standard.data(forKey: validatedLocationCacheKey) else {
             return ValidatedLocationCache()
         }
         do {
-            return try decoder.decode(ValidatedLocationCache.self, from: data)
+            let cache = try decoder.decode(ValidatedLocationCache.self, from: data)
+            cachedValidatedLocationCache = cache
+            cachedValidatedLocationCacheData = data
+            return cache
         } catch {
             return ValidatedLocationCache()
         }
@@ -251,7 +303,13 @@ class QuestDataManager {
     private func saveValidatedLocationCache(_ cache: ValidatedLocationCache) {
         do {
             let data = try encoder.encode(cache)
+            if data == cachedValidatedLocationCacheData {
+                cachedValidatedLocationCache = cache
+                return
+            }
             UserDefaults.standard.set(data, forKey: validatedLocationCacheKey)
+            cachedValidatedLocationCache = cache
+            cachedValidatedLocationCacheData = data
         } catch {
             print("[SYSTEM] Failed to save validated location cache: \(error)")
         }
@@ -268,12 +326,19 @@ class QuestDataManager {
 
     /// Load boss fights
     func loadBossFights() -> [BossFight]? {
+        if let cachedBossFights {
+            return cachedBossFights
+        }
+
         guard let data = UserDefaults.standard.data(forKey: bossFightsKey) else {
             return nil
         }
 
         do {
-            return try decoder.decode([BossFight].self, from: data)
+            let bossFights = try decoder.decode([BossFight].self, from: data)
+            cachedBossFights = bossFights
+            cachedBossFightsData = data
+            return bossFights
         } catch {
             print("[SYSTEM] Failed to load boss fights: \(error)")
             return nil
@@ -310,7 +375,13 @@ class QuestDataManager {
     private func saveQuestHistory(_ history: [QuestHistoryRecord]) {
         do {
             let data = try encoder.encode(history)
+            if data == cachedQuestHistoryData {
+                cachedQuestHistory = history
+                return
+            }
             UserDefaults.standard.set(data, forKey: questHistoryKey)
+            cachedQuestHistory = history
+            cachedQuestHistoryData = data
         } catch {
             print("[SYSTEM] Failed to save quest history: \(error)")
         }
@@ -318,12 +389,19 @@ class QuestDataManager {
 
     /// Load quest history
     func loadQuestHistory() -> [QuestHistoryRecord] {
+        if let cachedQuestHistory {
+            return cachedQuestHistory
+        }
+
         guard let data = UserDefaults.standard.data(forKey: questHistoryKey) else {
             return []
         }
 
         do {
-            return try decoder.decode([QuestHistoryRecord].self, from: data)
+            let history = try decoder.decode([QuestHistoryRecord].self, from: data)
+            cachedQuestHistory = history
+            cachedQuestHistoryData = data
+            return history
         } catch {
             print("[SYSTEM] Failed to load quest history: \(error)")
             return []
@@ -405,10 +483,16 @@ class ActivityLogDataManager {
     private let maxRetainedEntries = 250
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var cachedEntries: [ActivityLogEntry]?
+    private var cachedEntriesData: Data?
 
     private init() {}
 
     func loadActivityLog() -> [ActivityLogEntry] {
+        if let cachedEntries {
+            return trimmedEntriesPreservingRetentionWindow(cachedEntries)
+        }
+
         guard let data = UserDefaults.standard.data(forKey: activityLogKey) else {
             return []
         }
@@ -421,6 +505,8 @@ class ActivityLogDataManager {
                 saveActivityLog(trimmedEntries)
             }
 
+            cachedEntries = trimmedEntries
+            cachedEntriesData = data
             return trimmedEntries
         } catch {
             print("[SYSTEM] Failed to load recent activity: \(error)")
@@ -432,14 +518,20 @@ class ActivityLogDataManager {
         do {
             let trimmedEntries = trimmedEntriesPreservingRetentionWindow(entries)
             let data = try encoder.encode(trimmedEntries)
+            if data == cachedEntriesData {
+                cachedEntries = trimmedEntries
+                return
+            }
             UserDefaults.standard.set(data, forKey: activityLogKey)
+            cachedEntries = trimmedEntries
+            cachedEntriesData = data
         } catch {
             print("[SYSTEM] Failed to save recent activity: \(error)")
         }
     }
 
     func appendActivity(_ entry: ActivityLogEntry) {
-        var entries = loadActivityLog()
+        var entries = cachedEntries ?? loadActivityLog()
         entries.insert(entry, at: 0)
         saveActivityLog(entries)
     }
@@ -533,6 +625,7 @@ final class RuntimeCacheManager {
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var cachedDataByKey: [String: Data] = [:]
 
     private init() {}
 
@@ -595,7 +688,11 @@ final class RuntimeCacheManager {
     private func save<T: Codable>(_ value: T, forKey key: String) {
         do {
             let data = try encoder.encode(value)
+            if cachedDataByKey[key] == data {
+                return
+            }
             UserDefaults.standard.set(data, forKey: key)
+            cachedDataByKey[key] = data
         } catch {
             print("[SYSTEM] Failed to cache \(key): \(error)")
         }
@@ -603,6 +700,7 @@ final class RuntimeCacheManager {
 
     private func load<T: Codable>(_ type: T.Type, forKey key: String) -> T? {
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        cachedDataByKey[key] = data
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
@@ -758,6 +856,8 @@ class LocationDataManager {
     private let locationsKey = "gamelife_tracked_locations"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var cachedLocations: [TrackedLocation]?
+    private var cachedLocationsData: Data?
 
     private init() {}
 
@@ -765,7 +865,13 @@ class LocationDataManager {
     func saveLocations(_ locations: [TrackedLocation]) {
         do {
             let data = try encoder.encode(locations)
+            if data == cachedLocationsData {
+                cachedLocations = locations
+                return
+            }
             UserDefaults.standard.set(data, forKey: locationsKey)
+            cachedLocations = locations
+            cachedLocationsData = data
         } catch {
             print("[SYSTEM] Failed to save locations: \(error)")
         }
@@ -773,12 +879,19 @@ class LocationDataManager {
 
     /// Load tracked locations
     func loadLocations() -> [TrackedLocation] {
+        if let cachedLocations {
+            return cachedLocations
+        }
+
         guard let data = UserDefaults.standard.data(forKey: locationsKey) else {
             return []
         }
 
         do {
-            return try decoder.decode([TrackedLocation].self, from: data)
+            let locations = try decoder.decode([TrackedLocation].self, from: data)
+            cachedLocations = locations
+            cachedLocationsData = data
+            return locations
         } catch {
             print("[SYSTEM] Failed to load locations: \(error)")
             return []

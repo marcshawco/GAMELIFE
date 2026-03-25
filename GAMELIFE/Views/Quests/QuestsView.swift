@@ -379,6 +379,12 @@ struct QuestSummaryHeader: View {
         var id: Date { date }
     }
 
+    private struct MonthMarker: Identifiable {
+        let id: Int
+        let columnIndex: Int
+        let label: String
+    }
+
     private var completedCount: Int {
         quests.filter { $0.status == .completed }.count
     }
@@ -411,6 +417,14 @@ struct QuestSummaryHeader: View {
     private var weekColumns: [[CompletionDay]] {
         stride(from: 0, to: completionDays.count, by: 7).map { start in
             Array(completionDays[start..<min(start + 7, completionDays.count)])
+        }
+    }
+
+    private var monthMarkers: [MonthMarker] {
+        weekColumns.enumerated().compactMap { index, week in
+            let label = monthLabel(for: week, index: index)
+            guard !label.isEmpty else { return nil }
+            return MonthMarker(id: index, columnIndex: index, label: label)
         }
     }
 
@@ -459,26 +473,27 @@ struct QuestSummaryHeader: View {
 
                     if !isGridCollapsed {
                         VStack(alignment: .leading, spacing: 12) {
-                            ScrollView(.horizontal, showsIndicators: false) {
+                            GeometryReader { geometry in
+                                let metrics = heatmapMetrics(for: geometry.size.width)
+
                                 VStack(alignment: .leading, spacing: 8) {
-                                    HStack(alignment: .center, spacing: 4) {
-                                        ForEach(weekColumns.indices, id: \.self) { index in
-                                            let week = weekColumns[index]
-                                            let monthLabel = monthLabel(for: week, index: index)
-                                            Text(monthLabel)
+                                    ZStack(alignment: .leading) {
+                                        ForEach(monthMarkers) { marker in
+                                            Text(marker.label)
                                                 .font(SystemTypography.captionSmall)
                                                 .foregroundStyle(SystemTheme.textTertiary)
-                                                .frame(width: 12 * 4 + 12, alignment: .leading)
+                                                .offset(x: CGFloat(marker.columnIndex) * metrics.columnStride)
                                         }
                                     }
+                                    .frame(height: 14)
 
-                                    HStack(alignment: .top, spacing: 4) {
+                                    HStack(alignment: .top, spacing: metrics.spacing) {
                                         ForEach(weekColumns.indices, id: \.self) { columnIndex in
-                                            VStack(spacing: 4) {
+                                            VStack(spacing: metrics.spacing) {
                                                 ForEach(weekColumns[columnIndex]) { day in
                                                     RoundedRectangle(cornerRadius: 3)
                                                         .fill(color(for: day.count))
-                                                        .frame(width: 12, height: 12)
+                                                        .frame(width: metrics.cellSize, height: metrics.cellSize)
                                                         .overlay(
                                                             RoundedRectangle(cornerRadius: 3)
                                                                 .stroke(SystemTheme.borderSecondary.opacity(0.35), lineWidth: 0.5)
@@ -490,6 +505,7 @@ struct QuestSummaryHeader: View {
                                     }
                                 }
                             }
+                            .frame(height: 112)
                             .padding(.vertical, 4)
 
                             HStack(spacing: 6) {
@@ -576,6 +592,15 @@ struct QuestSummaryHeader: View {
         let previousMonth = Calendar.current.component(.month, from: weekColumns[index - 1].first?.date ?? firstDay)
         let currentMonth = Calendar.current.component(.month, from: firstDay)
         return previousMonth == currentMonth ? "" : label
+    }
+
+    private func heatmapMetrics(for availableWidth: CGFloat) -> (cellSize: CGFloat, spacing: CGFloat, columnStride: CGFloat) {
+        let totalColumns = max(weekColumns.count, 1)
+        let spacing: CGFloat = availableWidth > 360 ? 4 : 3
+        let totalSpacing = spacing * CGFloat(max(totalColumns - 1, 0))
+        let rawCellSize = floor((availableWidth - totalSpacing) / CGFloat(totalColumns))
+        let cellSize = min(12, max(8, rawCellSize))
+        return (cellSize: cellSize, spacing: spacing, columnStride: cellSize + spacing)
     }
 
     private func color(for count: Int) -> Color {

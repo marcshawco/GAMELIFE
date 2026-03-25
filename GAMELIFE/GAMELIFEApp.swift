@@ -27,6 +27,7 @@ struct GAMELIFEApp: App {
     init() {
         // [SYSTEM]: Configure app defaults
         SettingsManager.shared.setDefaults()
+        SystemTypography.ensureCustomFontRegistered()
         _ = CloudKitSyncManager.shared
         AnalyticsManager.shared.trackAppLaunch()
 

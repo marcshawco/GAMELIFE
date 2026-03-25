@@ -8,6 +8,7 @@
 
 import SwiftUI
 import UIKit
+import CoreText
 
 // MARK: - System Theme
 
@@ -201,16 +202,40 @@ extension UIColor {
 struct SystemTypography {
 
     private static let customFontName = "GoodTimes-Regular"
+    private static let customFontFilename = "Good Times Rg"
+    private static let customFontExtension = "otf"
+    private static var hasRegisteredCustomFont = false
 
     private static var useCustomAppFont: Bool {
         SettingsManager.shared.useCustomAppFont
     }
 
+    static func ensureCustomFontRegistered() {
+        guard hasRegisteredCustomFont == false else { return }
+        defer { hasRegisteredCustomFont = true }
+
+        guard let fontURL = Bundle.main.url(forResource: customFontFilename, withExtension: customFontExtension) else {
+            print("[SYSTEM] Missing bundled custom font: \(customFontFilename).\(customFontExtension)")
+            return
+        }
+
+        var registrationError: Unmanaged<CFError>?
+        let registered = CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &registrationError)
+
+        if !registered,
+           let error = registrationError?.takeRetainedValue(),
+           CFErrorGetCode(error) != CTFontManagerError.alreadyRegistered.rawValue {
+            print("[SYSTEM] Failed to register custom font: \(error)")
+        }
+    }
+
     private static func custom(_ size: CGFloat) -> Font {
-        .custom(customFontName, size: size)
+        ensureCustomFontRegistered()
+        return .custom(customFontName, size: size)
     }
 
     static func uiFont(_ size: CGFloat, weight: UIFont.Weight = .regular, design: UIFontDescriptor.SystemDesign = .default) -> UIFont {
+        ensureCustomFontRegistered()
         if useCustomAppFont, let font = UIFont(name: customFontName, size: size) {
             return font
         }

@@ -53,6 +53,9 @@ class NotificationManager: NSObject, ObservableObject {
     private let dailyReminderHourStoreKey = "dailyReminderHour"
     private let engagementHistoryLookbackDays = 28
     private let inactivityShutdownDays = 7
+    private let reminderPlanDebounceInterval: TimeInterval = 0.35
+    private var lastReminderPlanSignature: String?
+    private var reminderPlanRefreshWorkItem: DispatchWorkItem?
 
     enum QuestCompletionNotificationMode: String, CaseIterable, Identifiable {
         case immediate
@@ -402,14 +405,42 @@ class NotificationManager: NSObject, ObservableObject {
     }
 
     func refreshPersonalizedReminderPlan() {
+        reminderPlanRefreshWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.applyPersonalizedReminderPlanRefresh()
+        }
+        reminderPlanRefreshWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + reminderPlanDebounceInterval, execute: workItem)
+    }
+
+    private func applyPersonalizedReminderPlanRefresh() {
+        guard isAuthorized, isDailyReminderEnabled else {
+            lastReminderPlanSignature = nil
+            UNUserNotificationCenter.current().removePendingNotificationRequests(
+                withIdentifiers: [engagementReminderIdentifier, inactivityShutdownIdentifier, "daily_quest_reminder"]
+            )
+            return
+        }
+        let nextReminderDate = nextPreferredEngagementDate(after: Date())
+        let reminderProfile = personalizedReminderProfile()
+        let shutdownBody = inactivityShutdownBody()
+        let shutdownDate = inactivityShutdownTriggerDate()
+        let signature = reminderPlanSignature(
+            nextReminderDate: nextReminderDate,
+            reminderProfile: reminderProfile,
+            shutdownDate: shutdownDate,
+            shutdownBody: shutdownBody
+        )
+
+        guard signature != lastReminderPlanSignature else { return }
+        lastReminderPlanSignature = signature
+
         UNUserNotificationCenter.current().removePendingNotificationRequests(
             withIdentifiers: [engagementReminderIdentifier, inactivityShutdownIdentifier, "daily_quest_reminder"]
         )
 
-        guard isAuthorized, isDailyReminderEnabled else { return }
-
-        scheduleNextEngagementReminder()
-        scheduleInactivityShutdownNotification()
+        scheduleNextEngagementReminder(at: nextReminderDate, profile: reminderProfile)
+        scheduleInactivityShutdownNotification(triggerDate: shutdownDate, body: shutdownBody)
     }
 
     private var isDailyReminderEnabled: Bool {
@@ -450,9 +481,8 @@ class NotificationManager: NSObject, ObservableObject {
         return history
     }
 
-    private func scheduleNextEngagementReminder() {
-        let nextDate = nextPreferredEngagementDate(after: Date())
-        let content = personalizedEngagementContent()
+    private func scheduleNextEngagementReminder(at nextDate: Date, profile: (title: String, body: String)) {
+        let content = personalizedEngagementContent(profile: profile)
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: nextDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(
@@ -522,9 +552,8 @@ class NotificationManager: NSObject, ObservableObject {
         return best.key * 30
     }
 
-    private func personalizedEngagementContent() -> UNMutableNotificationContent {
+    private func personalizedEngagementContent(profile: (title: String, body: String)) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        let profile = personalizedReminderProfile()
         content.title = profile.title
         content.body = profile.body
         content.sound = .default
@@ -567,15 +596,11 @@ class NotificationManager: NSObject, ObservableObject {
         )
     }
 
-    private func scheduleInactivityShutdownNotification() {
-        let referenceDate = (UserDefaults.standard.object(forKey: lastEngagementOpenAtStoreKey) as? Date) ?? Date()
-        guard let triggerDate = Calendar.current.date(byAdding: .day, value: inactivityShutdownDays, to: referenceDate) else {
-            return
-        }
-
+    private func scheduleInactivityShutdownNotification(triggerDate: Date?, body: String) {
+        guard let triggerDate else { return }
         let content = UNMutableNotificationContent()
         content.title = "[SYSTEM] Transmission Ending"
-        content.body = inactivityShutdownBody()
+        content.body = body
         content.sound = .default
         content.categoryIdentifier = "DAILY_REMINDER"
 
@@ -587,6 +612,30 @@ class NotificationManager: NSObject, ObservableObject {
             trigger: trigger
         )
         UNUserNotificationCenter.current().add(request)
+    }
+
+    private func inactivityShutdownTriggerDate() -> Date? {
+        let referenceDate = (UserDefaults.standard.object(forKey: lastEngagementOpenAtStoreKey) as? Date) ?? Date()
+        return Calendar.current.date(byAdding: .day, value: inactivityShutdownDays, to: referenceDate)
+    }
+
+    private func reminderPlanSignature(
+        nextReminderDate: Date,
+        reminderProfile: (title: String, body: String),
+        shutdownDate: Date?,
+        shutdownBody: String
+    ) -> String {
+        let nextReminderMinute = Int(nextReminderDate.timeIntervalSince1970 / 60)
+        let shutdownMinute = shutdownDate.map { Int($0.timeIntervalSince1970 / 60) } ?? -1
+        return [
+            reminderProfile.title,
+            reminderProfile.body,
+            String(nextReminderMinute),
+            shutdownBody,
+            String(shutdownMinute),
+            String(isAuthorized),
+            String(isDailyReminderEnabled)
+        ].joined(separator: "|")
     }
 
     private func inactivityShutdownBody() -> String {
@@ -609,9 +658,9 @@ class NotificationManager: NSObject, ObservableObject {
                 switch (lhs.deadline, rhs.deadline) {
                 case let (left?, right?) where left != right:
                     return left < right
-                case (nil, let right?):
+                case (nil, _?):
                     return false
-                case (let left?, nil):
+                case (_?, nil):
                     return true
                 default:
                     if lhs.hpPercentage == rhs.hpPercentage {

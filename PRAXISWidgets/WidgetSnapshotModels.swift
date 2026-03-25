@@ -127,7 +127,8 @@ enum WidgetSnapshotLoader {
     static let payloadKey = "widgetSnapshotPayload"
 
     static func load() -> WidgetSnapshotPayload {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil,
+              let defaults = UserDefaults(suiteName: appGroupID),
               let data = defaults.data(forKey: payloadKey),
               let payload = try? JSONDecoder().decode(WidgetSnapshotPayload.self, from: data) else {
             return .placeholder

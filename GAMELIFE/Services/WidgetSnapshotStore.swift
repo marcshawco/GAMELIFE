@@ -57,11 +57,18 @@ final class WidgetSnapshotStore {
     private let appGroupID = "group.com.gamelife.shared"
     private let payloadKey = "widgetSnapshotPayload"
     private let encoder = JSONEncoder()
+    private lazy var sharedDefaults: UserDefaults? = {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil else {
+            print("[SYSTEM] App Group container unavailable for \(appGroupID). Widget snapshot publishing disabled.")
+            return nil
+        }
+        return UserDefaults(suiteName: appGroupID)
+    }()
 
     private init() {}
 
     func publish(player: Player, dailyQuests: [DailyQuest], bossFights: [BossFight]) {
-        guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else { return }
+        guard let sharedDefaults else { return }
 
         let sortedQuests = dailyQuests.sorted { lhs, rhs in
             let left = questPriorityScore(lhs, bossFights: bossFights, playerLevel: player.level)
