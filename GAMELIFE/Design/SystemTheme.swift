@@ -229,14 +229,35 @@ struct SystemTypography {
         }
     }
 
+    private static func adjustedCustomFontSize(for baseSize: CGFloat) -> CGFloat {
+        let scale: CGFloat
+
+        switch baseSize {
+        case 30...:
+            scale = 0.76
+        case 24..<30:
+            scale = 0.8
+        case 18..<24:
+            scale = 0.84
+        case 15..<18:
+            scale = 0.88
+        case 12..<15:
+            scale = 0.9
+        default:
+            scale = 0.94
+        }
+
+        return max(8, (baseSize * scale).rounded(.toNearestOrAwayFromZero))
+    }
+
     private static func custom(_ size: CGFloat) -> Font {
         ensureCustomFontRegistered()
-        return .custom(customFontName, size: size)
+        return .custom(customFontName, size: adjustedCustomFontSize(for: size))
     }
 
     static func uiFont(_ size: CGFloat, weight: UIFont.Weight = .regular, design: UIFontDescriptor.SystemDesign = .default) -> UIFont {
         ensureCustomFontRegistered()
-        if useCustomAppFont, let font = UIFont(name: customFontName, size: size) {
+        if useCustomAppFont, let font = UIFont(name: customFontName, size: adjustedCustomFontSize(for: size)) {
             return font
         }
 

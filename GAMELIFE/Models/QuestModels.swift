@@ -167,18 +167,55 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
     case weight = "Weight Goal"
     case bodyFat = "Body Fat Goal"
     case savings = "Savings Goal"
+    case stepCount = "Step Goal"
+    case sleepConsistency = "Sleep Goal"
+    case hydration = "Hydration Goal"
+    case mindfulness = "Mindfulness Goal"
+    case distance = "Distance Goal"
     case workoutConsistency = "Workout Consistency"
     case screenTimeDiscipline = "Screen-Time Discipline"
 
     var id: String { rawValue }
+
+    var displayName: String { rawValue }
 
     var icon: String {
         switch self {
         case .weight: return "scalemass.fill"
         case .bodyFat: return "figure.core.training"
         case .savings: return "banknote.fill"
+        case .stepCount: return "figure.walk"
+        case .sleepConsistency: return "bed.double.fill"
+        case .hydration: return "drop.fill"
+        case .mindfulness: return "brain.head.profile"
+        case .distance: return "figure.run.circle"
         case .workoutConsistency: return "figure.run"
         case .screenTimeDiscipline: return "hourglass"
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .weight:
+            return "Cut, bulk, or hold a target bodyweight."
+        case .bodyFat:
+            return "Reduce body-fat percentage over time."
+        case .savings:
+            return "Build toward a money target deposit by deposit."
+        case .stepCount:
+            return "Accumulate daily or weekly steps from Health."
+        case .sleepConsistency:
+            return "Lock in a target number of hours slept."
+        case .hydration:
+            return "Hit a hydration target from logged water intake."
+        case .mindfulness:
+            return "Build a meditation or breathing habit."
+        case .distance:
+            return "Walk or run toward a distance milestone."
+        case .workoutConsistency:
+            return "Complete a set number of workouts each cadence."
+        case .screenTimeDiscipline:
+            return "Reduce social-media minutes and regain focus."
         }
     }
 
@@ -187,6 +224,11 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         case .weight: return [.vitality, .strength]
         case .bodyFat: return [.vitality, .willpower]
         case .savings: return [.intelligence, .willpower]
+        case .stepCount: return [.vitality, .agility]
+        case .sleepConsistency: return [.vitality, .spirit]
+        case .hydration: return [.vitality, .willpower]
+        case .mindfulness: return [.spirit, .willpower]
+        case .distance: return [.agility, .vitality]
         case .workoutConsistency: return [.strength, .vitality, .willpower]
         case .screenTimeDiscipline: return [.willpower, .spirit]
         }
@@ -197,13 +239,23 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         case .weight: return "lb"
         case .bodyFat: return "%"
         case .savings: return "$"
+        case .stepCount: return "steps"
+        case .sleepConsistency: return "hours"
+        case .hydration: return "glasses"
+        case .mindfulness: return "minutes"
+        case .distance: return "km"
         case .workoutConsistency: return "workouts"
         case .screenTimeDiscipline: return "minutes"
         }
     }
 
     var isHealthKitDriven: Bool {
-        self == .weight || self == .bodyFat || self == .workoutConsistency
+        switch self {
+        case .weight, .bodyFat, .stepCount, .sleepConsistency, .hydration, .mindfulness, .distance, .workoutConsistency:
+            return true
+        case .savings, .screenTimeDiscipline:
+            return false
+        }
     }
 
     var isScreenTimeDriven: Bool {
@@ -211,9 +263,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
     }
 
     static var betaSelectableTypes: [DynamicBossGoalType] {
-        if AppFeatureFlags.screenTimeEnabled {
-            return allCases
-        }
         return allCases.filter { $0 != .screenTimeDiscipline }
     }
 }

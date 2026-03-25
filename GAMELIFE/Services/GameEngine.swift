@@ -1109,6 +1109,31 @@ class GameEngine: ObservableObject {
             description = "Deposit at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage the savings boss."
             trackingType = .manual
             healthKitIdentifier = nil
+        case .stepCount:
+            title = "\(boss.title): \(goal.cadence.rawValue) Step Push"
+            description = "Accumulate at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to push this boss back."
+            trackingType = .healthKit
+            healthKitIdentifier = "stepCount"
+        case .sleepConsistency:
+            title = "\(boss.title): \(goal.cadence.rawValue) Sleep Goal"
+            description = "Log at least \(formatGoalAmount(cadenceTarget, unit: unit)) of sleep this \(goal.cadence.rawValue.lowercased()) to damage the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "sleepHours"
+        case .hydration:
+            title = "\(boss.title): \(goal.cadence.rawValue) Hydration Goal"
+            description = "Drink at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to chip away at the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "waterGlasses"
+        case .mindfulness:
+            title = "\(boss.title): \(goal.cadence.rawValue) Mindfulness Goal"
+            description = "Complete at least \(formatGoalAmount(cadenceTarget, unit: unit)) of mindfulness this \(goal.cadence.rawValue.lowercased())."
+            trackingType = .healthKit
+            healthKitIdentifier = "mindfulMinutes"
+        case .distance:
+            title = "\(boss.title): \(goal.cadence.rawValue) Distance Goal"
+            description = "Cover at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "distanceWalkingRunning"
         case .workoutConsistency:
             title = "\(boss.title): \(goal.cadence.rawValue) Workout Count"
             description = "Complete at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage this boss."
@@ -1425,6 +1450,21 @@ class GameEngine: ObservableObject {
             rawValue = healthManager.currentBodyFatPercent > 0 ? healthManager.currentBodyFatPercent : nil
         case .savings:
             rawValue = goal.currentValue
+        case .stepCount:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = Double(healthManager.todaySteps)
+        case .sleepConsistency:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todaySleepHours
+        case .hydration:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todayWaterGlasses
+        case .mindfulness:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = Double(healthManager.todayMindfulMinutes)
+        case .distance:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todayDistanceKM
         case .workoutConsistency:
             guard healthManager.isAuthorized else { return nil }
             let start = cadenceStartDate(for: goal.cadence)

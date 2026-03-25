@@ -394,7 +394,7 @@ struct BossCardView: View {
 
     private func dynamicSourceText(for type: DynamicBossGoalType) -> String {
         switch type {
-        case .weight, .bodyFat, .workoutConsistency:
+        case .weight, .bodyFat, .stepCount, .sleepConsistency, .hydration, .mindfulness, .distance, .workoutConsistency:
             return "Auto-syncing from Apple Health."
         case .screenTimeDiscipline:
             return "Auto-syncing from Screen Time usage."
@@ -540,10 +540,60 @@ struct BossFormSheet: View {
                     Toggle("Use Dynamic Goal Boss", isOn: $useDynamicGoal)
 
                     if useDynamicGoal {
-                        Picker("Goal Type", selection: $dynamicGoalType) {
-                            ForEach(selectableDynamicGoalTypes) { type in
-                                Label(type.rawValue, systemImage: type.icon)
-                                    .tag(type)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Goal Type")
+                                .font(SystemTypography.mono(11, weight: .bold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                                ForEach(selectableDynamicGoalTypes) { type in
+                                    Button {
+                                        HapticManager.shared.selection()
+                                        dynamicGoalType = type
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: type.icon)
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(dynamicGoalType == type ? SystemTheme.backgroundPrimary : SystemTheme.primaryBlue)
+                                                    .frame(width: 24, height: 24)
+                                                    .background(
+                                                        Circle()
+                                                            .fill(dynamicGoalType == type ? SystemTheme.primaryBlue : SystemTheme.primaryBlue.opacity(0.15))
+                                                    )
+
+                                                Spacer(minLength: 0)
+
+                                                if dynamicGoalType == type {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .font(.system(size: 15, weight: .bold))
+                                                        .foregroundStyle(SystemTheme.primaryBlue)
+                                                }
+                                            }
+
+                                            Text(type.displayName)
+                                                .font(SystemTypography.mono(12, weight: .bold))
+                                                .foregroundStyle(SystemTheme.textPrimary)
+                                                .multilineTextAlignment(.leading)
+
+                                            Text(type.shortDescription)
+                                                .font(SystemTypography.captionSmall)
+                                                .foregroundStyle(SystemTheme.textSecondary)
+                                                .multilineTextAlignment(.leading)
+                                                .lineLimit(3)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
+                                        .padding(12)
+                                        .background(dynamicGoalType == type ? SystemTheme.primaryBlue.opacity(0.12) : SystemTheme.backgroundSecondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(dynamicGoalType == type ? SystemTheme.primaryBlue : SystemTheme.borderSecondary, lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
 
@@ -816,17 +866,50 @@ struct BossFormSheet: View {
                     dynamicStartValue = 180
                     dynamicCurrentValue = 180
                     dynamicTargetValue = 170
+                    dynamicCadence = .weekly
                     dynamicCadenceTarget = 1
                 case .bodyFat:
                     dynamicStartValue = 28
                     dynamicCurrentValue = 28
                     dynamicTargetValue = 20
+                    dynamicCadence = .weekly
                     dynamicCadenceTarget = 0.5
                 case .savings:
                     dynamicStartValue = 0
                     dynamicCurrentValue = 0
                     dynamicTargetValue = 5000
+                    dynamicCadence = .weekly
                     dynamicCadenceTarget = 250
+                case .stepCount:
+                    dynamicStartValue = 0
+                    dynamicCurrentValue = 0
+                    dynamicTargetValue = 10000
+                    dynamicCadence = .daily
+                    dynamicCadenceTarget = 2000
+                case .sleepConsistency:
+                    dynamicStartValue = 5
+                    dynamicCurrentValue = 5
+                    dynamicTargetValue = 8
+                    dynamicCadence = .daily
+                    dynamicCadenceTarget = 0.5
+                case .hydration:
+                    dynamicStartValue = 2
+                    dynamicCurrentValue = 2
+                    dynamicTargetValue = 8
+                    dynamicCadence = .daily
+                    dynamicCadenceTarget = 1
+                case .mindfulness:
+                    dynamicStartValue = 0
+                    dynamicCurrentValue = 0
+                    dynamicTargetValue = 20
+                    dynamicCadence = .daily
+                    dynamicCadenceTarget = 5
+                case .distance:
+                    dynamicStartValue = 0
+                    dynamicCurrentValue = 0
+                    dynamicTargetValue = 30
+                    dynamicCadence = .weekly
+                    dynamicCadenceTarget = 5
                 case .workoutConsistency:
                     dynamicStartValue = 0
                     dynamicCurrentValue = 0
@@ -852,6 +935,16 @@ struct BossFormSheet: View {
             return "Example: start 30%, goal 20%, target 1% per week. HP scales to 10 weeks of progress and tracks the real trend from Health."
         case .savings:
             return "Example: start $0, goal $5000, target $250 per week. HP scales to 20 weekly deposits and updates as savings change."
+        case .stepCount:
+            return "Example: build from 0 to 10,000 daily steps at a 2,000-step pace. HP scales to the full movement climb."
+        case .sleepConsistency:
+            return "Example: move from 5 to 8 hours nightly at 0.5 hours per cadence. HP reflects the full recovery journey."
+        case .hydration:
+            return "Example: move from 2 to 8 glasses daily at 1 glass per cadence. HP scales to the full hydration gap."
+        case .mindfulness:
+            return "Example: move from 0 to 20 mindful minutes daily at 5 minutes per cadence. HP tracks the whole calm-building block."
+        case .distance:
+            return "Example: build from 0 to 30km weekly at 5km per cadence. HP scales to the full endurance milestone."
         case .workoutConsistency:
             return "Example: start 0, goal 12 workouts, target 4 per week. HP scales to 3 weeks of workout quests."
         case .screenTimeDiscipline:
@@ -878,6 +971,36 @@ struct BossFormSheet: View {
                 "Building an emergency fund over several months.",
                 "Saving for a console, trip, car down payment, or tuition.",
                 "Aggressively paying down a budget target one deposit at a time."
+            ]
+        case .stepCount:
+            return [
+                "Building a walking habit after long desk-heavy days.",
+                "Increasing daily movement before a trip or event.",
+                "Recovering a consistent cardio baseline without intense training."
+            ]
+        case .sleepConsistency:
+            return [
+                "Repairing a chaotic sleep schedule before a hard season.",
+                "A recovery block where sleep is the real performance lever.",
+                "Stabilizing bedtime and total hours during stressful weeks."
+            ]
+        case .hydration:
+            return [
+                "Fixing low daily water intake during training or summer heat.",
+                "Using hydration to support energy, cravings, and recovery.",
+                "Creating a simple daily win that compounds into better habits."
+            ]
+        case .mindfulness:
+            return [
+                "A meditation streak during anxious or overloaded weeks.",
+                "Daily breathing resets before deep work or sleep.",
+                "Building calm recovery time into a demanding season."
+            ]
+        case .distance:
+            return [
+                "Training for a walk, hike, 5K, or endurance milestone.",
+                "Progressively increasing weekly movement volume.",
+                "A rehab-friendly distance build with clear checkpoints."
             ]
         case .workoutConsistency:
             return [
@@ -957,6 +1080,16 @@ struct BossFormSheet: View {
             return Array(stride(from: 80, through: 400, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0) lb") }
         case .bodyFat:
             return Array(stride(from: 5, through: 60, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0)%") }
+        case .stepCount:
+            return Array(stride(from: 0, through: 50000, by: 500)).map { WheelValueOption(value: Double($0), label: "\($0) steps") }
+        case .sleepConsistency:
+            return Array(stride(from: 0, through: 14, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " hr")) }
+        case .hydration:
+            return Array(stride(from: 0, through: 24, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " glasses")) }
+        case .mindfulness:
+            return Array(stride(from: 0, through: 120, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        case .distance:
+            return Array(stride(from: 0, through: 100, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " km")) }
         case .workoutConsistency:
             return Array(0...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
         case .screenTimeDiscipline:
@@ -970,6 +1103,16 @@ struct BossFormSheet: View {
             return Array(stride(from: 25, through: 5000, by: 25)).map { WheelValueOption(value: Double($0), label: "$\($0)") }
         case .weight, .bodyFat:
             return Array(stride(from: 1, through: 40, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0) \(type.unitLabel)") }
+        case .stepCount:
+            return Array(stride(from: 500, through: 25000, by: 500)).map { WheelValueOption(value: Double($0), label: "\($0) steps") }
+        case .sleepConsistency:
+            return Array(stride(from: 0.5, through: 4, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " hr")) }
+        case .hydration:
+            return Array(stride(from: 0.5, through: 8, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " glasses")) }
+        case .mindfulness:
+            return Array(stride(from: 5, through: 60, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        case .distance:
+            return Array(stride(from: 0.5, through: 20, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " km")) }
         case .workoutConsistency:
             return Array(1...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
         case .screenTimeDiscipline:
@@ -985,6 +1128,13 @@ struct BossFormSheet: View {
             return "\(Int(value))"
         }
         return String(format: "%.1f", value)
+    }
+
+    private func formattedDecimalLabel(_ value: Double, suffix: String) -> String {
+        if value.rounded() == value {
+            return "\(Int(value))\(suffix)"
+        }
+        return String(format: "%.1f%@", value, suffix)
     }
 
     @ViewBuilder

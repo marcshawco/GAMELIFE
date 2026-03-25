@@ -31,6 +31,34 @@ struct BottomWheelValuePickerSheet: View {
 
     @State private var draftValue: Double = 0
 
+    private var selectedIndex: Int {
+        guard let index = options.firstIndex(where: { $0.value == draftValue }) else {
+            return max(0, options.firstIndex(where: { $0.value == nearestValue(to: draftValue) }) ?? 0)
+        }
+        return index
+    }
+
+    private var previewOptions: [WheelValueOption] {
+        guard !options.isEmpty else { return [] }
+
+        let lowerBound = max(0, selectedIndex - 1)
+        let upperBound = min(options.count - 1, selectedIndex + 1)
+        let slice = Array(options[lowerBound...upperBound])
+
+        if slice.count == 3 {
+            return slice
+        }
+
+        if options.count >= 3 {
+            if lowerBound == 0 {
+                return Array(options.prefix(3))
+            }
+            return Array(options.suffix(3))
+        }
+
+        return options
+    }
+
     var body: some View {
         ZStack {
             Color.black
@@ -51,7 +79,7 @@ struct BottomWheelValuePickerSheet: View {
             }
             .padding(.bottom, 8)
         }
-        .presentationDetents([.fraction(0.48)])
+        .presentationDetents([.fraction(0.58)])
         .presentationDragIndicator(.visible)
         .onAppear {
             draftValue = nearestValue(to: selection)
@@ -83,13 +111,13 @@ struct BottomWheelValuePickerSheet: View {
 
     private var selectionCard: some View {
         VStack(spacing: 0) {
-            ForEach(Array(options.prefix(3).enumerated()), id: \.element.id) { index, option in
+            ForEach(Array(previewOptions.enumerated()), id: \.element.id) { index, option in
                 HStack(spacing: 12) {
                     Text("\(index + 1)")
                         .font(SystemTypography.mono(13, weight: .bold))
-                        .foregroundStyle(index == 0 ? Color.black : .white.opacity(0.72))
+                        .foregroundStyle(option.value == draftValue ? Color.black : .white.opacity(0.72))
                         .frame(width: 26, height: 26)
-                        .background(index == 0 ? accentColor : Color.white.opacity(0.18))
+                        .background(option.value == draftValue ? accentColor : Color.white.opacity(0.18))
                         .clipShape(Circle())
 
                     Text(option.label)
@@ -100,14 +128,14 @@ struct BottomWheelValuePickerSheet: View {
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 64)
-                .background(cardBackground(for: index))
+                .background(cardBackground(for: option.value == draftValue))
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private func cardBackground(for index: Int) -> some ShapeStyle {
-        if index == 1 {
+    private func cardBackground(for isSelected: Bool) -> some ShapeStyle {
+        if isSelected {
             return AnyShapeStyle(Color.white.opacity(0.10))
         }
         return AnyShapeStyle(Color.white.opacity(0.14))

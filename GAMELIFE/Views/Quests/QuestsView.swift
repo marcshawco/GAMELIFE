@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Combine
+import UIKit
 
 // MARK: - Quests View
 
@@ -383,6 +384,7 @@ struct QuestSummaryHeader: View {
         let id: Int
         let columnIndex: Int
         let label: String
+        let xOffset: CGFloat?
     }
 
     private var completedCount: Int {
@@ -396,6 +398,12 @@ struct QuestSummaryHeader: View {
     private var completionPercentage: Double {
         guard totalCount > 0 else { return 0 }
         return min(1, max(0, Double(completedCount) / Double(totalCount)))
+    }
+
+    private var safeCompletionPercentage: CGFloat {
+        let clamped = completionPercentage
+        guard clamped.isFinite else { return 0 }
+        return CGFloat(min(1, max(0, clamped)))
     }
 
     private var completionDays: [CompletionDay] {
@@ -424,7 +432,7 @@ struct QuestSummaryHeader: View {
         weekColumns.enumerated().compactMap { index, week in
             let label = monthLabel(for: week, index: index)
             guard !label.isEmpty else { return nil }
-            return MonthMarker(id: index, columnIndex: index, label: label)
+            return MonthMarker(id: index, columnIndex: index, label: label, xOffset: nil)
         }
     }
 
@@ -435,9 +443,9 @@ struct QuestSummaryHeader: View {
     private var contributionSummaryText: String {
         let total = questHistory.count
         if total == 1 {
-            return "1 quest completed in the tracked window"
+            return "1 quest cleared"
         }
-        return "\(total) quests completed in the tracked window"
+        return "\(total) quests cleared"
     }
 
     var body: some View {
@@ -456,9 +464,11 @@ struct QuestSummaryHeader: View {
                                     .font(SystemTypography.headline)
                                     .foregroundStyle(SystemTheme.textPrimary)
 
-                                Text("Daily quest completion heatmap")
+                                Text("Battle record")
                                     .font(SystemTypography.captionSmall)
                                     .foregroundStyle(SystemTheme.textSecondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.85)
                             }
 
                             Spacer()
@@ -474,15 +484,20 @@ struct QuestSummaryHeader: View {
                     if !isGridCollapsed {
                         VStack(alignment: .leading, spacing: 12) {
                             GeometryReader { geometry in
-                                let metrics = heatmapMetrics(for: geometry.size.width)
+                                let safeWidth = max(0, geometry.size.width.isFinite ? geometry.size.width : 0)
+                                let metrics = heatmapMetrics(for: safeWidth)
+                                let visibleMonthMarkers = visibleMonthMarkers(
+                                    availableWidth: safeWidth,
+                                    columnStride: metrics.columnStride
+                                )
 
                                 VStack(alignment: .leading, spacing: 8) {
                                     ZStack(alignment: .leading) {
-                                        ForEach(monthMarkers) { marker in
+                                        ForEach(visibleMonthMarkers) { marker in
                                             Text(marker.label)
-                                                .font(SystemTypography.captionSmall)
+                                                .font(.system(size: 10, weight: .medium, design: .rounded))
                                                 .foregroundStyle(SystemTheme.textTertiary)
-                                                .offset(x: CGFloat(marker.columnIndex) * metrics.columnStride)
+                                                .offset(x: marker.xOffset ?? (CGFloat(marker.columnIndex) * metrics.columnStride))
                                         }
                                     }
                                     .frame(height: 14)
@@ -563,13 +578,15 @@ struct QuestSummaryHeader: View {
             }
 
             GeometryReader { geometry in
+                let safeWidth = max(0, geometry.size.width.isFinite ? geometry.size.width : 0)
+
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(SystemTheme.backgroundSecondary)
 
                     RoundedRectangle(cornerRadius: 4)
                         .fill(SystemTheme.xpGradient)
-                        .frame(width: geometry.size.width * completionPercentage)
+                        .frame(width: safeWidth * safeCompletionPercentage)
                 }
             }
             .frame(height: 8)
@@ -594,11 +611,52 @@ struct QuestSummaryHeader: View {
         return previousMonth == currentMonth ? "" : label
     }
 
+    private func visibleMonthMarkers(availableWidth: CGFloat, columnStride: CGFloat) -> [MonthMarker] {
+        guard availableWidth.isFinite, availableWidth > 0 else { return monthMarkers }
+
+        var filtered: [MonthMarker] = []
+        var lastAcceptedMaxX: CGFloat = -.infinity
+        let trailingInset: CGFloat = 6
+
+        for marker in monthMarkers {
+            let originX = CGFloat(marker.columnIndex) * columnStride
+            let labelWidth = monthLabelWidth(for: marker.label)
+            let adjustedOriginX = min(originX, max(0, availableWidth - labelWidth - trailingInset))
+
+            if adjustedOriginX <= lastAcceptedMaxX + 6 {
+                continue
+            }
+
+            filtered.append(
+                MonthMarker(
+                    id: marker.id,
+                    columnIndex: marker.columnIndex,
+                    label: marker.label,
+                    xOffset: adjustedOriginX
+                )
+            )
+            lastAcceptedMaxX = adjustedOriginX + labelWidth
+        }
+
+        return filtered
+    }
+
+    private func monthLabelWidth(for label: String) -> CGFloat {
+        let font = UIFont.systemFont(ofSize: 10, weight: .medium)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        return ceil((label as NSString).size(withAttributes: attributes).width)
+    }
+
     private func heatmapMetrics(for availableWidth: CGFloat) -> (cellSize: CGFloat, spacing: CGFloat, columnStride: CGFloat) {
+        guard availableWidth.isFinite, availableWidth > 0 else {
+            return (cellSize: 8, spacing: 3, columnStride: 11)
+        }
+
         let totalColumns = max(weekColumns.count, 1)
         let spacing: CGFloat = availableWidth > 360 ? 4 : 3
         let totalSpacing = spacing * CGFloat(max(totalColumns - 1, 0))
-        let rawCellSize = floor((availableWidth - totalSpacing) / CGFloat(totalColumns))
+        let usableWidth = max(0, availableWidth - totalSpacing)
+        let rawCellSize = floor(usableWidth / CGFloat(totalColumns))
         let cellSize = min(12, max(8, rawCellSize))
         return (cellSize: cellSize, spacing: spacing, columnStride: cellSize + spacing)
     }
