@@ -38,13 +38,13 @@ struct BottomWheelValuePickerSheet: View {
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 24)
-                    .padding(.top, 22)
-                    .padding(.bottom, 18)
+                    .padding(.horizontal, 22)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
 
                 pickerBar
             }
-            .padding(.bottom, 12)
+            .padding(.bottom, 8)
         }
         .presentationDetents([.fraction(0.5)])
         .presentationDragIndicator(.visible)
@@ -57,7 +57,7 @@ struct BottomWheelValuePickerSheet: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(SystemTypography.titleSmall)
                 .foregroundStyle(.white)
@@ -69,7 +69,6 @@ struct BottomWheelValuePickerSheet: View {
                 .fill(accentColor)
                 .frame(width: 42, height: 4)
                 .clipShape(Capsule())
-                .padding(.bottom, 2)
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
@@ -88,8 +87,8 @@ struct BottomWheelValuePickerSheet: View {
             RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white.opacity(0.35))
                 .frame(width: 54, height: 5)
-                .padding(.top, 6)
-                .padding(.bottom, 16)
+                .padding(.top, 2)
+                .padding(.bottom, 12)
 
             HStack {
                 Button {
@@ -125,8 +124,8 @@ struct BottomWheelValuePickerSheet: View {
                 }
             }
             .padding(.horizontal, 22)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
 
             Picker(title, selection: $draftValue) {
                 ForEach(options) { option in
