@@ -10,7 +10,9 @@ You do the work. PRAXIS closes the feedback loop instantly with quests, XP, Gold
 
 - iOS productivity app with RPG systems (quests, bosses, stats, leveling, economy)
 - Auto-tracking via HealthKit, Location, and optional Screen Time APIs
-- Dynamic Bosses that react to real metric progress (weight, body fat, savings, workout consistency)
+- Dynamic Bosses that react to real metric progress (weight, body fat, savings, workout consistency, steps, sleep, hydration, mindfulness, distance)
+- In-app language switching with German, Russian, French, Italian, and Spanish support
+- Home Screen widgets for status, next-up quests, and boss progress
 - CloudKit sync, watchOS companion, onboarding, achievements, and configurable death/streak mechanics
 
 ## Product Thesis
@@ -46,7 +48,11 @@ PRAXIS implements all three so discipline feels like progression, not friction.
   - body fat goal
   - savings goal
   - workout consistency
-  - screen-time discipline
+  - step goal
+  - sleep goal
+  - hydration goal
+  - mindfulness goal
+  - distance goal
 - Dynamic configurations can auto-generate linked quests
 
 ### 3) Training Loop
@@ -95,6 +101,8 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 
 - Immediate or digest completion notifications
 - Reminder notifications
+- Smart engagement reminders learn likely return windows on-device
+- Inactivity shutdown logic pauses notifications after prolonged disengagement
 - Foreground iOS banners suppressed while actively using PRAXIS (in-app feedback remains)
 
 ### CloudKit
@@ -112,10 +120,14 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 - Status dashboard with radar/grid stat toggle and persisted preference
 - Tabbed Activity/Achievements module with persisted preference
 - Next Up prioritization for high-impact quests
+- GitHub-style quest completion heatmap with toggleable visibility
 - Undo completion pipeline with stat/economy reconciliation
 - Marketplace rewards, including health potion recovery
 - Haptic system with user-configurable toggle
 - Multiple app icons with in-app switching
+- Configurable default launch tab and in-app language selection
+- Local on-device usage analytics with export/reset controls
+- Widget deep links into quests and bosses
 - Guided onboarding flow for first-run activation
 
 ## Architecture
