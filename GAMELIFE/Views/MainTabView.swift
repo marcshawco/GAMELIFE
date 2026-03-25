@@ -27,9 +27,9 @@ struct MainTabView: View {
     // MARK: - Initialization
 
     init() {
-        // Initialize to user's preferred default tab
-        let savedDefault = UserDefaults.standard.integer(forKey: "defaultTab")
-        _selectedTab = State(initialValue: savedDefault)
+        let savedDefault = SettingsManager.shared.defaultTab
+        let normalizedDefault = GameTab(rawValue: savedDefault)?.rawValue ?? GameTab.status.rawValue
+        _selectedTab = State(initialValue: normalizedDefault)
     }
 
     // MARK: - Body

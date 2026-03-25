@@ -240,25 +240,68 @@ struct SystemTypography {
         case 18..<24:
             scale = 0.84
         case 15..<18:
-            scale = 0.88
+            scale = 0.82
         case 12..<15:
-            scale = 0.9
+            scale = 0.78
+        case 10..<12:
+            scale = 0.74
         default:
-            scale = 0.94
+            scale = 0.8
         }
 
         return max(8, (baseSize * scale).rounded(.toNearestOrAwayFromZero))
     }
 
+    private static func textStyle(for size: CGFloat) -> Font.TextStyle {
+        switch size {
+        case 30...:
+            return .largeTitle
+        case 24..<30:
+            return .title
+        case 20..<24:
+            return .title2
+        case 17..<20:
+            return .headline
+        case 15..<17:
+            return .body
+        case 13..<15:
+            return .subheadline
+        case 11..<13:
+            return .caption
+        default:
+            return .caption2
+        }
+    }
+
     private static func custom(_ size: CGFloat) -> Font {
         ensureCustomFontRegistered()
-        return .custom(customFontName, size: adjustedCustomFontSize(for: size))
+        let adjustedSize = adjustedCustomFontSize(for: size)
+        return .custom(customFontName, size: adjustedSize, relativeTo: textStyle(for: size))
     }
 
     static func uiFont(_ size: CGFloat, weight: UIFont.Weight = .regular, design: UIFontDescriptor.SystemDesign = .default) -> UIFont {
         ensureCustomFontRegistered()
         if useCustomAppFont, let font = UIFont(name: customFontName, size: adjustedCustomFontSize(for: size)) {
-            return font
+            let textStyle: UIFont.TextStyle
+            switch size {
+            case 30...:
+                textStyle = .largeTitle
+            case 24..<30:
+                textStyle = .title1
+            case 20..<24:
+                textStyle = .title2
+            case 17..<20:
+                textStyle = .headline
+            case 15..<17:
+                textStyle = .body
+            case 13..<15:
+                textStyle = .subheadline
+            case 11..<13:
+                textStyle = .caption1
+            default:
+                textStyle = .caption2
+            }
+            return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
         }
 
         let baseFont = UIFont.systemFont(ofSize: size, weight: weight)

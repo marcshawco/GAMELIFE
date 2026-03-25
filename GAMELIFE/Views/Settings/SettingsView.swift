@@ -70,16 +70,20 @@ struct SettingsView: View {
                 Text("Hunter Profile")
             }
 
+            Section {
+                Picker("Open App To", selection: $defaultTab) {
+                    ForEach(GameTab.allCases, id: \.rawValue) { tab in
+                        Text(tab.title).tag(tab.rawValue)
+                    }
+                }
+            } header: {
+                Text("Launch")
+            } footer: {
+                Text("Choose which tab PRAXIS opens to when you launch the app.")
+            }
+
             // Preferences Section
             Section {
-                Picker("Default Tab", selection: $defaultTab) {
-                    Text("Status").tag(0)
-                    Text("Quests").tag(1)
-                    Text("Training").tag(2)
-                    Text("Bosses").tag(3)
-                    Text("Shop").tag(4)
-                }
-
                 Toggle("Use System Appearance", isOn: $useSystemAppearance)
 
                 if !useSystemAppearance {
@@ -137,7 +141,7 @@ struct SettingsView: View {
             } header: {
                 Text("Preferences")
             } footer: {
-                Text("Set your default tab, appearance, app icon, quests layout, alerts, font style, and death penalties in one place. Haptic Feedback is the master switch for taps, picker ticks, confirmations, and combat/training feedback. Turning off death penalties does not stop HP loss.")
+                Text("Set your appearance, app icon, quests layout, alerts, font style, and death penalties in one place. Haptic Feedback is the master switch for taps, picker ticks, confirmations, and combat/training feedback. Turning off death penalties does not stop HP loss.")
             }
 
             // Neural Links Section

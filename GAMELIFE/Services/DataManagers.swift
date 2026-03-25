@@ -722,6 +722,7 @@ class SettingsManager {
 
     private enum Keys {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        static let defaultTab = "defaultTab"
         static let soundEnabled = "soundEnabled"
         static let hapticEnabled = "hapticEnabled"
         static let useCustomAppFont = "useCustomAppFont"
@@ -741,6 +742,11 @@ class SettingsManager {
     var hasCompletedOnboarding: Bool {
         get { UserDefaults.standard.bool(forKey: Keys.hasCompletedOnboarding) }
         set { UserDefaults.standard.set(newValue, forKey: Keys.hasCompletedOnboarding) }
+    }
+
+    var defaultTab: Int {
+        get { UserDefaults.standard.object(forKey: Keys.defaultTab) as? Int ?? 0 }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.defaultTab) }
     }
 
     // MARK: - Sound & Haptics
@@ -829,6 +835,7 @@ class SettingsManager {
 
     func setDefaults() {
         let defaults: [String: Any] = [
+            Keys.defaultTab: 0,
             Keys.soundEnabled: true,
             Keys.hapticEnabled: true,
             Keys.useCustomAppFont: false,

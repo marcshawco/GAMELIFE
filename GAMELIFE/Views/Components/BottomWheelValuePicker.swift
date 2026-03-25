@@ -31,34 +31,6 @@ struct BottomWheelValuePickerSheet: View {
 
     @State private var draftValue: Double = 0
 
-    private var selectedIndex: Int {
-        guard let index = options.firstIndex(where: { $0.value == draftValue }) else {
-            return max(0, options.firstIndex(where: { $0.value == nearestValue(to: draftValue) }) ?? 0)
-        }
-        return index
-    }
-
-    private var previewOptions: [WheelValueOption] {
-        guard !options.isEmpty else { return [] }
-
-        let lowerBound = max(0, selectedIndex - 1)
-        let upperBound = min(options.count - 1, selectedIndex + 1)
-        let slice = Array(options[lowerBound...upperBound])
-
-        if slice.count == 3 {
-            return slice
-        }
-
-        if options.count >= 3 {
-            if lowerBound == 0 {
-                return Array(options.prefix(3))
-            }
-            return Array(options.suffix(3))
-        }
-
-        return options
-    }
-
     var body: some View {
         ZStack {
             Color.black
@@ -66,20 +38,15 @@ struct BottomWheelValuePickerSheet: View {
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
                     .padding(.bottom, 18)
-
-                selectionCard
-                    .padding(.horizontal, 14)
-
-                Spacer(minLength: 16)
 
                 pickerBar
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 12)
         }
-        .presentationDetents([.fraction(0.58)])
+        .presentationDetents([.fraction(0.5)])
         .presentationDragIndicator(.visible)
         .onAppear {
             draftValue = nearestValue(to: selection)
@@ -94,51 +61,26 @@ struct BottomWheelValuePickerSheet: View {
             Text(title)
                 .font(SystemTypography.titleSmall)
                 .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .allowsTightening(true)
 
             Rectangle()
                 .fill(accentColor)
                 .frame(width: 42, height: 4)
                 .clipShape(Capsule())
+                .padding(.bottom, 2)
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
                     .font(SystemTypography.caption)
                     .foregroundStyle(SystemTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.62)
+                    .allowsTightening(true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var selectionCard: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(previewOptions.enumerated()), id: \.element.id) { index, option in
-                HStack(spacing: 12) {
-                    Text("\(index + 1)")
-                        .font(SystemTypography.mono(13, weight: .bold))
-                        .foregroundStyle(option.value == draftValue ? Color.black : .white.opacity(0.72))
-                        .frame(width: 26, height: 26)
-                        .background(option.value == draftValue ? accentColor : Color.white.opacity(0.18))
-                        .clipShape(Circle())
-
-                    Text(option.label)
-                        .font(SystemTypography.mono(18, weight: option.value == draftValue ? .bold : .medium))
-                        .foregroundStyle(option.value == draftValue ? .white : .white.opacity(0.55))
-
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .frame(height: 64)
-                .background(cardBackground(for: option.value == draftValue))
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private func cardBackground(for isSelected: Bool) -> some ShapeStyle {
-        if isSelected {
-            return AnyShapeStyle(Color.white.opacity(0.10))
-        }
-        return AnyShapeStyle(Color.white.opacity(0.14))
     }
 
     private var pickerBar: some View {
@@ -146,7 +88,8 @@ struct BottomWheelValuePickerSheet: View {
             RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white.opacity(0.35))
                 .frame(width: 54, height: 5)
-                .padding(.bottom, 12)
+                .padding(.top, 6)
+                .padding(.bottom, 16)
 
             HStack {
                 Button {
@@ -164,6 +107,9 @@ struct BottomWheelValuePickerSheet: View {
                 Text(confirmTitle)
                     .font(SystemTypography.body)
                     .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .allowsTightening(true)
 
                 Spacer()
 
@@ -178,9 +124,9 @@ struct BottomWheelValuePickerSheet: View {
                         .frame(width: 44, height: 44)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 22)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
 
             Picker(title, selection: $draftValue) {
                 ForEach(options) { option in
@@ -189,7 +135,7 @@ struct BottomWheelValuePickerSheet: View {
                 }
             }
             .pickerStyle(.wheel)
-            .frame(height: 170)
+            .frame(height: 196)
             .clipped()
         }
         .background(
