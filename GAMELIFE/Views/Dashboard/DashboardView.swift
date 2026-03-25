@@ -9,6 +9,11 @@
 import SwiftUI
 import Combine
 
+private func uiSafeUnitValue(_ value: Double) -> Double {
+    guard value.isFinite else { return 0 }
+    return min(1, max(0, value))
+}
+
 // MARK: - Dashboard View
 
 /// The main hub - displays player status, quests, and quick actions
@@ -149,7 +154,7 @@ struct DashboardHeaderView: View {
 
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(SystemTheme.xpGradient)
-                                .frame(width: geometry.size.width * player.xpProgress)
+                                .frame(width: max(0, geometry.size.width) * uiSafeUnitValue(player.xpProgress))
                         }
                     }
                     .frame(height: 8)
@@ -335,7 +340,7 @@ struct StatRowView: View {
 
                         RoundedRectangle(cornerRadius: 2)
                             .fill(stat.type.color.opacity(0.7))
-                            .frame(width: geometry.size.width * stat.progressToNextPoint)
+                            .frame(width: max(0, geometry.size.width) * uiSafeUnitValue(stat.progressToNextPoint))
                     }
                 }
                 .frame(height: 4)
@@ -876,7 +881,7 @@ struct ActiveDungeonView: View {
 
                 // Progress ring
                 Circle()
-                    .trim(from: 0, to: dungeon.progress)
+                    .trim(from: 0, to: uiSafeUnitValue(dungeon.progress))
                     .stroke(
                         LinearGradient(
                             colors: [SystemTheme.primaryBlue, SystemTheme.primaryPurple],
@@ -887,7 +892,7 @@ struct ActiveDungeonView: View {
                     )
                     .frame(width: 200, height: 200)
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 1), value: dungeon.progress)
+                    .animation(.linear(duration: 1), value: uiSafeUnitValue(dungeon.progress))
 
                 // Time display
                 VStack(spacing: 4) {

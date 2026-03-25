@@ -8,6 +8,11 @@
 
 import SwiftUI
 
+private func uiSafeTrainingUnitValue(_ value: Double) -> Double {
+    guard value.isFinite else { return 0 }
+    return min(1, max(0, value))
+}
+
 // MARK: - Training View
 
 /// Tab 3: Focus timer for deep work sessions (formerly "Dungeon")
@@ -233,7 +238,7 @@ struct ActiveTrainingView: View {
 
                 // Progress ring
                 Circle()
-                    .trim(from: 0, to: manager.progress)
+                    .trim(from: 0, to: uiSafeTrainingUnitValue(manager.progress))
                     .stroke(
                         LinearGradient(
                             colors: [SystemTheme.primaryBlue, SystemTheme.primaryPurple],
@@ -244,7 +249,7 @@ struct ActiveTrainingView: View {
                     )
                     .frame(width: 220, height: 220)
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 1), value: manager.progress)
+                    .animation(.linear(duration: 1), value: uiSafeTrainingUnitValue(manager.progress))
 
                 // Time display
                 VStack(spacing: 4) {

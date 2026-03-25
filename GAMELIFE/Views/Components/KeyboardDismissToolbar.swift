@@ -12,9 +12,7 @@ private struct KeyboardDismissToolbarModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-
+                ToolbarItem(placement: .keyboard) {
                     Button {
                         HapticManager.shared.selection()
                         UIApplication.shared.sendAction(
@@ -24,17 +22,8 @@ private struct KeyboardDismissToolbarModifier: ViewModifier {
                             for: nil
                         )
                     } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "keyboard.chevron.compact.down")
-                                .font(.system(size: 16, weight: .bold))
-                            Text("Dismiss Keyboard")
-                                .font(SystemTypography.mono(13, weight: .bold))
-                        }
-                        .foregroundStyle(SystemTheme.backgroundPrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(SystemTheme.primaryBlue)
-                        .clipShape(Capsule())
+                        Text("Done")
+                            .font(.system(size: 17, weight: .semibold))
                     }
                 }
             }

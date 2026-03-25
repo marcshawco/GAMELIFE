@@ -488,6 +488,7 @@ struct QuestSummaryHeader: View {
                                 let metrics = heatmapMetrics(for: safeWidth)
                                 let visibleMonthMarkers = visibleMonthMarkers(
                                     availableWidth: safeWidth,
+                                    cellSize: metrics.cellSize,
                                     columnStride: metrics.columnStride
                                 )
 
@@ -566,11 +567,11 @@ struct QuestSummaryHeader: View {
                         .stroke(SystemTheme.backgroundSecondary, lineWidth: 4)
 
                     Circle()
-                        .trim(from: 0, to: completionPercentage)
+                        .trim(from: 0, to: safeCompletionPercentage)
                         .stroke(SystemTheme.primaryBlue, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                         .rotationEffect(.degrees(-90))
 
-                    Text("\(Int(completionPercentage * 100))%")
+                    Text("\(Int(safeCompletionPercentage * 100))%")
                         .font(SystemTypography.mono(12, weight: .bold))
                         .foregroundStyle(SystemTheme.primaryBlue)
                 }
@@ -611,19 +612,24 @@ struct QuestSummaryHeader: View {
         return previousMonth == currentMonth ? "" : label
     }
 
-    private func visibleMonthMarkers(availableWidth: CGFloat, columnStride: CGFloat) -> [MonthMarker] {
+    private func visibleMonthMarkers(availableWidth: CGFloat, cellSize: CGFloat, columnStride: CGFloat) -> [MonthMarker] {
         guard availableWidth.isFinite, availableWidth > 0 else { return monthMarkers }
 
         var filtered: [MonthMarker] = []
         var lastAcceptedMaxX: CGFloat = -.infinity
-        let trailingInset: CGFloat = 6
+        let horizontalInset: CGFloat = 4
+        let minimumGap: CGFloat = 8
 
         for marker in monthMarkers {
-            let originX = CGFloat(marker.columnIndex) * columnStride
             let labelWidth = monthLabelWidth(for: marker.label)
-            let adjustedOriginX = min(originX, max(0, availableWidth - labelWidth - trailingInset))
+            let columnCenterX = (CGFloat(marker.columnIndex) * columnStride) + (cellSize / 2)
+            let preferredOriginX = columnCenterX - (labelWidth / 2)
+            let adjustedOriginX = min(
+                max(horizontalInset, preferredOriginX),
+                max(horizontalInset, availableWidth - labelWidth - horizontalInset)
+            )
 
-            if adjustedOriginX <= lastAcceptedMaxX + 6 {
+            if adjustedOriginX <= lastAcceptedMaxX + minimumGap {
                 continue
             }
 
@@ -772,6 +778,9 @@ struct QuestRowView: View {
                             .font(SystemTypography.headline)
                             .foregroundStyle(quest.status == .completed ? SystemTheme.textTertiary : SystemTheme.textPrimary)
                             .strikethrough(quest.status == .completed)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.72)
+                            .layoutPriority(1)
 
                         if quest.trackingType.isAutomatic {
                             Image(systemName: quest.trackingType.icon)
@@ -783,7 +792,8 @@ struct QuestRowView: View {
                     Text(quest.description)
                         .font(SystemTypography.caption)
                         .foregroundStyle(SystemTheme.textSecondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.75)
 
                     VStack(alignment: .leading, spacing: 2) {
                         if let impactBossText {
@@ -791,15 +801,18 @@ struct QuestRowView: View {
                                 .font(SystemTypography.captionSmall)
                                 .foregroundStyle(SystemTheme.warningOrange)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.65)
                         }
                         Text(impactRewardsText)
                             .font(SystemTypography.captionSmall)
                             .foregroundStyle(SystemTheme.primaryBlue)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.65)
                         Text(impactStreakText)
                             .font(SystemTypography.captionSmall)
                             .foregroundStyle(SystemTheme.textSecondary)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.65)
                     }
 
                     if quest.trackingType.isAutomatic && quest.status != .completed {
@@ -813,7 +826,7 @@ struct QuestRowView: View {
                         )
                     }
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Text(quest.difficulty.rawValue)
                             .font(SystemTypography.mono(10, weight: .semibold))
                             .foregroundStyle(quest.difficulty.color)
@@ -838,11 +851,13 @@ struct QuestRowView: View {
 
                         HStack(spacing: 2) {
                             Image(systemName: quest.resolvedFrequency.icon)
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                             Text(quest.resolvedFrequency.rawValue)
-                                .font(SystemTypography.mono(10, weight: .semibold))
+                                .font(SystemTypography.mono(9, weight: .semibold))
                         }
                         .foregroundStyle(SystemTheme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
 
                         Spacer()
 
@@ -1161,9 +1176,9 @@ private struct QuestRewardSummaryView: View {
         HStack(spacing: 8) {
             HStack(spacing: 3) {
                 Image(systemName: "star.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: 9))
                 Text("\(xpReward)")
-                    .font(SystemTypography.mono(11, weight: .semibold))
+                    .font(SystemTypography.mono(10, weight: .semibold))
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
             }
@@ -1172,9 +1187,9 @@ private struct QuestRewardSummaryView: View {
             if !isOptional {
                 HStack(spacing: 3) {
                     Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: 10))
+                        .font(.system(size: 9))
                     Text("\(goldReward)")
-                        .font(SystemTypography.mono(11, weight: .semibold))
+                        .font(SystemTypography.mono(10, weight: .semibold))
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
