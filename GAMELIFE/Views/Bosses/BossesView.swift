@@ -8,6 +8,11 @@
 
 import SwiftUI
 
+private func uiSafeUnitProgress(_ value: Double) -> Double {
+    guard value.isFinite else { return 0 }
+    return min(1, max(0, value))
+}
+
 // MARK: - Bosses View
 
 /// Tab 4: Projects & Long-term Goals displayed as Boss Fights
@@ -16,7 +21,9 @@ struct BossesView: View {
     // MARK: - Properties
 
     @EnvironmentObject var gameEngine: GameEngine
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @State private var showCreateBoss = false
+    @State private var highlightedBossID: UUID?
 
     // MARK: - Body
 
@@ -29,21 +36,50 @@ struct BossesView: View {
                 if gameEngine.activeBossFights.isEmpty {
                     EmptyBossState(onCreateTapped: { showCreateBoss = true })
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: SystemSpacing.md) {
-                            ForEach(gameEngine.activeBossFights) { boss in
-                                BossCardView(
-                                    boss: boss,
-                                    onDealDamage: { task in
-                                        dealDamage(boss: boss, task: task)
-                                    },
-                                    onUpdateDynamicValue: { value in
-                                        updateDynamicBoss(boss: boss, currentValue: value)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: SystemSpacing.md) {
+                                ForEach(gameEngine.activeBossFights) { boss in
+                                    BossCardView(
+                                        boss: boss,
+                                        autoExpand: highlightedBossID == boss.id,
+                                        onDealDamage: { task in
+                                            dealDamage(boss: boss, task: task)
+                                        },
+                                        onUpdateDynamicValue: { value in
+                                            updateDynamicBoss(boss: boss, currentValue: value)
+                                        }
+                                    )
+                                    .id(boss.id)
+                                    .overlay {
+                                        if highlightedBossID == boss.id {
+                                            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                                                .stroke(SystemTheme.primaryBlue, lineWidth: 2)
+                                        }
                                     }
-                                )
+                                }
+                            }
+                            .padding()
+                        }
+                        .onChange(of: deepLinkManager.pendingLink) { _, link in
+                            guard let link else { return }
+                            guard case let .bosses(bossID) = link.route else { return }
+                            guard let bossID else { return }
+
+                            highlightedBossID = bossID
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo(bossID, anchor: .top)
+                            }
+
+                            Task {
+                                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                await MainActor.run {
+                                    if highlightedBossID == bossID {
+                                        highlightedBossID = nil
+                                    }
+                                }
                             }
                         }
-                        .padding()
                     }
                 }
             }
@@ -62,6 +98,7 @@ struct BossesView: View {
             }
             .toolbarBackground(SystemTheme.backgroundPrimary, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .keyboardDismissToolbar()
             .sheet(isPresented: $showCreateBoss) {
                 BossFormSheet()
             }
@@ -121,6 +158,7 @@ struct EmptyBossState: View {
 struct BossCardView: View {
     @EnvironmentObject var gameEngine: GameEngine
     let boss: BossFight
+    let autoExpand: Bool
     let onDealDamage: (MicroTask) -> Void
     let onUpdateDynamicValue: (Double) -> Void
 
@@ -172,7 +210,7 @@ struct BossCardView: View {
 
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(SystemTheme.hpGradient)
-                                .frame(width: geometry.size.width * boss.hpPercentage)
+                                .frame(width: max(0, geometry.size.width) * uiSafeUnitProgress(boss.hpPercentage))
                         }
                     }
                     .frame(height: 16)
@@ -188,7 +226,7 @@ struct BossCardView: View {
 
                         Spacer()
 
-                        Text("\(Int(boss.damageDealtPercentage * 100))% defeated")
+                        Text("\(Int(uiSafeUnitProgress(boss.damageDealtPercentage) * 100))% defeated")
                             .font(SystemTypography.captionSmall)
                             .foregroundStyle(SystemTheme.textTertiary)
                     }
@@ -278,6 +316,12 @@ struct BossCardView: View {
                 dynamicCurrentInput = String(format: dynamicGoal.type == .savings ? "%.0f" : "%.1f", dynamicGoal.currentValue)
             }
         }
+        .onChange(of: autoExpand) { _, shouldExpand in
+            guard shouldExpand else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isExpanded = true
+            }
+        }
     }
 
     @ViewBuilder
@@ -313,12 +357,12 @@ struct BossCardView: View {
                         .fill(SystemTheme.backgroundSecondary)
                     Capsule()
                         .fill(SystemTheme.primaryBlue)
-                        .frame(width: geo.size.width * goal.normalizedProgress)
+                        .frame(width: max(0, geo.size.width) * uiSafeUnitProgress(goal.normalizedProgress))
                 }
             }
             .frame(height: 5)
 
-            Text("Progress: \(Int(goal.normalizedProgress * 100))% • Remaining \(formattedGoalValue(goal.remainingAmount, unit: goal.unitLabel))")
+            Text("Progress: \(Int(uiSafeUnitProgress(goal.normalizedProgress) * 100))% • Remaining \(formattedGoalValue(goal.remainingAmount, unit: goal.unitLabel))")
                 .font(SystemTypography.captionSmall)
                 .foregroundStyle(SystemTheme.textSecondary)
 
@@ -422,6 +466,7 @@ struct BossFormSheet: View {
     @State private var dynamicCadence: GoalCadence = .weekly
     @State private var dynamicCadenceTarget: Double = 1
     @State private var autoGenerateGoalQuest = true
+    @State private var activeWheelInput: BossWheelInput?
 
     // Micro-tasks
     @State private var microTasks: [String] = [""]
@@ -445,6 +490,38 @@ struct BossFormSheet: View {
         DynamicBossGoalType.betaSelectableTypes
     }
 
+    private var draftDynamicGoal: DynamicBossGoal? {
+        guard useDynamicGoal else { return nil }
+        return DynamicBossGoal(
+            type: dynamicGoalType,
+            startValue: dynamicStartValue,
+            targetValue: dynamicTargetValue,
+            currentValue: dynamicCurrentValue,
+            cadence: dynamicCadence,
+            perCadenceTarget: dynamicCadenceTarget,
+            generatedQuestID: nil,
+            lastUpdatedAt: Date()
+        )
+    }
+
+    private var resolvedBossHP: Int {
+        guard let draftDynamicGoal else { return maxHP }
+        return gameEngine.scaledDynamicBossMaxHP(
+            for: draftDynamicGoal,
+            difficulty: difficulty,
+            playerLevel: gameEngine.player.level
+        )
+    }
+
+    private var dynamicBossScalingPreview: GameEngine.DynamicBossScaling? {
+        guard let draftDynamicGoal else { return nil }
+        return gameEngine.dynamicBossScaling(
+            for: draftDynamicGoal,
+            difficulty: difficulty,
+            playerLevel: gameEngine.player.level
+        )
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -457,32 +534,6 @@ struct BossFormSheet: View {
                         .font(SystemTypography.body)
                 } header: {
                     Text("Boss Details")
-                }
-
-                // Combat Stats
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Total HP: \(maxHP)")
-                            .font(SystemTypography.mono(14, weight: .semibold))
-
-                        Slider(value: Binding(
-                            get: { Double(maxHP) },
-                            set: { maxHP = Int($0) }
-                        ), in: 100...10000, step: 100)
-                        .tint(SystemTheme.criticalRed)
-
-                        Text("Higher HP = more micro-tasks needed to defeat")
-                            .font(SystemTypography.captionSmall)
-                            .foregroundStyle(SystemTheme.textTertiary)
-                    }
-
-                    Picker("Difficulty", selection: $difficulty) {
-                        ForEach([QuestDifficulty.normal, .hard, .extreme, .legendary], id: \.self) { diff in
-                            Text(diff.rawValue).tag(diff)
-                        }
-                    }
-                } header: {
-                    Text("Combat Stats")
                 }
 
                 Section {
@@ -499,10 +550,13 @@ struct BossFormSheet: View {
                         HStack {
                             Text("Starting Value")
                             Spacer()
-                            TextField("Start", value: $dynamicStartValue, format: .number)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 120)
+                            Button {
+                                HapticManager.shared.selection()
+                                activeWheelInput = .dynamicStart
+                            } label: {
+                                wheelInputPill(label: "Start", value: formattedValue(dynamicStartValue))
+                            }
+                            .buttonStyle(.plain)
                             Text(dynamicGoalType.unitLabel)
                                 .foregroundStyle(SystemTheme.textSecondary)
                         }
@@ -510,10 +564,13 @@ struct BossFormSheet: View {
                         HStack {
                             Text("Current Value")
                             Spacer()
-                            TextField("Current", value: $dynamicCurrentValue, format: .number)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 120)
+                            Button {
+                                HapticManager.shared.selection()
+                                activeWheelInput = .dynamicCurrent
+                            } label: {
+                                wheelInputPill(label: "Current", value: formattedValue(dynamicCurrentValue))
+                            }
+                            .buttonStyle(.plain)
                             Text(dynamicGoalType.unitLabel)
                                 .foregroundStyle(SystemTheme.textSecondary)
                         }
@@ -521,10 +578,13 @@ struct BossFormSheet: View {
                         HStack {
                             Text("Target Value")
                             Spacer()
-                            TextField("Target", value: $dynamicTargetValue, format: .number)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 120)
+                            Button {
+                                HapticManager.shared.selection()
+                                activeWheelInput = .dynamicTarget
+                            } label: {
+                                wheelInputPill(label: "Target", value: formattedValue(dynamicTargetValue))
+                            }
+                            .buttonStyle(.plain)
                             Text(dynamicGoalType.unitLabel)
                                 .foregroundStyle(SystemTheme.textSecondary)
                         }
@@ -539,10 +599,13 @@ struct BossFormSheet: View {
                         HStack {
                             Text("Per-\(dynamicCadence.rawValue) Target")
                             Spacer()
-                            TextField("Target", value: $dynamicCadenceTarget, format: .number)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 120)
+                            Button {
+                                HapticManager.shared.selection()
+                                activeWheelInput = .cadenceTarget
+                            } label: {
+                                wheelInputPill(label: "Cadence", value: formattedValue(dynamicCadenceTarget))
+                            }
+                            .buttonStyle(.plain)
                             Text(dynamicGoalType.unitLabel)
                                 .foregroundStyle(SystemTheme.textSecondary)
                         }
@@ -552,11 +615,65 @@ struct BossFormSheet: View {
                         Text(dynamicGoalExplanation)
                             .font(SystemTypography.captionSmall)
                             .foregroundStyle(SystemTheme.textSecondary)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Useful Scenarios")
+                                .font(SystemTypography.mono(11, weight: .bold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+
+                            ForEach(dynamicGoalScenarios, id: \.self) { scenario in
+                                Text("• \(scenario)")
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textTertiary)
+                            }
+                        }
                     }
                 } header: {
                     Text("Dynamic Goal Engine")
                 } footer: {
                     Text("Dynamic bosses lose or regain HP based on your real metric progress. Weight/body fat sync from Apple Health. Savings updates from your entered amount.")
+                }
+
+                // Combat Stats
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(useDynamicGoal ? "Auto-Scaled HP: \(resolvedBossHP)" : "Total HP: \(maxHP)")
+                            .font(SystemTypography.mono(14, weight: .semibold))
+
+                        if useDynamicGoal {
+                            if let scaling = dynamicBossScalingPreview {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("\(scaling.requiredQuestCount) \(dynamicCadence.rawValue.lowercased()) quests at ~\(scaling.linkedQuestDamage) damage each")
+                                        .font(SystemTypography.captionSmall)
+                                        .foregroundStyle(SystemTheme.textSecondary)
+
+                                    Text("HP is derived from total goal distance, so the boss matches the full journey instead of a fixed slider.")
+                                        .font(SystemTypography.captionSmall)
+                                        .foregroundStyle(SystemTheme.textTertiary)
+                                }
+                            }
+                        } else {
+                            Button {
+                                HapticManager.shared.selection()
+                                activeWheelInput = .maxHP
+                            } label: {
+                                wheelInputPill(label: "Boss HP", value: "\(maxHP)")
+                            }
+                            .buttonStyle(.plain)
+
+                            Text("Higher HP = more micro-tasks needed to defeat")
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.textTertiary)
+                        }
+                    }
+
+                    Picker("Difficulty", selection: $difficulty) {
+                        ForEach([QuestDifficulty.normal, .hard, .extreme, .legendary], id: \.self) { diff in
+                            Text(diff.rawValue).tag(diff)
+                        }
+                    }
+                } header: {
+                    Text("Combat Stats")
                 }
 
                 // Deadline
@@ -682,6 +799,17 @@ struct BossFormSheet: View {
                         .disabled(!isValid)
                 }
             }
+            .sheet(item: $activeWheelInput) { input in
+                BottomWheelValuePickerSheet(
+                    title: input.title,
+                    subtitle: input.subtitle,
+                    accentColor: SystemTheme.criticalRed,
+                    options: wheelOptions(for: input),
+                    selection: wheelBinding(for: input),
+                    confirmTitle: "Apply"
+                )
+            }
+            .keyboardDismissToolbar()
             .onChange(of: dynamicGoalType) { _, newType in
                 switch newType {
                 case .weight:
@@ -719,32 +847,55 @@ struct BossFormSheet: View {
     private var dynamicGoalExplanation: String {
         switch dynamicGoalType {
         case .weight:
-            return "Example: start 200lb, goal 180lb. Boss HP will regenerate if weight moves away from 180."
+            return "Example: start 180lb, goal 160lb, target 1lb per week. The boss auto-scales to 20 weekly quests worth of HP."
         case .bodyFat:
-            return "Example: start 30%, goal 20%. Boss HP tracks actual body fat trend from Health."
+            return "Example: start 30%, goal 20%, target 1% per week. HP scales to 10 weeks of progress and tracks the real trend from Health."
         case .savings:
-            return "Example: start $0, goal $5000. Update current savings to recalculate boss HP and target quest amount."
+            return "Example: start $0, goal $5000, target $250 per week. HP scales to 20 weekly deposits and updates as savings change."
         case .workoutConsistency:
-            return "Example: start 0, goal 4 weekly workouts. Boss HP drops as HealthKit logs workouts in the active cadence window."
+            return "Example: start 0, goal 12 workouts, target 4 per week. HP scales to 3 weeks of workout quests."
         case .screenTimeDiscipline:
-            return "Example: baseline 180 min social media, target 60 min. Boss HP drops when daily social usage trends toward target."
+            return "Example: baseline 180 min social media, target 60 min, target 10 min per day. HP scales to 12 daily quests."
+        }
+    }
+
+    private var dynamicGoalScenarios: [String] {
+        switch dynamicGoalType {
+        case .weight:
+            return [
+                "A cut for a trip, photo shoot, or summer block.",
+                "A lean bulk capped at a target bodyweight.",
+                "Post-holiday weight recovery with weekly checkpoints."
+            ]
+        case .bodyFat:
+            return [
+                "Dropping from one body-fat range into another over a season.",
+                "Recomp prep where trend changes matter more than scale weight.",
+                "A coaching-style cut with weekly composition targets."
+            ]
+        case .savings:
+            return [
+                "Building an emergency fund over several months.",
+                "Saving for a console, trip, car down payment, or tuition.",
+                "Aggressively paying down a budget target one deposit at a time."
+            ]
+        case .workoutConsistency:
+            return [
+                "Twelve workouts over three weeks before an event.",
+                "Rebuilding gym consistency after a long break.",
+                "Locking in a run, lift, or class streak each week."
+            ]
+        case .screenTimeDiscipline:
+            return [
+                "Reducing social scroll before bed.",
+                "Cutting reels or TikTok time during work weeks.",
+                "A focused exam or launch sprint with lower daily usage caps."
+            ]
         }
     }
 
     private func createBoss() {
-        let dynamicGoal: DynamicBossGoal? = {
-            guard useDynamicGoal else { return nil }
-            return DynamicBossGoal(
-                type: dynamicGoalType,
-                startValue: dynamicStartValue,
-                targetValue: dynamicTargetValue,
-                currentValue: dynamicCurrentValue,
-                cadence: dynamicCadence,
-                perCadenceTarget: dynamicCadenceTarget,
-                generatedQuestID: nil,
-                lastUpdatedAt: Date()
-            )
-        }()
+        let dynamicGoal = draftDynamicGoal
 
         let resolvedTargetStats = dynamicGoal?.type.defaultStatTargets ?? [.intelligence, .willpower]
 
@@ -767,6 +918,126 @@ struct BossFormSheet: View {
         }
 
         dismiss()
+    }
+
+    private func wheelOptions(for input: BossWheelInput) -> [WheelValueOption] {
+        switch input {
+        case .maxHP:
+            return Array(stride(from: 100, through: 10000, by: 100)).map { WheelValueOption(value: Double($0), label: "\($0) HP") }
+        case .dynamicStart, .dynamicCurrent, .dynamicTarget:
+            return dynamicValueOptions(for: dynamicGoalType)
+        case .cadenceTarget:
+            return cadenceTargetOptions(for: dynamicGoalType)
+        }
+    }
+
+    private func wheelBinding(for input: BossWheelInput) -> Binding<Double> {
+        switch input {
+        case .maxHP:
+            return Binding(
+                get: { Double(maxHP) },
+                set: { maxHP = Int($0.rounded()) }
+            )
+        case .dynamicStart:
+            return $dynamicStartValue
+        case .dynamicCurrent:
+            return $dynamicCurrentValue
+        case .dynamicTarget:
+            return $dynamicTargetValue
+        case .cadenceTarget:
+            return $dynamicCadenceTarget
+        }
+    }
+
+    private func dynamicValueOptions(for type: DynamicBossGoalType) -> [WheelValueOption] {
+        switch type {
+        case .savings:
+            return Array(stride(from: 0, through: 20000, by: 50)).map { WheelValueOption(value: Double($0), label: "$\($0)") }
+        case .weight:
+            return Array(stride(from: 80, through: 400, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0) lb") }
+        case .bodyFat:
+            return Array(stride(from: 5, through: 60, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0)%") }
+        case .workoutConsistency:
+            return Array(0...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
+        case .screenTimeDiscipline:
+            return Array(stride(from: 0, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        }
+    }
+
+    private func cadenceTargetOptions(for type: DynamicBossGoalType) -> [WheelValueOption] {
+        switch type {
+        case .savings:
+            return Array(stride(from: 25, through: 5000, by: 25)).map { WheelValueOption(value: Double($0), label: "$\($0)") }
+        case .weight, .bodyFat:
+            return Array(stride(from: 1, through: 40, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0) \(type.unitLabel)") }
+        case .workoutConsistency:
+            return Array(1...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
+        case .screenTimeDiscipline:
+            return Array(stride(from: 5, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        }
+    }
+
+    private func formattedValue(_ value: Double) -> String {
+        if dynamicGoalType == .savings {
+            return String(format: "$%.0f", value)
+        }
+        if value.rounded() == value {
+            return "\(Int(value))"
+        }
+        return String(format: "%.1f", value)
+    }
+
+    @ViewBuilder
+    private func wheelInputPill(label: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Text(label.uppercased())
+                .font(SystemTypography.mono(10, weight: .bold))
+                .foregroundStyle(SystemTheme.textTertiary)
+            Text(value)
+                .font(SystemTypography.mono(14, weight: .bold))
+                .foregroundStyle(SystemTheme.textPrimary)
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(SystemTheme.criticalRed)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(SystemTheme.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+    }
+}
+
+private enum BossWheelInput: String, Identifiable {
+    case maxHP
+    case dynamicStart
+    case dynamicCurrent
+    case dynamicTarget
+    case cadenceTarget
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .maxHP: return "Boss Hit Points"
+        case .dynamicStart: return "Starting Value"
+        case .dynamicCurrent: return "Current Value"
+        case .dynamicTarget: return "Target Value"
+        case .cadenceTarget: return "Cadence Target"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .maxHP: return "Set the overall durability of this boss."
+        case .dynamicStart: return "Choose the metric value where the boss begins."
+        case .dynamicCurrent: return "Set the latest real-world metric value."
+        case .dynamicTarget: return "Choose the value that defeats the boss."
+        case .cadenceTarget: return "Set how much progress is expected each cadence."
+        }
     }
 }
 

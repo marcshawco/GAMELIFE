@@ -230,6 +230,10 @@ struct DynamicBossGoal: Codable {
 
     var unitLabel: String { type.unitLabel }
 
+    var totalGoalAmount: Double {
+        abs(finiteOrZero(targetValue) - finiteOrZero(startValue))
+    }
+
     /// Generic normalized goal progress for increasing or decreasing goals.
     var normalizedProgress: Double {
         let start = finiteOrZero(startValue)
@@ -624,7 +628,10 @@ struct BossFight: QuestProtocol {
         goal.lastUpdatedAt = date
         dynamicGoal = goal
 
-        currentHP = Int((1.0 - goal.normalizedProgress) * Double(maxHP))
+        // Preserve damage dealt through linked quest completions and micro-tasks
+        // when the underlying dynamic metric refreshes.
+        let goalDrivenHP = Int((1.0 - goal.normalizedProgress) * Double(maxHP))
+        currentHP = goalDrivenHP - totalDamageDealt
         currentHP = max(0, min(maxHP, currentHP))
 
         if currentHP <= 0 {

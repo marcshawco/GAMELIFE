@@ -17,6 +17,7 @@ struct QuestsView: View {
     // MARK: - Properties
 
     @EnvironmentObject var gameEngine: GameEngine
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @StateObject private var locationManager = LocationManager.shared
     @StateObject private var healthKitManager = HealthKitManager.shared
     @StateObject private var screenTimeManager = ScreenTimeManager.shared
@@ -31,7 +32,11 @@ struct QuestsView: View {
     @State private var undoDismissTask: Task<Void, Never>?
     @State private var isRefreshingExternalTracking = false
     @State private var liveProgressTick = Date()
+    @State private var highlightedQuestID: UUID?
     @AppStorage("quests.nextUpCollapsed") private var isNextUpCollapsed = false
+    @AppStorage("quests.progressGridCollapsed") private var isProgressGridCollapsed = false
+    @AppStorage("showQuestCompletionGrid") private var showQuestCompletionGrid = true
+    @AppStorage("showQuestNextUpSection") private var showQuestNextUpSection = true
 
     private var sortedQuests: [DailyQuest] {
         gameEngine.dailyQuests.sorted { lhs, rhs in
@@ -62,47 +67,81 @@ struct QuestsView: View {
                 if gameEngine.dailyQuests.isEmpty {
                     EmptyQuestState(onCreateTapped: { showAddSheet = true })
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: SystemSpacing.sm) {
-                            QuestSummaryHeader(quests: gameEngine.dailyQuests)
-                                .padding(.horizontal)
-                                .padding(.top, SystemSpacing.sm)
-
-                            if !nextUpQuests.isEmpty {
-                                NextUpSection(
-                                    quests: nextUpQuests,
-                                    bossImpactText: bossImpactText(for:),
-                                    rewardImpactText: rewardImpactText(for:),
-                                    streakImpactText: streakImpactText(for:),
-                                    isCollapsed: $isNextUpCollapsed
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: SystemSpacing.sm) {
+                                QuestSummaryHeader(
+                                    quests: gameEngine.dailyQuests,
+                                    questHistory: QuestDataManager.shared.loadQuestHistory(),
+                                    showsGrid: showQuestCompletionGrid,
+                                    isGridCollapsed: $isProgressGridCollapsed
                                 )
-                                .padding(.horizontal)
+                                    .padding(.horizontal)
+                                    .padding(.top, SystemSpacing.sm)
+
+                                if showQuestNextUpSection && !nextUpQuests.isEmpty {
+                                    NextUpSection(
+                                        quests: nextUpQuests,
+                                        bossImpactText: bossImpactText(for:),
+                                        rewardImpactText: rewardImpactText(for:),
+                                        streakImpactText: streakImpactText(for:),
+                                        isCollapsed: $isNextUpCollapsed
+                                    )
+                                    .padding(.horizontal)
+                                }
+
+                                ForEach(sortedQuests) { quest in
+                                    QuestRowView(
+                                        quest: quest,
+                                        locationManager: locationManager,
+                                        healthKitManager: healthKitManager,
+                                        screenTimeManager: screenTimeManager,
+                                        permissionManager: permissionManager,
+                                        liveProgressTick: liveProgressTick,
+                                        impactBossText: bossImpactText(for: quest),
+                                        impactRewardsText: rewardImpactText(for: quest),
+                                        impactStreakText: streakImpactText(for: quest),
+                                        onComplete: { completeQuest(quest) },
+                                        onShowActions: { questActionTarget = quest }
+                                    )
+                                    .padding(.horizontal)
+                                    .id(quest.id)
+                                    .overlay {
+                                        if highlightedQuestID == quest.id {
+                                            RoundedRectangle(cornerRadius: SystemRadius.medium)
+                                                .stroke(SystemTheme.primaryBlue, lineWidth: 2)
+                                                .padding(.horizontal, SystemSpacing.sm)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.bottom, SystemSpacing.lg)
+                        }
+                        .refreshable {
+                            await refreshExternalTracking()
+                        }
+                        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
+                            liveProgressTick = now
+                        }
+                        .onChange(of: deepLinkManager.pendingLink) { _, link in
+                            guard let link else { return }
+                            guard case let .quests(questID) = link.route else { return }
+                            guard let questID else { return }
+
+                            highlightedQuestID = questID
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo(questID, anchor: .top)
                             }
 
-                            ForEach(sortedQuests) { quest in
-                                QuestRowView(
-                                    quest: quest,
-                                    locationManager: locationManager,
-                                    healthKitManager: healthKitManager,
-                                    screenTimeManager: screenTimeManager,
-                                    permissionManager: permissionManager,
-                                    liveProgressTick: liveProgressTick,
-                                    impactBossText: bossImpactText(for: quest),
-                                    impactRewardsText: rewardImpactText(for: quest),
-                                    impactStreakText: streakImpactText(for: quest),
-                                    onComplete: { completeQuest(quest) },
-                                    onShowActions: { questActionTarget = quest }
-                                )
-                                .padding(.horizontal)
+                            Task {
+                                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                await MainActor.run {
+                                    if highlightedQuestID == questID {
+                                        highlightedQuestID = nil
+                                    }
+                                }
                             }
                         }
-                        .padding(.bottom, SystemSpacing.lg)
-                    }
-                    .refreshable {
-                        await refreshExternalTracking()
-                    }
-                    .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
-                        liveProgressTick = now
                     }
                 }
             }
@@ -320,10 +359,25 @@ struct QuestsView: View {
     }
 }
 
+private func uiSafeUnitProgress(_ value: Double) -> Double {
+    guard value.isFinite else { return 0 }
+    return min(1, max(0, value))
+}
+
 // MARK: - Quest Summary Header
 
 struct QuestSummaryHeader: View {
     let quests: [DailyQuest]
+    let questHistory: [QuestHistoryRecord]
+    let showsGrid: Bool
+    @Binding var isGridCollapsed: Bool
+
+    private struct CompletionDay: Identifiable {
+        let date: Date
+        let count: Int
+
+        var id: Date { date }
+    }
 
     private var completedCount: Int {
         quests.filter { $0.status == .completed }.count
@@ -338,8 +392,131 @@ struct QuestSummaryHeader: View {
         return min(1, max(0, Double(completedCount) / Double(totalCount)))
     }
 
+    private var completionDays: [CompletionDay] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let daysToShow = 7 * 26
+        let startDate = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: today) ?? today
+
+        let groupedCounts = Dictionary(grouping: questHistory) { record in
+            calendar.startOfDay(for: record.completedAt)
+        }.mapValues(\.count)
+
+        return (0..<daysToShow).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else { return nil }
+            return CompletionDay(date: date, count: groupedCounts[date, default: 0])
+        }
+    }
+
+    private var weekColumns: [[CompletionDay]] {
+        stride(from: 0, to: completionDays.count, by: 7).map { start in
+            Array(completionDays[start..<min(start + 7, completionDays.count)])
+        }
+    }
+
+    private var maxDailyCompletions: Int {
+        max(questHistory.map(\.completedAt).isEmpty ? 0 : completionDays.map(\.count).max() ?? 0, 1)
+    }
+
+    private var contributionSummaryText: String {
+        let total = questHistory.count
+        if total == 1 {
+            return "1 quest completed in the tracked window"
+        }
+        return "\(total) quests completed in the tracked window"
+    }
+
     var body: some View {
         VStack(spacing: SystemSpacing.sm) {
+            if showsGrid {
+                VStack(spacing: 0) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isGridCollapsed.toggle()
+                        }
+                        HapticManager.shared.selection()
+                    } label: {
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(contributionSummaryText)
+                                    .font(SystemTypography.headline)
+                                    .foregroundStyle(SystemTheme.textPrimary)
+
+                                Text("Daily quest completion heatmap")
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textSecondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: isGridCollapsed ? "chevron.down.circle.fill" : "chevron.up.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if !isGridCollapsed {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(alignment: .center, spacing: 4) {
+                                        ForEach(weekColumns.indices, id: \.self) { index in
+                                            let week = weekColumns[index]
+                                            let monthLabel = monthLabel(for: week, index: index)
+                                            Text(monthLabel)
+                                                .font(SystemTypography.captionSmall)
+                                                .foregroundStyle(SystemTheme.textTertiary)
+                                                .frame(width: 12 * 4 + 12, alignment: .leading)
+                                        }
+                                    }
+
+                                    HStack(alignment: .top, spacing: 4) {
+                                        ForEach(weekColumns.indices, id: \.self) { columnIndex in
+                                            VStack(spacing: 4) {
+                                                ForEach(weekColumns[columnIndex]) { day in
+                                                    RoundedRectangle(cornerRadius: 3)
+                                                        .fill(color(for: day.count))
+                                                        .frame(width: 12, height: 12)
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 3)
+                                                                .stroke(SystemTheme.borderSecondary.opacity(0.35), lineWidth: 0.5)
+                                                        )
+                                                        .accessibilityLabel(accessibilityLabel(for: day))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+
+                            HStack(spacing: 6) {
+                                Text("Less")
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textTertiary)
+
+                                ForEach(0..<5, id: \.self) { level in
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(legendColor(for: level))
+                                        .frame(width: 12, height: 12)
+                                }
+
+                                Text("More")
+                                    .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textTertiary)
+                            }
+                        }
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .padding()
+                .background(SystemTheme.backgroundTertiary)
+                .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+            }
+
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Today's Progress")
@@ -384,6 +561,62 @@ struct QuestSummaryHeader: View {
         .padding()
         .background(SystemTheme.backgroundTertiary)
         .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+    }
+
+    private func monthLabel(for week: [CompletionDay], index: Int) -> String {
+        guard let firstDay = week.first?.date else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        let label = formatter.string(from: firstDay)
+
+        if index == 0 {
+            return label
+        }
+
+        let previousMonth = Calendar.current.component(.month, from: weekColumns[index - 1].first?.date ?? firstDay)
+        let currentMonth = Calendar.current.component(.month, from: firstDay)
+        return previousMonth == currentMonth ? "" : label
+    }
+
+    private func color(for count: Int) -> Color {
+        guard count > 0 else {
+            return SystemTheme.backgroundSecondary
+        }
+
+        let ratio = min(1, Double(count) / Double(maxDailyCompletions))
+        switch ratio {
+        case 0..<0.25:
+            return SystemTheme.successGreen.opacity(0.25)
+        case 0.25..<0.5:
+            return SystemTheme.successGreen.opacity(0.45)
+        case 0.5..<0.75:
+            return SystemTheme.successGreen.opacity(0.7)
+        default:
+            return SystemTheme.successGreen
+        }
+    }
+
+    private func legendColor(for level: Int) -> Color {
+        switch level {
+        case 0:
+            return SystemTheme.backgroundSecondary
+        case 1:
+            return SystemTheme.successGreen.opacity(0.25)
+        case 2:
+            return SystemTheme.successGreen.opacity(0.45)
+        case 3:
+            return SystemTheme.successGreen.opacity(0.7)
+        default:
+            return SystemTheme.successGreen
+        }
+    }
+
+    private func accessibilityLabel(for day: CompletionDay) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        let formattedDate = formatter.string(from: day.date)
+        let countText = day.count == 1 ? "1 quest completed" : "\(day.count) quests completed"
+        return "\(formattedDate), \(countText)"
     }
 }
 
@@ -557,7 +790,7 @@ struct QuestRowView: View {
 
                     Spacer()
 
-                    Text("\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(displayedProgress * 100))%")
+                    Text("\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%")
                         .font(SystemTypography.mono(10, weight: .semibold))
                         .foregroundStyle(quest.status == .completed ? SystemTheme.successGreen : SystemTheme.primaryBlue)
                         .lineLimit(1)
@@ -573,7 +806,7 @@ struct QuestRowView: View {
 
                         Capsule()
                             .fill(quest.status == .completed ? SystemTheme.successGreen : SystemTheme.primaryBlue)
-                            .frame(width: geometry.size.width * displayedProgress)
+                            .frame(width: max(0, geometry.size.width) * uiSafeUnitProgress(displayedProgress))
                     }
                 }
                 .frame(height: 3)
@@ -595,14 +828,14 @@ struct QuestRowView: View {
     private var displayedProgress: Double {
         if quest.trackingType == .location {
             _ = liveProgressTick
-            return locationManager.liveLocationProgress(for: quest, now: liveProgressTick)
+            return uiSafeUnitProgress(locationManager.liveLocationProgress(for: quest, now: liveProgressTick))
         }
-        return quest.normalizedProgress
+        return uiSafeUnitProgress(quest.normalizedProgress)
     }
 
     private var displayedMetricValue: Double {
         if quest.status == .completed { return max(1, quest.targetValue) }
-        return min(max(0, displayedProgress * max(1, quest.targetValue)), max(1, quest.targetValue))
+        return min(max(0, uiSafeUnitProgress(displayedProgress) * max(1, quest.targetValue)), max(1, quest.targetValue))
     }
 }
 

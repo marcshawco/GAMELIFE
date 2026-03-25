@@ -469,6 +469,7 @@ struct NameEntryPhaseView: View {
                 isNameFieldFocused = true
             }
         }
+        .keyboardDismissToolbar()
     }
 }
 
@@ -565,6 +566,7 @@ struct OriginStoryPhaseView: View {
                 showContent = true
             }
         }
+        .keyboardDismissToolbar()
     }
 }
 

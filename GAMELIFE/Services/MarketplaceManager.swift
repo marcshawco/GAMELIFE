@@ -181,6 +181,7 @@ class MarketplaceManager: ObservableObject {
     func purchaseReward(_ reward: MarketplaceReward, player: inout Player) -> PurchaseResult {
         // Check if player has enough gold
         guard player.gold >= reward.cost else {
+            AnalyticsManager.shared.trackFeature("shop_purchase_failed_insufficient_gold")
             HapticManager.shared.purchaseFailed()
             return PurchaseResult(
                 success: false,
@@ -189,6 +190,7 @@ class MarketplaceManager: ObservableObject {
         }
 
         if let healthRestore = reward.healthRestore, healthRestore > 0, player.currentHP >= player.maxHP {
+            AnalyticsManager.shared.trackFeature("shop_purchase_blocked_full_health")
             HapticManager.shared.warning()
             return PurchaseResult(
                 success: false,
@@ -198,6 +200,8 @@ class MarketplaceManager: ObservableObject {
 
         // Deduct gold
         player.gold -= reward.cost
+        AnalyticsManager.shared.trackFeature("shop_purchase_completed")
+        AnalyticsManager.shared.trackFeature("shop_category_\(reward.category.rawValue)")
 
         // Create purchase record
         var purchase = RewardPurchase(
@@ -298,6 +302,7 @@ class MarketplaceManager: ObservableObject {
             title: purchase.reward.name,
             detail: "Shop reward redeemed"
         )
+        AnalyticsManager.shared.trackFeature("shop_reward_redeemed")
         HapticManager.shared.rewardRedeemed()
 
         savePurchaseHistory()
@@ -323,6 +328,7 @@ class MarketplaceManager: ObservableObject {
 
         availableRewards.append(reward)
         saveCustomRewards()
+        AnalyticsManager.shared.trackFeature("custom_reward_created")
     }
 
     /// Remove a custom reward
@@ -330,6 +336,7 @@ class MarketplaceManager: ObservableObject {
         guard reward.isCustom else { return }
         availableRewards.removeAll { $0.id == reward.id }
         saveCustomRewards()
+        AnalyticsManager.shared.trackFeature("custom_reward_deleted")
     }
 
     // MARK: - Persistence

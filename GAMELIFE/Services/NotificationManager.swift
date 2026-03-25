@@ -45,6 +45,14 @@ class NotificationManager: NSObject, ObservableObject {
     private let questCompletionModeStoreKey = "questCompletionNotificationMode"
     private let questReminderCategoryIdentifier = "QUEST_REMINDER"
     private let completeQuestActionIdentifier = "COMPLETE_QUEST"
+    private let engagementHistoryStoreKey = "engagementOpenHistory"
+    private let lastEngagementOpenAtStoreKey = "lastEngagementOpenAt"
+    private let engagementReminderIdentifier = "smart_engagement_reminder"
+    private let inactivityShutdownIdentifier = "smart_engagement_shutdown"
+    private let dailyReminderEnabledStoreKey = "dailyReminderEnabled"
+    private let dailyReminderHourStoreKey = "dailyReminderHour"
+    private let engagementHistoryLookbackDays = 28
+    private let inactivityShutdownDays = 7
 
     enum QuestCompletionNotificationMode: String, CaseIterable, Identifiable {
         case immediate
@@ -65,6 +73,10 @@ class NotificationManager: NSObject, ObservableObject {
         let xp: Int
         let gold: Int
         let timestamp: Date
+    }
+
+    private struct EngagementOpenRecord: Codable {
+        let openedAt: Date
     }
 
     var questCompletionNotificationMode: QuestCompletionNotificationMode {
@@ -91,6 +103,12 @@ class NotificationManager: NSObject, ObservableObject {
         checkAuthorizationStatus()
         setupNotificationCategories()
         updateQueuedDigestCount()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
 
     // MARK: - Authorization
@@ -103,6 +121,9 @@ class NotificationManager: NSObject, ObservableObject {
 
         await MainActor.run {
             self.isAuthorized = granted
+            if granted {
+                self.refreshPersonalizedReminderPlan()
+            }
         }
     }
 
@@ -295,28 +316,9 @@ class NotificationManager: NSObject, ObservableObject {
 
     /// Send daily quest reminder
     func scheduleDailyQuestReminder(at hour: Int, minute: Int) {
-        let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] Daily Quests Await"
-        content.body = "Your daily quests have reset. Begin your training, Hunter."
-        content.sound = .default
-        content.categoryIdentifier = "DAILY_REMINDER"
-
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: dateComponents,
-            repeats: true
-        )
-
-        let request = UNNotificationRequest(
-            identifier: "daily_quest_reminder",
-            content: content,
-            trigger: trigger
-        )
-
-        UNUserNotificationCenter.current().add(request)
+        UserDefaults.standard.set(hour, forKey: dailyReminderHourStoreKey)
+        UserDefaults.standard.set(true, forKey: dailyReminderEnabledStoreKey)
+        refreshPersonalizedReminderPlan()
     }
 
     /// Send evening reminder for incomplete quests
@@ -390,6 +392,257 @@ class NotificationManager: NSObject, ObservableObject {
                 .filter { $0.hasPrefix("quest_reminder_") }
             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
         }
+    }
+
+    // MARK: - Personalized Engagement Notifications
+
+    @objc private func handleAppDidBecomeActive() {
+        recordAppOpen()
+        refreshPersonalizedReminderPlan()
+    }
+
+    func refreshPersonalizedReminderPlan() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [engagementReminderIdentifier, inactivityShutdownIdentifier, "daily_quest_reminder"]
+        )
+
+        guard isAuthorized, isDailyReminderEnabled else { return }
+
+        scheduleNextEngagementReminder()
+        scheduleInactivityShutdownNotification()
+    }
+
+    private var isDailyReminderEnabled: Bool {
+        UserDefaults.standard.object(forKey: dailyReminderEnabledStoreKey) as? Bool ?? true
+    }
+
+    private var fallbackDailyReminderHour: Int {
+        let hour = UserDefaults.standard.integer(forKey: dailyReminderHourStoreKey)
+        return (0...23).contains(hour) ? hour : 8
+    }
+
+    private func recordAppOpen(at date: Date = Date()) {
+        var history = loadEngagementHistory()
+        if let last = history.last?.openedAt, date.timeIntervalSince(last) < 15 * 60 {
+            UserDefaults.standard.set(date, forKey: lastEngagementOpenAtStoreKey)
+            return
+        }
+
+        history.append(EngagementOpenRecord(openedAt: date))
+        history = history.filter {
+            guard let cutoff = Calendar.current.date(byAdding: .day, value: -engagementHistoryLookbackDays, to: date) else {
+                return true
+            }
+            return $0.openedAt >= cutoff
+        }
+
+        if let data = try? JSONEncoder().encode(history) {
+            UserDefaults.standard.set(data, forKey: engagementHistoryStoreKey)
+        }
+        UserDefaults.standard.set(date, forKey: lastEngagementOpenAtStoreKey)
+    }
+
+    private func loadEngagementHistory() -> [EngagementOpenRecord] {
+        guard let data = UserDefaults.standard.data(forKey: engagementHistoryStoreKey),
+              let history = try? JSONDecoder().decode([EngagementOpenRecord].self, from: data) else {
+            return []
+        }
+        return history
+    }
+
+    private func scheduleNextEngagementReminder() {
+        let nextDate = nextPreferredEngagementDate(after: Date())
+        let content = personalizedEngagementContent()
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: nextDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: engagementReminderIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func nextPreferredEngagementDate(after now: Date) -> Date {
+        let history = loadEngagementHistory()
+        let calendar = Calendar.current
+        let learnedMinutes = learnedReminderMinutes(from: history)
+
+        if let learnedMinutes {
+            let hour = learnedMinutes / 60
+            let minute = learnedMinutes % 60
+
+            var bestCandidate: Date?
+            for offset in 0...2 {
+                guard let day = calendar.date(byAdding: .day, value: offset, to: now) else { continue }
+                var components = calendar.dateComponents([.year, .month, .day], from: day)
+                components.hour = hour
+                components.minute = minute
+                guard let candidate = calendar.date(from: components), candidate > now.addingTimeInterval(45 * 60) else {
+                    continue
+                }
+                bestCandidate = candidate
+                break
+            }
+
+            if let bestCandidate {
+                return bestCandidate
+            }
+        }
+
+        var fallbackComponents = calendar.dateComponents([.year, .month, .day], from: now)
+        fallbackComponents.hour = fallbackDailyReminderHour
+        fallbackComponents.minute = 0
+        let fallbackToday = calendar.date(from: fallbackComponents) ?? now.addingTimeInterval(3600)
+        if fallbackToday > now.addingTimeInterval(45 * 60) {
+            return fallbackToday
+        }
+        return calendar.date(byAdding: .day, value: 1, to: fallbackToday) ?? now.addingTimeInterval(24 * 3600)
+    }
+
+    private func learnedReminderMinutes(from history: [EngagementOpenRecord]) -> Int? {
+        guard history.count >= 4 else { return nil }
+
+        var buckets: [Int: Int] = [:]
+        for record in history {
+            let components = Calendar.current.dateComponents([.hour, .minute], from: record.openedAt)
+            let hour = components.hour ?? 0
+            let minute = components.minute ?? 0
+            let bucket = hour * 2 + (minute >= 30 ? 1 : 0)
+            buckets[bucket, default: 0] += 1
+        }
+
+        guard let best = buckets.max(by: { lhs, rhs in
+            if lhs.value == rhs.value { return lhs.key > rhs.key }
+            return lhs.value < rhs.value
+        }), best.value >= 2 else {
+            return nil
+        }
+
+        return best.key * 30
+    }
+
+    private func personalizedEngagementContent() -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        let profile = personalizedReminderProfile()
+        content.title = profile.title
+        content.body = profile.body
+        content.sound = .default
+        content.categoryIdentifier = "DAILY_REMINDER"
+        content.interruptionLevel = .active
+        return content
+    }
+
+    private func personalizedReminderProfile() -> (title: String, body: String) {
+        let engine = GameEngine.shared
+        let player = engine.player
+        let quests = engine.dailyQuests.filter { $0.status != .completed }
+        let urgentQuest = mostUrgentQuest(from: quests, playerLevel: player.level, bosses: engine.activeBossFights)
+        let activeBoss = currentBossTarget(from: engine.activeBossFights)
+
+        if let urgentQuest, let activeBoss {
+            return (
+                title: "[SYSTEM] Return Window Detected",
+                body: "\(urgentQuest.title) is your best next move. Push back against \(activeBoss.title) before it stalls your progress."
+            )
+        }
+
+        if let urgentQuest {
+            return (
+                title: "[SYSTEM] Your Momentum Window Is Open",
+                body: "\(urgentQuest.title) is still waiting. A short session now keeps your streak and XP pipeline alive."
+            )
+        }
+
+        if let activeBoss {
+            return (
+                title: "[SYSTEM] Boss Pressure Rising",
+                body: "\(activeBoss.title) is still standing. Log in and chip away before the system loses your rhythm."
+            )
+        }
+
+        return (
+            title: "[SYSTEM] Check-In Opportunity",
+            body: "Your build is quiet right now. Log in, review your board, and set the next chain of progress in motion."
+        )
+    }
+
+    private func scheduleInactivityShutdownNotification() {
+        let referenceDate = (UserDefaults.standard.object(forKey: lastEngagementOpenAtStoreKey) as? Date) ?? Date()
+        guard let triggerDate = Calendar.current.date(byAdding: .day, value: inactivityShutdownDays, to: referenceDate) else {
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "[SYSTEM] Transmission Ending"
+        content.body = inactivityShutdownBody()
+        content.sound = .default
+        content.categoryIdentifier = "DAILY_REMINDER"
+
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: inactivityShutdownIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func inactivityShutdownBody() -> String {
+        if let boss = currentBossTarget(from: GameEngine.shared.activeBossFights) {
+            return "No activity detected for 7 days. PRAXIS is standing down for now. \(boss.title) remains undefeated."
+        }
+        return "No activity detected for 7 days. PRAXIS is standing down for now. Reopen the app whenever you're ready to resume the climb."
+    }
+
+    private func mostUrgentQuest(from quests: [DailyQuest], playerLevel: Int, bosses: [BossFight]) -> DailyQuest? {
+        quests.max { lhs, rhs in
+            questPriorityScore(lhs, playerLevel: playerLevel, bosses: bosses) < questPriorityScore(rhs, playerLevel: playerLevel, bosses: bosses)
+        }
+    }
+
+    private func currentBossTarget(from bosses: [BossFight]) -> BossFight? {
+        bosses
+            .filter { !$0.isDefeated }
+            .sorted { lhs, rhs in
+                switch (lhs.deadline, rhs.deadline) {
+                case let (left?, right?) where left != right:
+                    return left < right
+                case (nil, let right?):
+                    return false
+                case (let left?, nil):
+                    return true
+                default:
+                    if lhs.hpPercentage == rhs.hpPercentage {
+                        return lhs.title < rhs.title
+                    }
+                    return lhs.hpPercentage < rhs.hpPercentage
+                }
+            }
+            .first
+    }
+
+    private func questPriorityScore(_ quest: DailyQuest, playerLevel: Int, bosses: [BossFight]) -> Double {
+        let now = Date()
+        let secondsLeft = max(60, quest.expiresAt.timeIntervalSince(now))
+        let dueSoonScore = 250_000 / secondsLeft
+        let rewardValue = Double(quest.xpReward) + Double(quest.isOptional ? 0 : quest.goldReward * 3)
+        let streakRisk = (!quest.isOptional && quest.resolvedFrequency == .daily)
+            ? (1.0 - quest.normalizedProgress) * 40.0
+            : 0
+        let bossImpact = Double(estimatedBossDamage(for: quest, playerLevel: playerLevel, bosses: bosses))
+        return dueSoonScore + (rewardValue * 0.3) + streakRisk + (bossImpact * 1.6)
+    }
+
+    private func estimatedBossDamage(for quest: DailyQuest, playerLevel: Int, bosses: [BossFight]) -> Int {
+        guard let linkedBossID = quest.linkedBossID,
+              let boss = bosses.first(where: { $0.id == linkedBossID && !$0.isDefeated }) else {
+            return 0
+        }
+        let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: playerLevel)
+        let estimated = max(1, Int(Double(baseDamage) * 0.8))
+        return min(estimated, boss.currentHP)
     }
 
     // MARK: - Level Up Notifications
@@ -740,10 +993,12 @@ struct NotificationSettingsView: View {
                         color: SystemTheme.primaryBlue
                     )
                     .onChange(of: dailyReminderEnabled) { _, enabled in
+                        UserDefaults.standard.set(enabled, forKey: "dailyReminderEnabled")
                         if enabled {
                             notificationManager.scheduleDailyQuestReminder(at: dailyReminderHour, minute: 0)
                         } else {
                             notificationManager.cancelNotification(identifier: "daily_quest_reminder")
+                            notificationManager.refreshPersonalizedReminderPlan()
                         }
                     }
 

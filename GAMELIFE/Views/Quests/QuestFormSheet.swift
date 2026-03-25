@@ -77,6 +77,7 @@ struct QuestFormSheet: View {
     // UI state
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var activeWheelInput: QuestWheelInput?
 
     private var linkableBosses: [BossFight] {
         gameEngine.activeBossFights.sorted {
@@ -315,6 +316,17 @@ struct QuestFormSheet: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
+            .sheet(item: $activeWheelInput) { input in
+                BottomWheelValuePickerSheet(
+                    title: input.title,
+                    subtitle: input.subtitle,
+                    accentColor: SystemTheme.primaryBlue,
+                    options: wheelOptions(for: input),
+                    selection: wheelBinding(for: input),
+                    confirmTitle: "Apply"
+                )
+            }
+            .keyboardDismissToolbar()
             .onAppear(perform: loadExistingQuest)
             .onChange(of: trackingType) { _, newType in
                 if !AppFeatureFlags.screenTimeEnabled && newType == .screenTime {
@@ -359,12 +371,15 @@ struct QuestFormSheet: View {
                     .foregroundStyle(SystemTheme.textSecondary)
 
                 HStack {
-                    Stepper(value: $targetValue, in: 1...1000, step: 1) {
-                        Text("\(Int(targetValue))")
-                            .font(SystemTypography.mono(16, weight: .bold))
+                    Button {
+                        HapticManager.shared.selection()
+                        activeWheelInput = .manualTarget
+                    } label: {
+                        wheelInputPill(label: "Count", value: "\(Int(targetValue))")
                     }
+                    .buttonStyle(.plain)
 
-                    TextField("unit", text: $unit)
+                    TextField("Unit", text: $unit)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 100)
                 }
@@ -380,10 +395,14 @@ struct QuestFormSheet: View {
             HStack {
                 Text("Target")
                     .foregroundStyle(SystemTheme.textSecondary)
-                TextField("", value: $targetValue, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.numberPad)
-                    .frame(width: 100)
+                Spacer()
+                Button {
+                    HapticManager.shared.selection()
+                    activeWheelInput = .healthTarget
+                } label: {
+                    wheelInputPill(label: healthKitType.unit, value: formattedTargetValue)
+                }
+                .buttonStyle(.plain)
                 Text(healthKitType.unit)
                     .foregroundStyle(SystemTheme.textSecondary)
             }
@@ -420,10 +439,14 @@ struct QuestFormSheet: View {
                 HStack {
                     Text("Target duration")
                         .foregroundStyle(SystemTheme.textSecondary)
-                    TextField("", value: $targetValue, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .keyboardType(.numberPad)
-                        .frame(width: 100)
+                    Spacer()
+                    Button {
+                        HapticManager.shared.selection()
+                        activeWheelInput = .screenTimeTarget
+                    } label: {
+                        wheelInputPill(label: "Minutes", value: "\(Int(targetValue))")
+                    }
+                    .buttonStyle(.plain)
                     Text("minutes")
                         .foregroundStyle(SystemTheme.textSecondary)
                 }
@@ -506,19 +529,27 @@ struct QuestFormSheet: View {
             HStack {
                 Text("Minimum stay")
                     .foregroundStyle(SystemTheme.textSecondary)
-                Stepper(value: $targetValue, in: 5...240, step: 5) {
-                    Text("\(Int(targetValue)) minutes")
-                        .font(SystemTypography.mono(14, weight: .semibold))
+                Spacer()
+                Button {
+                    HapticManager.shared.selection()
+                    activeWheelInput = .locationDuration
+                } label: {
+                    wheelInputPill(label: "Stay", value: "\(Int(targetValue)) min")
                 }
+                .buttonStyle(.plain)
             }
 
             HStack {
                 Text("Tracking radius")
                     .foregroundStyle(SystemTheme.textSecondary)
-                Stepper(value: $locationRadiusMeters, in: 100...1609, step: 50) {
-                    Text("\(radiusLabel)")
-                        .font(SystemTypography.mono(14, weight: .semibold))
+                Spacer()
+                Button {
+                    HapticManager.shared.selection()
+                    activeWheelInput = .locationRadius
+                } label: {
+                    wheelInputPill(label: "Radius", value: radiusLabel)
                 }
+                .buttonStyle(.plain)
             }
 
             if let locationCoordinate {
@@ -923,6 +954,82 @@ struct QuestFormSheet: View {
         return String(format: "%.2f mi (%.0f m)", miles, locationRadiusMeters)
     }
 
+    private var formattedTargetValue: String {
+        if targetValue.rounded() == targetValue {
+            return "\(Int(targetValue))"
+        }
+        return String(format: "%.1f", targetValue)
+    }
+
+    private func wheelOptions(for input: QuestWheelInput) -> [WheelValueOption] {
+        switch input {
+        case .manualTarget:
+            return Array(1...100).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .healthTarget:
+            return healthTargetOptions
+        case .screenTimeTarget:
+            return Array(stride(from: 5, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        case .locationDuration:
+            return Array(stride(from: 5, through: 240, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
+        case .locationRadius:
+            return Array(stride(from: 100, through: 1600, by: 50)).map { value in
+                let miles = Double(value) / 1609.34
+                return WheelValueOption(value: Double(value), label: String(format: "%.2f mi • %dm", miles, value))
+            }
+        }
+    }
+
+    private var healthTargetOptions: [WheelValueOption] {
+        switch healthKitType {
+        case .steps:
+            return Array(stride(from: 1000, through: 30000, by: 500)).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .distance, .sleep:
+            return Array(stride(from: 1, through: 20, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .activeEnergy:
+            return Array(stride(from: 50, through: 2000, by: 50)).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .exerciseMinutes, .mindfulness:
+            return Array(stride(from: 5, through: 240, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .workoutCount:
+            return Array(1...14).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .standHours:
+            return Array(1...24).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        case .water:
+            return Array(stride(from: 1, through: 20, by: 1)).map { WheelValueOption(value: Double($0), label: "\($0)") }
+        }
+    }
+
+    private func wheelBinding(for input: QuestWheelInput) -> Binding<Double> {
+        switch input {
+        case .manualTarget, .healthTarget, .screenTimeTarget, .locationDuration:
+            return $targetValue
+        case .locationRadius:
+            return $locationRadiusMeters
+        }
+    }
+
+    @ViewBuilder
+    private func wheelInputPill(label: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Text(label.uppercased())
+                .font(SystemTypography.mono(10, weight: .bold))
+                .foregroundStyle(SystemTheme.textTertiary)
+            Text(value)
+                .font(SystemTypography.mono(14, weight: .bold))
+                .foregroundStyle(SystemTheme.textPrimary)
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(SystemTheme.primaryBlue)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(SystemTheme.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+        )
+    }
+
     private func openValidatedLocationInMaps(_ coordinate: LocationCoordinate) {
         let placemark = MKPlacemark(
             coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude)
@@ -968,6 +1075,36 @@ struct QuestFormSheet: View {
         }
 
         return fallback
+    }
+}
+
+private enum QuestWheelInput: String, Identifiable {
+    case manualTarget
+    case healthTarget
+    case screenTimeTarget
+    case locationDuration
+    case locationRadius
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .manualTarget: return "Quest Target"
+        case .healthTarget: return "Health Target"
+        case .screenTimeTarget: return "Usage Limit"
+        case .locationDuration: return "Minimum Stay"
+        case .locationRadius: return "Tracking Radius"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .manualTarget: return "Choose how many actions define success for this quest."
+        case .healthTarget: return "Set the amount needed for this auto-tracked target."
+        case .screenTimeTarget: return "Pick the number of minutes tied to completion."
+        case .locationDuration: return "Set how long the user must stay at the location."
+        case .locationRadius: return "Choose how tight the location tracking zone should be."
+        }
     }
 }
 

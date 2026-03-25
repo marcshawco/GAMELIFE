@@ -260,6 +260,7 @@ struct StatusStatModule: View {
                         icon: "hexagon",
                         isSelected: displayMode == .radar
                     ) {
+                        HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.18)) {
                             displayMode = .radar
                         }
@@ -269,6 +270,7 @@ struct StatusStatModule: View {
                         icon: "list.bullet.rectangle",
                         isSelected: displayMode == .grid
                     ) {
+                        HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.18)) {
                             displayMode = .grid
                         }
@@ -833,8 +835,8 @@ struct TrophyRoomView: View {
                 title: Text(achievement.title),
                 message: Text(
                     unlocked
-                    ? "\(achievement.description)\n\nUnlocked."
-                    : "\(achievement.description)\n\n\(achievement.requirementText)\nProgress: \(progress.current)/\(progress.target)"
+                    ? "\(achievement.description)\n\nRewards: \(achievement.rewardSummary)\n\nUnlocked."
+                    : "\(achievement.description)\n\n\(achievement.requirementText)\nProgress: \(progress.current)/\(progress.target)\n\nRewards: \(achievement.rewardSummary)"
                 ),
                 dismissButton: .default(Text("OK"))
             )

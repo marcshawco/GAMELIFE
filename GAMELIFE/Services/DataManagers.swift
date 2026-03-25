@@ -401,6 +401,8 @@ class ActivityLogDataManager {
     static let shared = ActivityLogDataManager()
 
     private let activityLogKey = "gamelife_recent_activity"
+    private let minimumRetentionWindow: TimeInterval = 24 * 60 * 60
+    private let maxRetainedEntries = 250
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -412,7 +414,14 @@ class ActivityLogDataManager {
         }
 
         do {
-            return try decoder.decode([ActivityLogEntry].self, from: data)
+            let entries = try decoder.decode([ActivityLogEntry].self, from: data)
+            let trimmedEntries = trimmedEntriesPreservingRetentionWindow(entries)
+
+            if trimmedEntries.count != entries.count {
+                saveActivityLog(trimmedEntries)
+            }
+
+            return trimmedEntries
         } catch {
             print("[SYSTEM] Failed to load recent activity: \(error)")
             return []
@@ -421,22 +430,33 @@ class ActivityLogDataManager {
 
     func saveActivityLog(_ entries: [ActivityLogEntry]) {
         do {
-            let data = try encoder.encode(entries)
+            let trimmedEntries = trimmedEntriesPreservingRetentionWindow(entries)
+            let data = try encoder.encode(trimmedEntries)
             UserDefaults.standard.set(data, forKey: activityLogKey)
         } catch {
             print("[SYSTEM] Failed to save recent activity: \(error)")
         }
     }
 
-    func appendActivity(_ entry: ActivityLogEntry, maxEntries: Int = 100) {
+    func appendActivity(_ entry: ActivityLogEntry) {
         var entries = loadActivityLog()
         entries.insert(entry, at: 0)
+        saveActivityLog(entries)
+    }
 
-        if entries.count > maxEntries {
-            entries = Array(entries.prefix(maxEntries))
+    private func trimmedEntriesPreservingRetentionWindow(_ entries: [ActivityLogEntry], now: Date = Date()) -> [ActivityLogEntry] {
+        let sortedEntries = entries.sorted { $0.timestamp > $1.timestamp }
+        let retentionCutoff = now.addingTimeInterval(-minimumRetentionWindow)
+
+        let guaranteedEntries = sortedEntries.filter { $0.timestamp >= retentionCutoff }
+        let olderEntries = sortedEntries.filter { $0.timestamp < retentionCutoff }
+
+        if guaranteedEntries.count >= maxRetainedEntries {
+            return guaranteedEntries
         }
 
-        saveActivityLog(entries)
+        let remainingCapacity = max(0, maxRetainedEntries - guaranteedEntries.count)
+        return guaranteedEntries + olderEntries.prefix(remainingCapacity)
     }
 }
 
@@ -606,6 +626,9 @@ class SettingsManager {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let soundEnabled = "soundEnabled"
         static let hapticEnabled = "hapticEnabled"
+        static let useCustomAppFont = "useCustomAppFont"
+        static let showQuestCompletionGrid = "showQuestCompletionGrid"
+        static let showQuestNextUpSection = "showQuestNextUpSection"
         static let dailyReminderTime = "dailyReminderTime"
         static let eveningReminderEnabled = "eveningReminderEnabled"
         static let streakAlertsEnabled = "streakAlertsEnabled"
@@ -632,6 +655,21 @@ class SettingsManager {
     var hapticEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: Keys.hapticEnabled) }
         set { UserDefaults.standard.set(newValue, forKey: Keys.hapticEnabled) }
+    }
+
+    var useCustomAppFont: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.useCustomAppFont) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.useCustomAppFont) }
+    }
+
+    var showQuestCompletionGrid: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.showQuestCompletionGrid) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.showQuestCompletionGrid) }
+    }
+
+    var showQuestNextUpSection: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.showQuestNextUpSection) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.showQuestNextUpSection) }
     }
 
     // MARK: - Notifications
@@ -695,6 +733,9 @@ class SettingsManager {
         let defaults: [String: Any] = [
             Keys.soundEnabled: true,
             Keys.hapticEnabled: true,
+            Keys.useCustomAppFont: false,
+            Keys.showQuestCompletionGrid: true,
+            Keys.showQuestNextUpSection: true,
             Keys.eveningReminderEnabled: true,
             Keys.streakAlertsEnabled: true,
             Keys.autoTrackHealthKit: false,  // Disabled by default - requires Info.plist setup

@@ -378,6 +378,15 @@ enum AchievementRarity: String, Codable, CaseIterable {
         case .legendary: return Color(hex: "E5E4E2")
         }
     }
+
+    var goldBaseReward: Int {
+        switch self {
+        case .common: return 15
+        case .rare: return 35
+        case .epic: return 75
+        case .legendary: return 140
+        }
+    }
 }
 
 enum AchievementCategory: String, Codable, CaseIterable, Identifiable {
@@ -394,6 +403,15 @@ enum AchievementCategory: String, Codable, CaseIterable, Identifiable {
         case .arena: return "The Arena"
         case .scholar: return "The Scholar"
         case .vault: return "The Vault"
+        }
+    }
+
+    var goldRewardMultiplier: Double {
+        switch self {
+        case .grind: return 1.0
+        case .arena: return 1.15
+        case .scholar: return 1.05
+        case .vault: return 0.95
         }
     }
 }
@@ -414,6 +432,39 @@ struct AchievementDefinition: Identifiable {
     let icon: String
     let targetValue: Int
     let reward: AchievementReward
+
+    var scaledGoldReward: Int {
+        let scopeMultiplier: Double
+        switch targetValue {
+        case ..<5:
+            scopeMultiplier = 0.9
+        case 5..<15:
+            scopeMultiplier = 1.0
+        case 15..<50:
+            scopeMultiplier = 1.2
+        case 50..<250:
+            scopeMultiplier = 1.45
+        default:
+            scopeMultiplier = 1.7
+        }
+
+        let scaled = Double(rarity.goldBaseReward) * category.goldRewardMultiplier * scopeMultiplier
+        return max(reward.gold, Int((scaled / 5.0).rounded() * 5.0))
+    }
+
+    var rewardSummary: String {
+        var segments: [String] = []
+        if reward.xp > 0 {
+            segments.append("+\(reward.xp) XP")
+        }
+        if scaledGoldReward > 0 {
+            segments.append("+\(scaledGoldReward) Gold")
+        }
+        if let title = reward.title {
+            segments.append("Title: \(title)")
+        }
+        return segments.isEmpty ? "Reward claimed." : segments.joined(separator: " • ")
+    }
 }
 
 struct UnlockedAchievement: Codable, Identifiable {

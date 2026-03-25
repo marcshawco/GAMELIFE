@@ -200,45 +200,68 @@ extension UIColor {
 /// System fonts - Monospace for stats, Sans-serif for content
 struct SystemTypography {
 
+    private static let customFontName = "GoodTimes-Regular"
+
+    private static var useCustomAppFont: Bool {
+        SettingsManager.shared.useCustomAppFont
+    }
+
+    private static func custom(_ size: CGFloat) -> Font {
+        .custom(customFontName, size: size)
+    }
+
+    static func uiFont(_ size: CGFloat, weight: UIFont.Weight = .regular, design: UIFontDescriptor.SystemDesign = .default) -> UIFont {
+        if useCustomAppFont, let font = UIFont(name: customFontName, size: size) {
+            return font
+        }
+
+        let baseFont = UIFont.systemFont(ofSize: size, weight: weight)
+        guard design != .default,
+              let descriptor = baseFont.fontDescriptor.withDesign(design) else {
+            return baseFont
+        }
+        return UIFont(descriptor: descriptor, size: size)
+    }
+
     // MARK: - Monospace (Stats & Numbers)
 
     static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        useCustomAppFont ? custom(size) : .system(size: size, weight: weight, design: .monospaced)
     }
 
-    static let statLarge = mono(48, weight: .bold)
-    static let statMedium = mono(32, weight: .bold)
-    static let statSmall = mono(24, weight: .semibold)
-    static let statTiny = mono(14, weight: .medium)
+    static var statLarge: Font { mono(48, weight: .bold) }
+    static var statMedium: Font { mono(32, weight: .bold) }
+    static var statSmall: Font { mono(24, weight: .semibold) }
+    static var statTiny: Font { mono(14, weight: .medium) }
 
-    static let timer = mono(64, weight: .ultraLight)
-    static let timerSmall = mono(32, weight: .light)
+    static var timer: Font { mono(64, weight: .ultraLight) }
+    static var timerSmall: Font { mono(32, weight: .light) }
 
-    static let xpCounter = mono(18, weight: .bold)
-    static let goldCounter = mono(16, weight: .semibold)
+    static var xpCounter: Font { mono(18, weight: .bold) }
+    static var goldCounter: Font { mono(16, weight: .semibold) }
 
     // MARK: - Sans-Serif (Content)
 
     static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .default)
+        useCustomAppFont ? custom(size) : .system(size: size, weight: weight, design: .default)
     }
 
-    static let titleLarge = sans(34, weight: .bold)
-    static let titleMedium = sans(28, weight: .bold)
-    static let titleSmall = sans(22, weight: .semibold)
+    static var titleLarge: Font { sans(34, weight: .bold) }
+    static var titleMedium: Font { sans(28, weight: .bold) }
+    static var titleSmall: Font { sans(22, weight: .semibold) }
 
-    static let headline = sans(17, weight: .semibold)
-    static let body = sans(17, weight: .regular)
-    static let bodySmall = sans(15, weight: .regular)
+    static var headline: Font { sans(17, weight: .semibold) }
+    static var body: Font { sans(17, weight: .regular) }
+    static var bodySmall: Font { sans(15, weight: .regular) }
 
-    static let caption = sans(13, weight: .regular)
-    static let captionSmall = sans(11, weight: .regular)
+    static var caption: Font { sans(13, weight: .regular) }
+    static var captionSmall: Font { sans(11, weight: .regular) }
 
     // MARK: - System Messages
 
-    static let systemMessage = mono(14, weight: .medium)
-    static let systemTitle = mono(18, weight: .bold)
-    static let systemAlert = mono(16, weight: .semibold)
+    static var systemMessage: Font { mono(14, weight: .medium) }
+    static var systemTitle: Font { mono(18, weight: .bold) }
+    static var systemAlert: Font { mono(16, weight: .semibold) }
 }
 
 // MARK: - Spacing

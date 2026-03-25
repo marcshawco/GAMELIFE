@@ -110,6 +110,7 @@ struct FirstLaunchSetupView: View {
                 await permissionManager.checkAllPermissions()
             }
         }
+        .keyboardDismissToolbar()
     }
 
     // MARK: - Setup Header

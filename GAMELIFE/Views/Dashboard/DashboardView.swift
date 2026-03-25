@@ -716,7 +716,7 @@ struct BossFightCardView: View {
 
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(SystemTheme.hpGradient)
-                                .frame(width: geometry.size.width * boss.hpPercentage)
+                                .frame(width: max(0, geometry.size.width) * min(1, max(0, boss.hpPercentage.isFinite ? boss.hpPercentage : 0)))
                         }
                     }
                     .frame(height: 16)
@@ -732,7 +732,7 @@ struct BossFightCardView: View {
 
                         Spacer()
 
-                        Text("\(Int(boss.damageDealtPercentage * 100))% defeated")
+                        Text("\(Int(min(1, max(0, boss.damageDealtPercentage.isFinite ? boss.damageDealtPercentage : 0)) * 100))% defeated")
                             .font(SystemTypography.captionSmall)
                             .foregroundStyle(SystemTheme.textTertiary)
                     }

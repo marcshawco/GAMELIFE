@@ -16,9 +16,11 @@ struct GAMELIFEApp: App {
     // MARK: - State Objects
 
     @StateObject private var gameEngine = GameEngine.shared
+    @StateObject private var deepLinkManager = DeepLinkManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
+    @AppStorage("useCustomAppFont") private var useCustomAppFont = false
 
     // MARK: - Environment
 
@@ -26,6 +28,7 @@ struct GAMELIFEApp: App {
         // [SYSTEM]: Configure app defaults
         SettingsManager.shared.setDefaults()
         _ = CloudKitSyncManager.shared
+        AnalyticsManager.shared.trackAppLaunch()
 
         // [SYSTEM]: Configure appearance
         configureAppearance()
@@ -37,7 +40,18 @@ struct GAMELIFEApp: App {
         WindowGroup {
             RootView(hasCompletedOnboarding: $hasCompletedOnboarding)
                 .environmentObject(gameEngine)
+                .environmentObject(deepLinkManager)
                 .preferredColorScheme(resolvedColorScheme)
+                .id(useCustomAppFont)
+                .onOpenURL { url in
+                    deepLinkManager.handle(url)
+                }
+                .onAppear {
+                    configureAppearance()
+                }
+                .onChange(of: useCustomAppFont) { _, _ in
+                    configureAppearance()
+                }
             // [SYSTEM]: NO permission bombing - permissions are requested
             // via "Neural Link" setup quests in onboarding or settings
         }
@@ -57,11 +71,11 @@ struct GAMELIFEApp: App {
         navAppearance.backgroundColor = UIColor(SystemTheme.backgroundPrimary)
         navAppearance.titleTextAttributes = [
             .foregroundColor: UIColor(SystemTheme.textPrimary),
-            .font: UIFont.monospacedSystemFont(ofSize: 17, weight: .bold)
+            .font: SystemTypography.uiFont(17, weight: .bold, design: .monospaced)
         ]
         navAppearance.largeTitleTextAttributes = [
             .foregroundColor: UIColor(SystemTheme.primaryBlue),
-            .font: UIFont.monospacedSystemFont(ofSize: 34, weight: .bold)
+            .font: SystemTypography.uiFont(34, weight: .bold, design: .monospaced)
         ]
 
         UINavigationBar.appearance().standardAppearance = navAppearance
@@ -104,12 +118,17 @@ struct RootView: View {
             }
         }
         .onAppear {
+            AnalyticsManager.shared.trackScreenView("splash")
             // Show splash for 2 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showSplash = false
                 }
             }
+        }
+        .onChange(of: showSplash) { _, isShowingSplash in
+            guard !isShowingSplash else { return }
+            AnalyticsManager.shared.trackScreenView(hasCompletedOnboarding ? "main_tabs" : "onboarding")
         }
     }
 }

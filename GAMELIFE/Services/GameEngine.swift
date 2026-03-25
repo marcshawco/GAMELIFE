@@ -60,6 +60,12 @@ class GameEngine: ObservableObject {
     private var agilityDodgesUsed = 0
     private var externalRefreshToken: UInt64 = 0
 
+    struct DynamicBossScaling {
+        let requiredQuestCount: Int
+        let linkedQuestDamage: Int
+        let maxHP: Int
+    }
+
     private func sanitizeProgress(_ value: Double) -> Double {
         guard value.isFinite else { return 0 }
         return min(1.0, max(0.0, value))
@@ -194,6 +200,15 @@ class GameEngine: ObservableObject {
         checkDailyQuestStreak()
         evaluateAchievementsIfNeeded()
 
+        AnalyticsManager.shared.trackFeature("quest_completed")
+        AnalyticsManager.shared.trackFeature("quest_completed_\(completedQuest.trackingType.rawValue)")
+        if completedQuest.isOptional {
+            AnalyticsManager.shared.trackFeature("optional_quest_completed")
+        }
+        if isCritical {
+            AnalyticsManager.shared.trackFeature("critical_quest_completion")
+        }
+
         // Save
         save()
         armQuestCompletionUndoWindow(for: completedQuest.title)
@@ -242,6 +257,7 @@ class GameEngine: ObservableObject {
     // MARK: - Quest Management
 
     func saveQuest(_ quest: DailyQuest, replacing existingQuestID: UUID? = nil) {
+        let isEditing = existingQuestID != nil
         let previousQuest = existingQuestID.flatMap { questID in
             dailyQuests.first(where: { $0.id == questID })
         }
@@ -259,6 +275,8 @@ class GameEngine: ObservableObject {
         }
         QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.scheduleQuestReminder(for: quest)
+        AnalyticsManager.shared.trackFeature(isEditing ? "quest_updated" : "quest_created")
+        AnalyticsManager.shared.trackFeature("quest_tracking_\(quest.trackingType.rawValue)")
         save()
     }
 
@@ -275,6 +293,10 @@ class GameEngine: ObservableObject {
         }
         QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.removeQuestReminder(questID: questID)
+        AnalyticsManager.shared.trackFeature("quest_deleted")
+        if let trackingType = deletedQuest?.trackingType.rawValue {
+            AnalyticsManager.shared.trackFeature("quest_deleted_\(trackingType)")
+        }
         save()
     }
 
@@ -292,6 +314,7 @@ class GameEngine: ObservableObject {
         LocationManager.shared.removeAllGeofences()
         QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         clearQuestCompletionUndoSnapshot()
+        AnalyticsManager.shared.trackFeature("fresh_profile_started")
         save()
     }
 
@@ -302,6 +325,7 @@ class GameEngine: ObservableObject {
             dailyQuests[index].currentProgress = 0
             dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: now)
         }
+        AnalyticsManager.shared.trackFeature("quest_progress_reset")
         save()
     }
 
@@ -448,12 +472,23 @@ class GameEngine: ObservableObject {
         autoGenerateGoalQuest: Bool = false,
         deadline: Date?
     ) -> BossFight {
+        let resolvedMaxHP: Int
+        if let dynamicGoal {
+            resolvedMaxHP = scaledDynamicBossMaxHP(
+                for: dynamicGoal,
+                difficulty: difficulty,
+                playerLevel: player.level
+            )
+        } else {
+            resolvedMaxHP = maxHP
+        }
+
         var boss = BossFight(
             title: title,
             description: description,
             difficulty: difficulty,
             targetStats: targetStats,
-            maxHP: maxHP,
+            maxHP: resolvedMaxHP,
             linkedQuestIDs: linkedQuestIDs,
             dynamicGoal: dynamicGoal,
             deadline: deadline
@@ -477,20 +512,37 @@ class GameEngine: ObservableObject {
         return boss
     }
 
+    func scaledDynamicBossMaxHP(
+        for goal: DynamicBossGoal,
+        difficulty: QuestDifficulty,
+        playerLevel: Int
+    ) -> Int {
+        dynamicBossScaling(for: goal, difficulty: difficulty, playerLevel: playerLevel).maxHP
+    }
+
+    func dynamicBossScaling(
+        for goal: DynamicBossGoal,
+        difficulty: QuestDifficulty,
+        playerLevel: Int
+    ) -> DynamicBossScaling {
+        let cadenceTarget = max(0.1, abs(goal.perCadenceTarget))
+        let requiredQuestCount = max(1, Int(ceil(goal.totalGoalAmount / cadenceTarget)))
+        let baseDamage = GameFormulas.bossDamage(taskDifficulty: difficulty, playerLevel: playerLevel)
+        let linkedQuestDamage = max(1, Int(Double(baseDamage) * 0.8))
+        let maxHP = max(1, requiredQuestCount * linkedQuestDamage)
+
+        return DynamicBossScaling(
+            requiredQuestCount: requiredQuestCount,
+            linkedQuestDamage: linkedQuestDamage,
+            maxHP: maxHP
+        )
+    }
+
     func updateDynamicBossCurrentValue(bossId: UUID, currentValue: Double) {
         guard let index = activeBossFights.firstIndex(where: { $0.id == bossId }) else { return }
         let wasDefeated = activeBossFights[index].isDefeated
         let sanitizedValue = currentValue.isFinite ? currentValue : 0
         activeBossFights[index].updateDynamicGoalCurrentValue(sanitizedValue)
-
-        if let generatedQuestID = activeBossFights[index].dynamicGoal?.generatedQuestID,
-           let questIndex = dailyQuests.firstIndex(where: { $0.id == generatedQuestID }) {
-            if dailyQuests[questIndex].trackingType == .manual {
-                let progress = sanitizeProgress(activeBossFights[index].dynamicGoal?.normalizedProgress ?? 0)
-                dailyQuests[questIndex].currentProgress = progress
-                dailyQuests[questIndex].status = progress >= 1 ? .completed : .inProgress
-            }
-        }
 
         adjustGeneratedGoalQuestTargets()
 
@@ -1436,15 +1488,6 @@ class GameEngine: ObservableObject {
                 didChange = true
             }
 
-            if let generatedQuestID = activeBossFights[bossIndex].dynamicGoal?.generatedQuestID,
-               let questIndex = dailyQuests.firstIndex(where: { $0.id == generatedQuestID }),
-               dailyQuests[questIndex].trackingType == .manual {
-                let progress = sanitizeProgress(activeBossFights[bossIndex].dynamicGoal?.normalizedProgress ?? 0)
-                dailyQuests[questIndex].currentProgress = progress
-                dailyQuests[questIndex].status = progress >= 1 ? .completed : .inProgress
-                didChange = true
-            }
-
             if activeBossFights[bossIndex].isDefeated && !wasDefeated {
                 defeatedBossIDs.append(activeBossFights[bossIndex].id)
             }
@@ -1671,6 +1714,12 @@ class GameEngine: ObservableObject {
         QuestDataManager.shared.saveDailyQuests(dailyQuests)
         QuestDataManager.shared.saveBossFights(activeBossFights)
         ActivityLogDataManager.shared.saveActivityLog(recentActivity)
+        WidgetSnapshotStore.shared.publish(
+            player: player,
+            dailyQuests: dailyQuests,
+            bossFights: activeBossFights
+        )
+        NotificationManager.shared.refreshPersonalizedReminderPlan()
         QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         if syncToCloud {
             CloudKitSyncManager.shared.queueUpload(
@@ -1705,11 +1754,8 @@ class GameEngine: ObservableObject {
 
     private func logActivity(type: ActivityLogType, title: String, detail: String) {
         let entry = ActivityLogEntry(type: type, title: title, detail: detail)
-        recentActivity.insert(entry, at: 0)
-
-        if recentActivity.count > 100 {
-            recentActivity = Array(recentActivity.prefix(100))
-        }
+        ActivityLogDataManager.shared.appendActivity(entry)
+        recentActivity = ActivityLogDataManager.shared.loadActivityLog()
     }
 
     // MARK: - Achievement System
@@ -1768,6 +1814,7 @@ class GameEngine: ObservableObject {
         guard !unlockedThisPass.isEmpty else { return }
 
         player.unlockedAchievements.sort { $0.unlockedAt > $1.unlockedAt }
+        save()
         HapticManager.shared.success()
     }
 
@@ -1776,25 +1823,15 @@ class GameEngine: ObservableObject {
             _ = awardXP(achievement.reward.xp)
         }
 
-        if achievement.reward.gold > 0 {
-            player.gold += achievement.reward.gold
+        if achievement.scaledGoldReward > 0 {
+            player.gold += achievement.scaledGoldReward
         }
 
         if let title = achievement.reward.title, !player.unlockedTitles.contains(title) {
             player.unlockedTitles.append(title)
         }
 
-        var rewardSegments: [String] = []
-        if achievement.reward.xp > 0 {
-            rewardSegments.append("+\(achievement.reward.xp) XP")
-        }
-        if achievement.reward.gold > 0 {
-            rewardSegments.append("+\(achievement.reward.gold) Gold")
-        }
-        if let title = achievement.reward.title {
-            rewardSegments.append("Title: \(title)")
-        }
-        let rewardText = rewardSegments.isEmpty ? "Reward claimed." : rewardSegments.joined(separator: " • ")
+        let rewardText = achievement.rewardSummary
 
         logActivity(
             type: .achievementUnlocked,

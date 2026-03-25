@@ -96,6 +96,8 @@ class TrainingManager: ObservableObject {
         elapsedSeconds = 0
         isActive = true
         focusModeEnabled = true
+        AnalyticsManager.shared.trackFeature("training_session_started")
+        AnalyticsManager.shared.trackFeature("training_duration_\(minutes)")
         HapticManager.shared.trainingStarted()
 
         // Start the timer
@@ -156,6 +158,7 @@ class TrainingManager: ObservableObject {
             "Training Complete",
             "+\(xp) XP, +\(gold) Gold earned."
         )
+        AnalyticsManager.shared.trackFeature("training_session_completed")
         HapticManager.shared.trainingCompleted()
 
         // Reset state
@@ -178,6 +181,7 @@ class TrainingManager: ObservableObject {
         let engine = GameEngine.shared
         engine.applyPenalty(reason: reason)
         engine.save()
+        AnalyticsManager.shared.trackFeature("training_session_abandoned")
 
         // Show warning
         SystemMessageHelper.showWarning(warningMessage)
@@ -201,6 +205,7 @@ class TrainingManager: ObservableObject {
     /// Toggle focus mode (screen dimming)
     func toggleFocusMode() {
         focusModeEnabled.toggle()
+        AnalyticsManager.shared.trackFeature(focusModeEnabled ? "focus_mode_enabled" : "focus_mode_disabled")
         HapticManager.shared.selection()
     }
 

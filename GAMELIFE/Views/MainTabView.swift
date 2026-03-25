@@ -16,6 +16,7 @@ struct MainTabView: View {
     // MARK: - Properties
 
     @EnvironmentObject var gameEngine: GameEngine
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @AppStorage("defaultTab") private var defaultTab: Int = 0
     @State private var selectedTab: Int
 
@@ -91,11 +92,22 @@ struct MainTabView: View {
                 }
             }
         }
+        .onAppear {
+            AnalyticsManager.shared.trackScreenView(GameTab(rawValue: selectedTab)?.title ?? "unknown_tab")
+            AnalyticsManager.shared.trackFeature("tab_selected_\(GameTab(rawValue: selectedTab)?.title ?? "unknown")")
+        }
         .onChange(of: defaultTab) { _, newValue in
             selectedTab = newValue
         }
-        .onChange(of: selectedTab) { _, _ in
+        .onChange(of: selectedTab) { _, newValue in
             HapticManager.shared.selection()
+            let tabName = GameTab(rawValue: newValue)?.title ?? "unknown"
+            AnalyticsManager.shared.trackScreenView(tabName)
+            AnalyticsManager.shared.trackFeature("tab_selected_\(tabName)")
+        }
+        .onChange(of: deepLinkManager.pendingLink) { _, link in
+            guard let link else { return }
+            selectedTab = link.route.tabIndex
         }
         .sheet(item: $gameEngine.deathPenaltySummary) { summary in
             DeathPenaltySummaryView(summary: summary)

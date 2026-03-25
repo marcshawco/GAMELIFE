@@ -194,6 +194,11 @@ struct TrainingPresetButton: View {
                     .stroke(difficulty.color.opacity(0.3), lineWidth: 1)
             )
         }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                HapticManager.shared.selection()
+            }
+        )
     }
 }
 
@@ -381,40 +386,39 @@ struct CustomDurationPicker: View {
     let onConfirm: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var wheelMinutes: Double = 25
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: SystemSpacing.lg) {
-                Text("Custom Duration")
-                    .font(SystemTypography.titleSmall)
-                    .foregroundStyle(SystemTheme.textPrimary)
-
-                Picker("Minutes", selection: $minutes) {
-                    ForEach(Array(stride(from: 5, through: 120, by: 5)), id: \.self) { min in
-                        Text("\(min) minutes").tag(min)
-                    }
-                }
-                .pickerStyle(.wheel)
-                .frame(height: 120)
-
-                Button(action: onConfirm) {
-                    Text("Start Training")
-                        .font(SystemTypography.mono(16, weight: .bold))
-                        .foregroundStyle(SystemTheme.backgroundPrimary)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(SystemTheme.primaryPurple)
-                        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
-                }
-                .padding(.horizontal)
+        BottomWheelValuePickerSheet(
+            title: "Custom Duration",
+            subtitle: "Set the session length before you drop into Training.",
+            accentColor: SystemTheme.primaryBlue,
+            options: durationOptions,
+            selection: $wheelMinutes,
+            confirmTitle: "Start Training"
+        )
+        .onAppear {
+            wheelMinutes = Double(minutes)
+        }
+        .onChange(of: wheelMinutes) { _, newValue in
+            minutes = Int(newValue.rounded())
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel") { dismiss() }
             }
-            .padding()
-            .background(SystemTheme.backgroundSecondary)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Start") {
+                    minutes = Int(wheelMinutes.rounded())
+                    onConfirm()
                 }
             }
+        }
+    }
+
+    private var durationOptions: [WheelValueOption] {
+        Array(stride(from: 5, through: 120, by: 5)).map { minute in
+            WheelValueOption(value: Double(minute), label: "\(minute) min")
         }
     }
 }

@@ -22,9 +22,13 @@ struct SettingsView: View {
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
     @AppStorage("hapticEnabled") private var hapticEnabled = true
+    @AppStorage("useCustomAppFont") private var useCustomAppFont = false
+    @AppStorage("showQuestCompletionGrid") private var showQuestCompletionGrid = true
+    @AppStorage("showQuestNextUpSection") private var showQuestNextUpSection = true
     @AppStorage("questCompletionNotificationMode") private var questCompletionNotificationMode = NotificationManager.QuestCompletionNotificationMode.immediate.rawValue
     @AppStorage("deathMechanicEnabled") private var deathMechanicEnabled = true
     @StateObject private var appIconManager = AppIconManager.shared
+    @StateObject private var analyticsManager = AnalyticsManager.shared
     @State private var showResetConfirmation = false
     @State private var showDeleteConfirmation = false
     @State private var showDeathMechanicInfo = false
@@ -89,6 +93,12 @@ struct SettingsView: View {
                         }
                     }
 
+                Toggle("Use Good Times Font", isOn: $useCustomAppFont)
+
+                Toggle("Show Quest Completion Grid", isOn: $showQuestCompletionGrid)
+
+                Toggle("Show Next Up Section", isOn: $showQuestNextUpSection)
+
                 Picker("Quest Completion Alerts", selection: $questCompletionNotificationMode) {
                     ForEach(NotificationManager.QuestCompletionNotificationMode.allCases) { mode in
                         Text(mode.displayName).tag(mode.rawValue)
@@ -127,7 +137,7 @@ struct SettingsView: View {
             } header: {
                 Text("Preferences")
             } footer: {
-                Text("Set your default tab, appearance, app icon, alerts, and death penalties in one place. Turning off death penalties does not stop HP loss.")
+                Text("Set your default tab, appearance, app icon, quests layout, alerts, font style, and death penalties in one place. Haptic Feedback is the master switch for taps, picker ticks, confirmations, and combat/training feedback. Turning off death penalties does not stop HP loss.")
             }
 
             // Neural Links Section
@@ -162,6 +172,39 @@ struct SettingsView: View {
                 StatRow(label: "Achievements", value: "\(gameEngine.player.unlockedAchievements.count)")
             } header: {
                 Text("Statistics")
+            }
+
+            Section {
+                StatRow(label: "App Launches", value: "\(analyticsManager.snapshot.appLaunchCount)")
+                StatRow(label: "Tracked Events", value: "\(analyticsManager.totalTrackedEvents)")
+
+                if let topFeature = analyticsManager.topFeatureEvents.first {
+                    StatRow(label: "Top Feature", value: "\(topFeature.name) (\(topFeature.count))")
+                }
+
+                if let topScreen = analyticsManager.topScreenViews.first {
+                    StatRow(label: "Top Screen", value: "\(topScreen.name) (\(topScreen.count))")
+                }
+
+                Button {
+                    if let json = analyticsManager.exportJSON() {
+                        UIPasteboard.general.string = json
+                        SystemMessageHelper.showInfo("Analytics Copied", "Usage analytics JSON is now on your clipboard.")
+                    }
+                } label: {
+                    Label("Copy Analytics JSON", systemImage: "doc.on.doc")
+                }
+
+                Button(role: .destructive) {
+                    analyticsManager.reset()
+                    SystemMessageHelper.showInfo("Analytics Reset", "Local analytics data has been cleared.")
+                } label: {
+                    Label("Reset Analytics", systemImage: "chart.bar.xaxis")
+                }
+            } header: {
+                Text("Usage Analytics")
+            } footer: {
+                Text("Analytics are currently stored on-device only. This gives you a lightweight way to learn which tabs and features are used most before wiring up a remote dashboard.")
             }
 
             // Danger Zone Section
@@ -237,12 +280,31 @@ struct SettingsView: View {
                 """
             )
         }
+        .onAppear {
+            AnalyticsManager.shared.trackScreenView("settings")
+        }
+        .onChange(of: defaultTab) { _, _ in
+            AnalyticsManager.shared.trackFeature("settings_changed_default_tab")
+        }
+        .onChange(of: useSystemAppearance) { _, isEnabled in
+            AnalyticsManager.shared.trackFeature(isEnabled ? "settings_enabled_system_appearance" : "settings_disabled_system_appearance")
+        }
+        .onChange(of: preferDarkMode) { _, isEnabled in
+            AnalyticsManager.shared.trackFeature(isEnabled ? "settings_enabled_dark_mode" : "settings_enabled_light_mode")
+        }
+        .onChange(of: hapticEnabled) { _, isEnabled in
+            AnalyticsManager.shared.trackFeature(isEnabled ? "settings_enabled_haptics" : "settings_disabled_haptics")
+        }
+        .onChange(of: deathMechanicEnabled) { _, isEnabled in
+            AnalyticsManager.shared.trackFeature(isEnabled ? "settings_enabled_death_penalties" : "settings_disabled_death_penalties")
+        }
     }
 
     // MARK: - Actions
 
     private func resetDailyQuests() {
         gameEngine.resetQuestProgressManually()
+        AnalyticsManager.shared.trackFeature("settings_reset_quest_progress")
 
         SystemMessageHelper.showInfo("Quests Reset", "Quest progress has been reset for the current cycle.")
     }
@@ -256,6 +318,7 @@ struct SettingsView: View {
         MarketplaceManager.shared.resetForFreshStart()
         NotificationManager.shared.clearAllQuestReminders()
         UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        AnalyticsManager.shared.trackFeature("settings_deleted_all_data")
 
         SystemMessageHelper.show(SystemMessage(
             type: .critical,
@@ -732,6 +795,7 @@ struct PlayerProfileView: View {
                 }
             }
         }
+        .keyboardDismissToolbar()
     }
 
     private func saveProfile() {

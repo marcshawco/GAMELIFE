@@ -26,6 +26,7 @@ struct ShopView: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
+                            HapticManager.shared.selection()
                             showAddReward = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
@@ -153,6 +154,7 @@ struct CustomRewardSheet: View {
                         .disabled(!isValid)
                 }
             }
+            .keyboardDismissToolbar()
         }
     }
 
