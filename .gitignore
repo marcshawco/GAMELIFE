@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Xcode user and build artifacts
+build/
+DerivedData/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+GAMELIFE.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Local-only private data and branding
+PrivateAssets/
+PrivateData/
+LocalData/
