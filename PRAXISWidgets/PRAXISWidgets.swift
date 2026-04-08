@@ -182,7 +182,7 @@ struct StatusWidgetView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                metricRow(title: "XP", value: "\(Int(entry.payload.xpProgress * 100))%")
+                metricRow(title: "XP", value: "\(Int((entry.payload.xpProgress * 100).rounded()))%")
                 ProgressView(value: entry.payload.xpProgress)
                     .tint(.blue)
             }

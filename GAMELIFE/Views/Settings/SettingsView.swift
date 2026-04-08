@@ -407,7 +407,6 @@ struct StatRow: View {
 
 enum AppIconOption: String, CaseIterable, Identifiable {
     case systemDefault
-    case phoenixDark
     case phoenixIvory
     case phoenixWhite
 
@@ -416,7 +415,6 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     var iconName: String? {
         switch self {
         case .systemDefault: return nil
-        case .phoenixDark: return "AppIconPhoenixDarkV2"
         case .phoenixIvory: return "AppIconPhoenixIvoryV2"
         case .phoenixWhite: return "AppIconPhoenixWhiteV2"
         }
@@ -425,7 +423,6 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .systemDefault: return "Default (Black)"
-        case .phoenixDark: return "Phoenix (Navy)"
         case .phoenixIvory: return "Phoenix (Ivory)"
         case .phoenixWhite: return "Phoenix (White)"
         }
@@ -434,7 +431,6 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     var previewAssetName: String {
         switch self {
         case .systemDefault: return "AppIconPreviewDefault"
-        case .phoenixDark: return "AppIconPreviewDark"
         case .phoenixIvory: return "AppIconPreviewIvory"
         case .phoenixWhite: return "AppIconPreviewWhite"
         }
@@ -443,7 +439,6 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     init?(iconName: String?) {
         switch iconName {
         case nil: self = .systemDefault
-        case "AppIconPhoenixDark", "AppIconPhoenixDarkV2": self = .phoenixDark
         case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .phoenixIvory
         case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .phoenixWhite
         default: return nil

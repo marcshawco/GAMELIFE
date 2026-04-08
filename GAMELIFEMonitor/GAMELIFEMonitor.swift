@@ -113,9 +113,10 @@ class GAMELIFEMonitor: DeviceActivityMonitor {
     }
 
     private func sendCompletionNotification(for questIdString: String) {
-        let questTitle = activeQuestMetadata(for: questIdString)?["title"] as? String ?? "Screen Time Quest"
-        let xp = activeQuestMetadata(for: questIdString)?["xpReward"] as? Int ?? 0
-        let gold = activeQuestMetadata(for: questIdString)?["goldReward"] as? Int ?? 0
+        let metadata = activeQuestMetadata(for: questIdString)
+        let questTitle = metadata?["title"] as? String ?? "Screen Time Quest"
+        let xp = metadata?["xpReward"] as? Int ?? 0
+        let gold = metadata?["goldReward"] as? Int ?? 0
 
         let content = UNMutableNotificationContent()
         content.title = "[SYSTEM] Quest Auto-Completed"

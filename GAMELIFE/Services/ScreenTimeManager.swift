@@ -482,7 +482,7 @@ class ScreenTimeManager: ObservableObject {
 
     private func currentDayKey() -> String {
         let components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        return "\(components.year ?? 0)-\(components.month ?? 0)-\(components.day ?? 0)"
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 
     private func recordSync(event: String) {
