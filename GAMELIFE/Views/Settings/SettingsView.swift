@@ -29,7 +29,6 @@ struct SettingsView: View {
     @AppStorage("questCompletionNotificationMode") private var questCompletionNotificationMode = NotificationManager.QuestCompletionNotificationMode.immediate.rawValue
     @AppStorage("deathMechanicEnabled") private var deathMechanicEnabled = true
     @StateObject private var appIconManager = AppIconManager.shared
-    @StateObject private var analyticsManager = AnalyticsManager.shared
     @State private var showResetConfirmation = false
     @State private var showDeleteConfirmation = false
     @State private var showDeathMechanicInfo = false
@@ -191,39 +190,6 @@ struct SettingsView: View {
                 Text("Statistics")
             }
 
-            Section {
-                StatRow(label: "App Launches", value: "\(analyticsManager.snapshot.appLaunchCount)")
-                StatRow(label: "Tracked Events", value: "\(analyticsManager.totalTrackedEvents)")
-
-                if let topFeature = analyticsManager.topFeatureEvents.first {
-                    StatRow(label: "Top Feature", value: "\(topFeature.name) (\(topFeature.count))")
-                }
-
-                if let topScreen = analyticsManager.topScreenViews.first {
-                    StatRow(label: "Top Screen", value: "\(topScreen.name) (\(topScreen.count))")
-                }
-
-                Button {
-                    if let json = analyticsManager.exportJSON() {
-                        UIPasteboard.general.string = json
-                        SystemMessageHelper.showInfo("Analytics Copied", "Usage analytics JSON is now on your clipboard.")
-                    }
-                } label: {
-                    Label("Copy Analytics JSON", systemImage: "doc.on.doc")
-                }
-
-                Button(role: .destructive) {
-                    analyticsManager.reset()
-                    SystemMessageHelper.showInfo("Analytics Reset", "Local analytics data has been cleared.")
-                } label: {
-                    Label("Reset Analytics", systemImage: "chart.bar.xaxis")
-                }
-            } header: {
-                Text("Usage Analytics")
-            } footer: {
-                Text("Analytics are currently stored on-device only. This gives you a lightweight way to learn which tabs and features are used most before wiring up a remote dashboard.")
-            }
-
             // Danger Zone Section
             Section {
                 Button {
@@ -259,7 +225,7 @@ struct SettingsView: View {
                     }
                 }
 
-                if let privacyURL = URL(string: "https://gamelife.app/privacy") {
+                if let privacyURL = URL(string: "https://shawhause.com/praxis-privacy.html") {
                     Link(destination: privacyURL) {
                         Label("Privacy Policy", systemImage: "hand.raised.fill")
                     }
@@ -406,41 +372,46 @@ struct StatRow: View {
 // MARK: - App Icon Support
 
 enum AppIconOption: String, CaseIterable, Identifiable {
-    case systemDefault
-    case phoenixIvory
-    case phoenixWhite
+    case black
+    case cream
+    case white
+    case appTint
 
     var id: String { rawValue }
 
     var iconName: String? {
         switch self {
-        case .systemDefault: return nil
-        case .phoenixIvory: return "AppIconPhoenixIvoryV2"
-        case .phoenixWhite: return "AppIconPhoenixWhiteV2"
+        case .black: return nil
+        case .cream: return "AppIconPhoenixIvoryV2"
+        case .white: return "AppIconPhoenixWhiteV2"
+        case .appTint: return "AppIconPhoenixDarkV2"
         }
     }
 
     var displayName: String {
         switch self {
-        case .systemDefault: return "Default (Black)"
-        case .phoenixIvory: return "Phoenix (Ivory)"
-        case .phoenixWhite: return "Phoenix (White)"
+        case .black: return "Black"
+        case .cream: return "Cream"
+        case .white: return "White"
+        case .appTint: return "App Tint"
         }
     }
 
     var previewAssetName: String {
         switch self {
-        case .systemDefault: return "AppIconPreviewDefault"
-        case .phoenixIvory: return "AppIconPreviewIvory"
-        case .phoenixWhite: return "AppIconPreviewWhite"
+        case .black: return "AppIconPreviewDefault"
+        case .cream: return "AppIconPreviewIvory"
+        case .white: return "AppIconPreviewWhite"
+        case .appTint: return "AppIconPreviewDark"
         }
     }
 
     init?(iconName: String?) {
         switch iconName {
-        case nil: self = .systemDefault
-        case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .phoenixIvory
-        case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .phoenixWhite
+        case nil: self = .black
+        case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .cream
+        case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .white
+        case "AppIconPhoenixDark", "AppIconPhoenixDarkV2": self = .appTint
         default: return nil
         }
     }
@@ -450,7 +421,7 @@ enum AppIconOption: String, CaseIterable, Identifiable {
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
 
-    @Published private(set) var currentOption: AppIconOption = .systemDefault
+    @Published private(set) var currentOption: AppIconOption = .black
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
@@ -470,12 +441,12 @@ final class AppIconManager: ObservableObject {
     func refreshCurrentIcon() {
         isSupported = UIApplication.shared.supportsAlternateIcons
         guard isSupported else {
-            currentOption = .systemDefault
+            currentOption = .black
             hasLegacyIconOverride = false
             return
         }
         let currentName = UIApplication.shared.alternateIconName
-        currentOption = AppIconOption(iconName: currentName) ?? .systemDefault
+        currentOption = AppIconOption(iconName: currentName) ?? .black
         hasLegacyIconOverride = (currentName != nil && AppIconOption(iconName: currentName) == nil)
         reconcilePendingState(currentName: currentName)
     }
