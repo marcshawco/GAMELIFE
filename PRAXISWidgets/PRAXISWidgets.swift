@@ -12,13 +12,19 @@ private enum WidgetLanguageSupport {
     static let preferredLanguageKey = "preferredLanguageCode"
 
     static var locale: Locale {
+        Locale(identifier: resolvedLanguageCode)
+    }
+
+    private static var resolvedLanguageCode: String {
         guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil,
               let defaults = UserDefaults(suiteName: appGroupID),
               let code = defaults.string(forKey: preferredLanguageKey),
               code != "system" else {
-            return .autoupdatingCurrent
+            return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
         }
-        return Locale(identifier: code)
+
+        let normalized = code.split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? code
+        return normalized.isEmpty ? "en" : normalized
     }
 }
 

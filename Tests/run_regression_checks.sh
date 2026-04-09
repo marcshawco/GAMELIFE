@@ -84,9 +84,11 @@ fi
 echo "Running model logic tests..."
 swiftc -o /tmp/gamelife_model_logic_tests \
   "$ROOT/Tests/test_theme_stub.swift" \
+  "$ROOT/Tests/test_data_manager_stubs.swift" \
   "$ROOT/GAMELIFE/Models/PlayerModels.swift" \
   "$ROOT/GAMELIFE/Models/QuestModels.swift" \
   "$ROOT/GAMELIFE/Models/ActivityLogModels.swift" \
+  "$ROOT/GAMELIFE/Services/DataManagers.swift" \
   "$ROOT/Tests/model_logic_tests.swift"
 /tmp/gamelife_model_logic_tests
 

@@ -372,10 +372,10 @@ enum AchievementRarity: String, Codable, CaseIterable {
 
     var color: Color {
         switch self {
-        case .common: return Color(hex: "B08D57")
-        case .rare: return Color(hex: "C0C0C0")
+        case .common: return Self.color(red: 176, green: 141, blue: 87)
+        case .rare: return Self.color(red: 192, green: 192, blue: 192)
         case .epic: return SystemTheme.goldColor
-        case .legendary: return Color(hex: "E5E4E2")
+        case .legendary: return Self.color(red: 229, green: 228, blue: 226)
         }
     }
 
@@ -386,6 +386,10 @@ enum AchievementRarity: String, Codable, CaseIterable {
         case .epic: return 75
         case .legendary: return 140
         }
+    }
+
+    private static func color(red: Double, green: Double, blue: Double) -> Color {
+        Color(red: red / 255.0, green: green / 255.0, blue: blue / 255.0)
     }
 }
 

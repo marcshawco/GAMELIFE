@@ -171,7 +171,7 @@ struct CompactHeaderView: View {
 
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(SystemTheme.xpGradient)
-                                .frame(width: geo.size.width * xpProgress)
+                                .frame(width: max(0, (geo.size.width.isFinite ? geo.size.width : 0) * xpProgress))
                         }
                     }
                     .frame(width: isCompact ? 68 : 80, height: 6)
@@ -283,7 +283,7 @@ struct StatusStatModule: View {
                     HStack {
                         Spacer(minLength: 0)
                         RadarChartView(stats: stats)
-                            .frame(maxWidth: contentHeight * 1.05)
+                            .frame(maxWidth: max(0, (contentHeight.isFinite ? contentHeight : 0) * 1.05))
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

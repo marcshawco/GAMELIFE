@@ -971,6 +971,7 @@ struct SetupLinkRow: View {
 /// Animated background particles for atmosphere
 struct ParticleFieldView: View {
     @State private var particles: [Particle] = []
+    @State private var animationTimer: Timer?
 
     struct Particle: Identifiable {
         let id = UUID()
@@ -993,28 +994,40 @@ struct ParticleFieldView: View {
                 }
             }
             .onAppear {
-                // Generate initial particles
-                for _ in 0..<50 {
-                    particles.append(Particle(
-                        x: CGFloat.random(in: 0...geometry.size.width),
-                        y: CGFloat.random(in: 0...geometry.size.height),
-                        size: CGFloat.random(in: 2...6),
-                        opacity: Double.random(in: 0.1...0.5),
-                        speed: Double.random(in: 0.5...2)
-                    ))
+                let size = geometry.size
+                guard size.width > 0, size.height > 0 else { return }
+
+                if particles.isEmpty {
+                    particles = makeParticles(in: size)
                 }
 
-                // Animate particles
-                Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                animationTimer?.invalidate()
+                animationTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
                     for i in particles.indices {
                         particles[i].y -= CGFloat(particles[i].speed)
                         if particles[i].y < -10 {
-                            particles[i].y = geometry.size.height + 10
-                            particles[i].x = CGFloat.random(in: 0...geometry.size.width)
+                            particles[i].y = size.height + 10
+                            particles[i].x = CGFloat.random(in: 0...size.width)
                         }
                     }
                 }
             }
+            .onDisappear {
+                animationTimer?.invalidate()
+                animationTimer = nil
+            }
+        }
+    }
+
+    private func makeParticles(in size: CGSize) -> [Particle] {
+        (0..<50).map { _ in
+            Particle(
+                x: CGFloat.random(in: 0...size.width),
+                y: CGFloat.random(in: 0...size.height),
+                size: CGFloat.random(in: 2...6),
+                opacity: Double.random(in: 0.1...0.5),
+                speed: Double.random(in: 0.5...2)
+            )
         }
     }
 }
