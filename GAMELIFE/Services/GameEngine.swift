@@ -102,7 +102,6 @@ class GameEngine: ObservableObject {
         migrateLegacyStatBaselineIfNeeded()
 
         // Ensure loaded quests are in the active cycle and integrations are synced.
-        migrateDisabledScreenTimeDataIfNeeded()
         refreshQuestCyclesIfNeeded()
         syncBossLinksWithQuests()
         dailyQuests.forEach { NotificationManager.shared.scheduleQuestReminder(for: $0) }
@@ -112,11 +111,7 @@ class GameEngine: ObservableObject {
 
         // Set up health data observers
         setupHealthKitObservers()
-        if AppFeatureFlags.screenTimeEnabled {
-            setupScreenTimeObservers()
-        }
         setupLocationQuestObservers()
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         setupCloudKitSync()
         Task { @MainActor [weak self] in
             await self?.syncDynamicBossGoals()
@@ -273,7 +268,6 @@ class GameEngine: ObservableObject {
         if quest.trackingType == .location || previousQuest?.trackingType == .location {
             syncLocationGeofences()
         }
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.scheduleQuestReminder(for: quest)
         AnalyticsManager.shared.trackFeature(isEditing ? "quest_updated" : "quest_created")
         AnalyticsManager.shared.trackFeature("quest_tracking_\(quest.trackingType.rawValue)")
@@ -291,7 +285,6 @@ class GameEngine: ObservableObject {
         if deletedQuest?.trackingType == .location {
             LocationManager.shared.removeQuestGeofence(for: questID)
         }
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         NotificationManager.shared.removeQuestReminder(questID: questID)
         AnalyticsManager.shared.trackFeature("quest_deleted")
         if let trackingType = deletedQuest?.trackingType.rawValue {
@@ -312,7 +305,6 @@ class GameEngine: ObservableObject {
         isInDungeon = false
 
         LocationManager.shared.removeAllGeofences()
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         clearQuestCompletionUndoSnapshot()
         AnalyticsManager.shared.trackFeature("fresh_profile_started")
         save()
@@ -672,13 +664,6 @@ class GameEngine: ObservableObject {
         activeDungeon?.start()
         isInDungeon = true
 
-        // Start app blocking if Screen Time is authorized
-        if AppFeatureFlags.screenTimeEnabled && ScreenTimeManager.shared.isAuthorized {
-            ScreenTimeManager.shared.startDungeonBlocking(
-                duration: TimeInterval(minutes * 60)
-            )
-        }
-
         // Start timer
         dungeonTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -722,11 +707,6 @@ class GameEngine: ObservableObject {
         // Update counter
         player.dungeonsClearedCount += 1
 
-        // End blocking
-        if AppFeatureFlags.screenTimeEnabled {
-            ScreenTimeManager.shared.endDungeonBlocking()
-        }
-
         // Clear state
         activeDungeon?.complete()
         isInDungeon = false
@@ -749,11 +729,6 @@ class GameEngine: ObservableObject {
         dungeonTimer = nil
 
         activeDungeon?.fail()
-
-        // End blocking
-        if AppFeatureFlags.screenTimeEnabled {
-            ScreenTimeManager.shared.endDungeonBlocking()
-        }
 
         // Apply penalty
         applyPenalty(reason: .dungeonFailed)
@@ -1139,13 +1114,7 @@ class GameEngine: ObservableObject {
             description = "Complete at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage this boss."
             trackingType = .healthKit
             healthKitIdentifier = "HKWorkoutType"
-        case .screenTimeDiscipline:
-            title = "\(boss.title): \(goal.cadence.rawValue) Screen Discipline"
-            description = "Keep social media usage under \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased())."
-            trackingType = .manual
-            healthKitIdentifier = nil
         }
-
         return DailyQuest(
             title: title,
             description: description,
@@ -1363,24 +1332,6 @@ class GameEngine: ObservableObject {
         }
     }
 
-    private func setupScreenTimeObservers() {
-        NotificationCenter.default
-            .publisher(for: .screenTimeDataDidUpdate)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    await self?.updateScreenTimeQuests()
-                }
-            }
-            .store(in: &cancellables)
-
-        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.updateScreenTimeQuests()
-            }
-        }
-    }
-
     private func setupCloudKitSync() {
         CloudKitSyncManager.shared.start()
 
@@ -1424,8 +1375,6 @@ class GameEngine: ObservableObject {
         refreshQuestCyclesIfNeeded()
         syncBossLinksWithQuests()
         syncLocationGeofences()
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
-
         dailyQuests.forEach { NotificationManager.shared.scheduleQuestReminder(for: $0) }
 
         save(syncToCloud: false)
@@ -1435,8 +1384,7 @@ class GameEngine: ObservableObject {
 
     private func dynamicGoalCurrentValue(
         for boss: BossFight,
-        healthManager: HealthKitManager,
-        screenTimeManager: ScreenTimeManager
+        healthManager: HealthKitManager
     ) async -> Double? {
         guard let goal = boss.dynamicGoal else { return nil }
         let rawValue: Double?
@@ -1470,10 +1418,6 @@ class GameEngine: ObservableObject {
             let start = cadenceStartDate(for: goal.cadence)
             let workouts = await healthManager.fetchWorkoutCount(from: start, to: Date())
             rawValue = Double(workouts)
-        case .screenTimeDiscipline:
-            guard AppFeatureFlags.screenTimeEnabled else { return nil }
-            guard screenTimeManager.isAuthorized else { return nil }
-            rawValue = Double(max(0, screenTimeManager.socialMediaMinutesToday))
         }
 
         guard let rawValue, rawValue.isFinite else { return nil }
@@ -1496,7 +1440,6 @@ class GameEngine: ObservableObject {
 
     private func syncDynamicBossGoals() async {
         let healthManager = HealthKitManager.shared
-        let screenTimeManager = ScreenTimeManager.shared
         var didChange = false
         var defeatedBossIDs: [UUID] = []
 
@@ -1510,8 +1453,7 @@ class GameEngine: ObservableObject {
 
             guard let currentValue = await dynamicGoalCurrentValue(
                 for: bossSnapshot,
-                healthManager: healthManager,
-                screenTimeManager: screenTimeManager
+                healthManager: healthManager
             ) else {
                 continue
             }
@@ -1568,122 +1510,7 @@ class GameEngine: ObservableObject {
         await updateHealthKitQuests(refreshToken: token)
         guard isExternalRefreshTokenCurrent(token) else { return }
 
-        if AppFeatureFlags.screenTimeEnabled {
-            let screenTimeManager = ScreenTimeManager.shared
-            if screenTimeManager.isAuthorized {
-                screenTimeManager.refreshAuthorizationStatus()
-                screenTimeManager.startUsageMonitoring()
-            }
-            await updateScreenTimeQuests(refreshToken: token)
-        }
-        guard isExternalRefreshTokenCurrent(token) else { return }
-
         save()
-    }
-
-    func updateScreenTimeQuests(refreshToken: UInt64? = nil) async {
-        guard AppFeatureFlags.screenTimeEnabled else { return }
-        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-        let screenTimeManager = ScreenTimeManager.shared
-        var autoCompletedRewards: [(title: String, xp: Int, gold: Int)] = []
-        QuestManager.shared.checkExtensionCompletions()
-        let extensionProgress = QuestManager.shared.getProgressFromExtension()
-
-        let screenTimeQuestIDs = dailyQuests
-            .filter { $0.trackingType == .screenTime }
-            .map(\.id)
-
-        for questID in screenTimeQuestIDs {
-            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-            guard let questIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
-            let questSnapshot = dailyQuests[questIndex]
-
-            let reportedProgress = extensionProgress[questID] ?? 0
-            let sampledProgress = screenTimeManager.checkQuestProgress(for: questSnapshot)
-            let progress = sanitizeProgress(max(reportedProgress, sampledProgress))
-
-            guard let latestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
-
-            dailyQuests[latestIndex].currentProgress = progress
-
-            if progress >= 1.0 && dailyQuests[latestIndex].status != .completed {
-                let completedTitle = dailyQuests[latestIndex].title
-                let completionResult = completeQuest(dailyQuests[latestIndex])
-                if completionResult.success {
-                    autoCompletedRewards.append((
-                        title: completedTitle,
-                        xp: completionResult.xpAwarded,
-                        gold: completionResult.goldAwarded
-                    ))
-                }
-            }
-        }
-
-        if let extensionLog = QuestManager.shared.latestExtensionLog() {
-            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-            screenTimeManager.lastDetectedEvent = extensionLog
-            screenTimeManager.lastSyncDate = Date()
-        }
-
-        for reward in autoCompletedRewards {
-            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-            SystemMessageHelper.showQuestComplete(
-                title: reward.title,
-                xp: reward.xp,
-                gold: reward.gold
-            )
-        }
-
-        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-        await syncDynamicBossGoals()
-    }
-
-    private func migrateDisabledScreenTimeDataIfNeeded() {
-        guard !AppFeatureFlags.screenTimeEnabled else { return }
-
-        var didMutate = false
-
-        for index in dailyQuests.indices where dailyQuests[index].trackingType == .screenTime {
-            let quest = dailyQuests[index]
-            dailyQuests[index] = DailyQuest(
-                id: quest.id,
-                title: quest.title,
-                description: quest.description,
-                difficulty: quest.difficulty,
-                status: quest.status,
-                targetStats: quest.targetStats,
-                frequency: quest.frequency,
-                isOptional: quest.isOptional,
-                trackingType: .manual,
-                currentProgress: quest.currentProgress,
-                targetValue: quest.targetValue,
-                unit: quest.unit,
-                createdAt: quest.createdAt,
-                expiresAt: quest.expiresAt,
-                healthKitIdentifier: nil,
-                screenTimeCategory: nil,
-                screenTimeSelectionData: nil,
-                locationCoordinate: quest.locationCoordinate,
-                locationAddress: quest.locationAddress,
-                linkedBossID: quest.linkedBossID,
-                linkedDynamicBossID: quest.linkedDynamicBossID,
-                reminderEnabled: quest.reminderEnabled,
-                reminderTime: quest.reminderTime
-            )
-            didMutate = true
-        }
-
-        for index in activeBossFights.indices {
-            if activeBossFights[index].dynamicGoal?.type == .screenTimeDiscipline {
-                activeBossFights[index].dynamicGoal = nil
-                didMutate = true
-            }
-        }
-
-        if didMutate {
-            QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
-            save()
-        }
     }
 
     /// Update quest progress from HealthKit
@@ -1760,7 +1587,6 @@ class GameEngine: ObservableObject {
             bossFights: activeBossFights
         )
         NotificationManager.shared.refreshPersonalizedReminderPlan()
-        QuestManager.shared.synchronizeMonitoring(with: dailyQuests)
         if syncToCloud {
             CloudKitSyncManager.shared.queueUpload(
                 player: player,

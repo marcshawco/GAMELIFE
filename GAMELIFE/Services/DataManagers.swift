@@ -733,7 +733,6 @@ class SettingsManager {
         static let eveningReminderEnabled = "eveningReminderEnabled"
         static let streakAlertsEnabled = "streakAlertsEnabled"
         static let autoTrackHealthKit = "autoTrackHealthKit"
-        static let autoTrackScreenTime = "autoTrackScreenTime"
         static let autoTrackLocation = "autoTrackLocation"
         static let deathMechanicEnabled = "deathMechanicEnabled"
     }
@@ -820,11 +819,6 @@ class SettingsManager {
         set { UserDefaults.standard.set(newValue, forKey: Keys.autoTrackHealthKit) }
     }
 
-    var autoTrackScreenTime: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.autoTrackScreenTime) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.autoTrackScreenTime) }
-    }
-
     var autoTrackLocation: Bool {
         get { UserDefaults.standard.bool(forKey: Keys.autoTrackLocation) }
         set { UserDefaults.standard.set(newValue, forKey: Keys.autoTrackLocation) }
@@ -863,7 +857,6 @@ class SettingsManager {
             Keys.eveningReminderEnabled: true,
             Keys.streakAlertsEnabled: true,
             Keys.autoTrackHealthKit: false,  // Disabled by default - requires Info.plist setup
-            Keys.autoTrackScreenTime: false, // Disabled by default - requires entitlement
             Keys.autoTrackLocation: false,   // Disabled by default - requires Info.plist setup
             Keys.deathMechanicEnabled: true
         ]

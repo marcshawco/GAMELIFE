@@ -871,8 +871,6 @@ struct SetupQuestsPhaseView: View {
                 switch type {
                 case .vitalSigns:
                     try await permissionManager.requestHealthKit()
-                case .mindActivity:
-                    try await permissionManager.requestScreenTime()
                 case .worldPosition:
                     permissionManager.requestLocation()
                     try await Task.sleep(nanoseconds: 1_200_000_000)
@@ -950,7 +948,6 @@ struct SetupLinkRow: View {
     private func iconName(for type: NeuralLinkType) -> String {
         switch type {
         case .vitalSigns: return "heart.fill"
-        case .mindActivity: return "brain.head.profile"
         case .worldPosition: return "location.fill"
         case .systemMessages: return "bell.fill"
         }
@@ -959,7 +956,6 @@ struct SetupLinkRow: View {
     private func description(for type: NeuralLinkType) -> String {
         switch type {
         case .vitalSigns: return "Track steps, workouts, sleep"
-        case .mindActivity: return "Track app usage automatically"
         case .worldPosition: return "Auto-complete location quests"
         case .systemMessages: return "Get quest reminders"
         }

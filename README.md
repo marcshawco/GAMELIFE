@@ -9,7 +9,7 @@ You do the work. PRAXIS closes the feedback loop instantly with quests, XP, Gold
 ## TL;DR
 
 - iOS productivity app with RPG systems (quests, bosses, stats, leveling, economy)
-- Auto-tracking via HealthKit, Location, and optional Screen Time APIs
+- Auto-tracking via HealthKit and Location
 - Dynamic Bosses that react to real metric progress (weight, body fat, savings, workout consistency, steps, sleep, hydration, mindfulness, distance)
 - In-app language switching with German, Russian, French, Italian, and Spanish support
 - Home Screen widgets for status, next-up quests, and boss progress
@@ -31,7 +31,7 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 
 ### 1) Quest Loop
 
-- Tracking types: `manual`, `healthKit`, `screenTime` (optional), `location`, `timer`
+- Tracking types: `manual`, `healthKit`, `location`, `timer`
 - Cadence: hourly, daily, semi-weekly, weekly, monthly
 - Optional quests:
   - grant XP and stat growth
@@ -89,13 +89,6 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 - Apple Maps address validation
 - Geofence + dwell-time tracking
 - Location status and progress surfaced in quest cards
-
-### Screen Time (Optional)
-
-- Uses `FamilyControls` + `DeviceActivity`
-- App/category-driven usage quests
-- Background completion through monitor extension
-- TestFlight/App Store distribution requires Family Controls distribution entitlement
 
 ### Notifications
 
@@ -157,8 +150,6 @@ It also executes:
 
 - `HealthKitManager`
 - `LocationManager`
-- `ScreenTimeManager`
-- `QuestManager`
 - `NotificationManager`
 - `CloudKitSyncManager`
 - `WatchConnectivityManager`
@@ -170,7 +161,6 @@ It also executes:
 ### Targets
 
 - `GAMELIFE` (iOS app)
-- `GAMELIFEMonitor` (DeviceActivity monitor extension)
 - `GAMELIFEWatch` (watch app)
 - `GAMELIFEWatchExtension` (watch extension)
 
@@ -224,29 +214,18 @@ bash Tests/run_regression_checks.sh
 - iCloud + CloudKit
 - HealthKit
 - App Groups (`group.com.gamelife.shared`)
-- Family Controls (if Screen Time is enabled)
 - Location permissions (`When In Use`, `Always and When In Use`)
 - Health usage descriptions in `Info.plist`
-
-### Monitor extension (`GAMELIFEMonitor`)
-
-- Extension point: `com.apple.deviceactivity.monitor-extension`
-- Shared app group
-- Family Controls entitlement
-- Aligned bundle versions with containing app
-- Required `Info.plist` metadata (including `CFBundleDisplayName`)
 
 ## Beta / Release Readiness Notes
 
 - **Simulator logs include framework noise** (WatchConnectivity pairing, LaunchServices, haptics, RenderBox). Validate final behavior on physical devices.
 - `WCSession counterpart app not installed` is expected when watch app is not paired/installed.
-- Without Family Controls distribution entitlement, Screen Time features may be partially blocked outside development.
 - iOS notification history may show stale icon assets after icon swaps due to system caching.
 
 ## Privacy Model
 
 - Health and location data are used strictly for quest automation.
-- Screen Time data (if enabled) is used only for usage-based quest progression.
 - User game state is local-first and can sync to the user’s private CloudKit.
 - App-group storage is used for app/extension communication.
 

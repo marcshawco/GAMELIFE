@@ -323,7 +323,6 @@ struct ConnectionStatusBadge: View {
     private var connectedCount: Int {
         var count = 0
         if permissionManager.healthKitEnabled { count += 1 }
-        if AppFeatureFlags.screenTimeEnabled && permissionManager.screenTimeEnabled { count += 1 }
         if permissionManager.locationEnabled { count += 1 }
         if permissionManager.notificationsEnabled { count += 1 }
         return count

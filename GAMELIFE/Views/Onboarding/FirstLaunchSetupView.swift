@@ -656,10 +656,6 @@ struct FirstLaunchSetupView: View {
             do {
                 try await permissionManager.requestHealthKit()
             } catch {}
-        case .mindActivity:
-            do {
-                try await permissionManager.requestScreenTime()
-            } catch {}
         case .worldPosition:
             if permissionManager.status(for: .worldPosition) == .denied {
                 permissionManager.openSystemSettings()
@@ -768,7 +764,6 @@ private struct OnboardingPermissionRow: View {
     private var icon: String {
         switch type {
         case .vitalSigns: return "heart.fill"
-        case .mindActivity: return "brain.head.profile"
         case .worldPosition: return "location.fill"
         case .systemMessages: return "bell.fill"
         }

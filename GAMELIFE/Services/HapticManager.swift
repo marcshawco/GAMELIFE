@@ -47,7 +47,11 @@ final class HapticManager {
     }
 
     private var isEnabled: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
         SettingsManager.shared.hapticEnabled && UIApplication.shared.applicationState == .active
+        #endif
     }
 
     func selection() {

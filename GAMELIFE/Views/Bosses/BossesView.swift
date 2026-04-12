@@ -396,8 +396,6 @@ struct BossCardView: View {
         switch type {
         case .weight, .bodyFat, .stepCount, .sleepConsistency, .hydration, .mindfulness, .distance, .workoutConsistency:
             return "Auto-syncing from Apple Health."
-        case .screenTimeDiscipline:
-            return "Auto-syncing from Screen Time usage."
         case .savings:
             return "Update manually with your current saved amount."
         }
@@ -916,12 +914,6 @@ struct BossFormSheet: View {
                     dynamicTargetValue = 4
                     dynamicCadence = .weekly
                     dynamicCadenceTarget = 4
-                case .screenTimeDiscipline:
-                    dynamicStartValue = 180
-                    dynamicCurrentValue = 180
-                    dynamicTargetValue = 60
-                    dynamicCadence = .daily
-                    dynamicCadenceTarget = 60
                 }
             }
         }
@@ -947,8 +939,6 @@ struct BossFormSheet: View {
             return "Example: build from 0 to 30km weekly at 5km per cadence. HP scales to the full endurance milestone."
         case .workoutConsistency:
             return "Example: start 0, goal 12 workouts, target 4 per week. HP scales to 3 weeks of workout quests."
-        case .screenTimeDiscipline:
-            return "Example: baseline 180 min social media, target 60 min, target 10 min per day. HP scales to 12 daily quests."
         }
     }
 
@@ -1007,12 +997,6 @@ struct BossFormSheet: View {
                 "Twelve workouts over three weeks before an event.",
                 "Rebuilding gym consistency after a long break.",
                 "Locking in a run, lift, or class streak each week."
-            ]
-        case .screenTimeDiscipline:
-            return [
-                "Reducing social scroll before bed.",
-                "Cutting reels or TikTok time during work weeks.",
-                "A focused exam or launch sprint with lower daily usage caps."
             ]
         }
     }
@@ -1092,8 +1076,6 @@ struct BossFormSheet: View {
             return Array(stride(from: 0, through: 100, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " km")) }
         case .workoutConsistency:
             return Array(0...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
-        case .screenTimeDiscipline:
-            return Array(stride(from: 0, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
         }
     }
 
@@ -1115,8 +1097,6 @@ struct BossFormSheet: View {
             return Array(stride(from: 0.5, through: 20, by: 0.5)).map { WheelValueOption(value: $0, label: formattedDecimalLabel($0, suffix: " km")) }
         case .workoutConsistency:
             return Array(1...14).map { WheelValueOption(value: Double($0), label: "\($0) workouts") }
-        case .screenTimeDiscipline:
-            return Array(stride(from: 5, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
         }
     }
 

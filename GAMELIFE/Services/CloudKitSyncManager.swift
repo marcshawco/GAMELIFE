@@ -33,6 +33,7 @@ final class CloudKitSyncManager: ObservableObject {
     private let uploadDebounceSeconds: TimeInterval = 1.5
     private let remoteClockTolerance: TimeInterval = 1.0
     private let maxSnapshotsToKeep = 25
+    private let availabilityRetryInterval: TimeInterval = 300
 
     private let localStateUpdatedAtKey = "gamelife_local_state_updated_at"
     private let cloudSyncDeviceIDKey = "gamelife_cloud_sync_device_id"
@@ -41,6 +42,7 @@ final class CloudKitSyncManager: ObservableObject {
     private var didStart = false
     private var uploadWorkItem: DispatchWorkItem?
     private var lastQueuedPayloadData: Data?
+    private var lastAvailabilityCheckDate: Date?
 
     private init(container: CKContainer = .default()) {
         self.container = container
@@ -101,7 +103,7 @@ final class CloudKitSyncManager: ObservableObject {
         if !didStart {
             start()
         }
-        if !isCloudKitAvailable {
+        if !isCloudKitAvailable && shouldRefreshAvailability() {
             await refreshAvailability()
         }
         guard isCloudKitAvailable else { return nil }
@@ -160,6 +162,7 @@ final class CloudKitSyncManager: ObservableObject {
     }
 
     private func refreshAvailability() async {
+        lastAvailabilityCheckDate = Date()
         do {
             let status = try await accountStatus()
             isCloudKitAvailable = (status == .available)
@@ -172,6 +175,11 @@ final class CloudKitSyncManager: ObservableObject {
             isCloudKitAvailable = false
             lastSyncEvent = "CloudKit account check failed: \(error.localizedDescription)"
         }
+    }
+
+    private func shouldRefreshAvailability(now: Date = Date()) -> Bool {
+        guard let lastAvailabilityCheckDate else { return true }
+        return now.timeIntervalSince(lastAvailabilityCheckDate) >= availabilityRetryInterval
     }
 
     private func accountStatus() async throws -> CKAccountStatus {

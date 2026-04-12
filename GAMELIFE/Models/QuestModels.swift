@@ -9,13 +9,6 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Feature Flags
-
-enum AppFeatureFlags {
-    // Temporary beta switch. Set true to re-enable Screen Time flows.
-    static let screenTimeEnabled = true
-}
-
 // MARK: - Numeric Safety
 
 private func finiteOrZero(_ value: Double) -> Double {
@@ -67,7 +60,6 @@ enum QuestStatus: String, Codable {
 enum QuestTrackingType: String, Codable {
     case manual           // User manually marks complete
     case healthKit        // Auto-tracked via HealthKit
-    case screenTime       // Auto-tracked via Screen Time API
     case location         // Auto-tracked via Core Location
     case timer            // Tracked by in-app timer (dungeons)
 
@@ -75,7 +67,6 @@ enum QuestTrackingType: String, Codable {
         switch self {
         case .manual: return "hand.tap"
         case .healthKit: return "heart.fill"
-        case .screenTime: return "iphone"
         case .location: return "location.fill"
         case .timer: return "timer"
         }
@@ -86,10 +77,13 @@ enum QuestTrackingType: String, Codable {
     }
 
     static var betaSelectableTypes: [QuestTrackingType] {
-        if AppFeatureFlags.screenTimeEnabled {
-            return [.manual, .healthKit, .screenTime, .location]
-        }
         return [.manual, .healthKit, .location]
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = QuestTrackingType(rawValue: rawValue) ?? .manual
     }
 }
 
@@ -173,7 +167,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
     case mindfulness = "Mindfulness Goal"
     case distance = "Distance Goal"
     case workoutConsistency = "Workout Consistency"
-    case screenTimeDiscipline = "Screen-Time Discipline"
 
     var id: String { rawValue }
 
@@ -190,7 +183,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         case .mindfulness: return "brain.head.profile"
         case .distance: return "figure.run.circle"
         case .workoutConsistency: return "figure.run"
-        case .screenTimeDiscipline: return "hourglass"
         }
     }
 
@@ -214,8 +206,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
             return "Walk or run toward a distance milestone."
         case .workoutConsistency:
             return "Complete a set number of workouts each cadence."
-        case .screenTimeDiscipline:
-            return "Reduce social-media minutes and regain focus."
         }
     }
 
@@ -230,7 +220,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         case .mindfulness: return [.spirit, .willpower]
         case .distance: return [.agility, .vitality]
         case .workoutConsistency: return [.strength, .vitality, .willpower]
-        case .screenTimeDiscipline: return [.willpower, .spirit]
         }
     }
 
@@ -245,7 +234,6 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         case .mindfulness: return "minutes"
         case .distance: return "km"
         case .workoutConsistency: return "workouts"
-        case .screenTimeDiscipline: return "minutes"
         }
     }
 
@@ -253,17 +241,19 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .weight, .bodyFat, .stepCount, .sleepConsistency, .hydration, .mindfulness, .distance, .workoutConsistency:
             return true
-        case .savings, .screenTimeDiscipline:
+        case .savings:
             return false
         }
     }
 
-    var isScreenTimeDriven: Bool {
-        self == .screenTimeDiscipline
+    static var betaSelectableTypes: [DynamicBossGoalType] {
+        allCases
     }
 
-    static var betaSelectableTypes: [DynamicBossGoalType] {
-        return allCases.filter { $0 != .screenTimeDiscipline }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = DynamicBossGoalType(rawValue: rawValue) ?? .mindfulness
     }
 }
 
@@ -350,8 +340,6 @@ struct DailyQuest: QuestProtocol {
 
     // Auto-tracking metadata
     var healthKitIdentifier: String?
-    var screenTimeCategory: String?
-    var screenTimeSelectionData: Data?
     var locationCoordinate: LocationCoordinate?
     var locationAddress: String?
     var linkedBossID: UUID?
@@ -406,8 +394,6 @@ struct DailyQuest: QuestProtocol {
         createdAt: Date = Date(),
         expiresAt: Date? = nil,
         healthKitIdentifier: String? = nil,
-        screenTimeCategory: String? = nil,
-        screenTimeSelectionData: Data? = nil,
         locationCoordinate: LocationCoordinate? = nil,
         locationAddress: String? = nil,
         linkedBossID: UUID? = nil,
@@ -436,8 +422,6 @@ struct DailyQuest: QuestProtocol {
         self.expiresAt = expiresAt ?? (frequency ?? .daily).nextResetDate(from: createdAt)
 
         self.healthKitIdentifier = healthKitIdentifier
-        self.screenTimeCategory = screenTimeCategory
-        self.screenTimeSelectionData = screenTimeSelectionData
         self.locationCoordinate = locationCoordinate
         self.locationAddress = locationAddress
         self.linkedBossID = linkedBossID
@@ -465,8 +449,6 @@ struct DailyQuest: QuestProtocol {
         case unit
         case expiresAt
         case healthKitIdentifier
-        case screenTimeCategory
-        case screenTimeSelectionData
         case locationCoordinate
         case locationAddress
         case linkedBossID
@@ -500,8 +482,6 @@ struct DailyQuest: QuestProtocol {
             ?? (frequency ?? .daily).nextResetDate(from: createdAt)
 
         healthKitIdentifier = try container.decodeIfPresent(String.self, forKey: .healthKitIdentifier)
-        screenTimeCategory = try container.decodeIfPresent(String.self, forKey: .screenTimeCategory)
-        screenTimeSelectionData = try container.decodeIfPresent(Data.self, forKey: .screenTimeSelectionData)
         locationCoordinate = try container.decodeIfPresent(LocationCoordinate.self, forKey: .locationCoordinate)
         locationAddress = try container.decodeIfPresent(String.self, forKey: .locationAddress)
         linkedBossID = try container.decodeIfPresent(UUID.self, forKey: .linkedBossID)
@@ -530,8 +510,6 @@ struct DailyQuest: QuestProtocol {
         try container.encode(unit, forKey: .unit)
         try container.encode(expiresAt, forKey: .expiresAt)
         try container.encodeIfPresent(healthKitIdentifier, forKey: .healthKitIdentifier)
-        try container.encodeIfPresent(screenTimeCategory, forKey: .screenTimeCategory)
-        try container.encodeIfPresent(screenTimeSelectionData, forKey: .screenTimeSelectionData)
         try container.encodeIfPresent(locationCoordinate, forKey: .locationCoordinate)
         try container.encodeIfPresent(locationAddress, forKey: .locationAddress)
         try container.encodeIfPresent(linkedBossID, forKey: .linkedBossID)
@@ -1042,17 +1020,6 @@ struct DefaultQuests {
             targetValue: 1,
             unit: "page"
         ),
-        DailyQuest(
-            title: "Read for 30 Minutes",
-            description: "Immerse yourself in wisdom.",
-            difficulty: .normal,
-            targetStats: [.intelligence],
-            trackingType: .screenTime,
-            targetValue: 30,
-            unit: "minutes",
-            screenTimeCategory: "Books"
-        ),
-
         // AGI - Agility
         DailyQuest(
             title: "1 Minute Stretch",
@@ -1086,17 +1053,6 @@ struct DefaultQuests {
         ),
 
         // WIL - Willpower
-        DailyQuest(
-            title: "No Social Media Before Noon",
-            description: "Guard your morning focus.",
-            difficulty: .hard,
-            targetStats: [.willpower],
-            trackingType: .screenTime,
-            targetValue: 0,
-            unit: "minutes",
-            screenTimeCategory: "SocialMedia"
-        ),
-
         // SPI - Spirit
         DailyQuest(
             title: "1 Minute Meditation",

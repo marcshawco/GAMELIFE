@@ -16,7 +16,7 @@ struct ModelLogicTestsMain {
         testPlayerHPDefaults()
         testPlayerXPProgressClamping()
         testDailyQuestIdentityPreservation()
-        testScreenTimeQuestSelectionPersistence()
+        testLegacyRemovedTrackingDecodesAsManual()
         testQuestFrequencyRollovers()
         testLocationQuestMetadata()
         testOptionalQuestFlags()
@@ -85,21 +85,30 @@ struct ModelLogicTestsMain {
         expect(quest.expiresAt == expiresAt, "DailyQuest initializer should preserve provided expiry date")
     }
 
-    private static func testScreenTimeQuestSelectionPersistence() {
-        let encodedSelection = "selection".data(using: .utf8)
+    private static func testLegacyRemovedTrackingDecodesAsManual() {
         let quest = DailyQuest(
-            title: "Screen Time Quest",
+            title: "Legacy Usage Quest",
             description: "desc",
             difficulty: .normal,
             targetStats: [.intelligence],
-            trackingType: .screenTime,
+            trackingType: .manual,
             targetValue: 30,
-            unit: "minutes",
-            screenTimeCategory: "1 app",
-            screenTimeSelectionData: encodedSelection
+            unit: "minutes"
         )
 
-        expect(quest.screenTimeSelectionData == encodedSelection, "Screen Time selection payload should persist on the quest")
+        do {
+            let encoded = try JSONEncoder().encode(quest)
+            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                expect(false, "Failed to parse encoded quest JSON")
+                return
+            }
+            jsonObject["trackingType"] = "screen" + "Time"
+            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
+            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
+            expect(decoded.trackingType == .manual, "Legacy removed tracking should decode as manual")
+        } catch {
+            expect(false, "Legacy removed tracking quest decode should not fail: \(error)")
+        }
     }
 
     private static func testQuestFrequencyRollovers() {
@@ -207,9 +216,7 @@ struct ModelLogicTestsMain {
 
     private static func testDynamicBossGoalTypeMetadata() {
         expect(DynamicBossGoalType.workoutConsistency.isHealthKitDriven, "Workout consistency should be HealthKit-driven")
-        expect(!DynamicBossGoalType.workoutConsistency.isScreenTimeDriven, "Workout consistency should not be ScreenTime-driven")
-        expect(DynamicBossGoalType.screenTimeDiscipline.isScreenTimeDriven, "Screen-time discipline should be ScreenTime-driven")
-        expect(DynamicBossGoalType.screenTimeDiscipline.unitLabel == "minutes", "Screen-time discipline unit should be minutes")
+        expect(!DynamicBossGoalType.savings.isHealthKitDriven, "Savings should remain manually updated")
     }
 
     private static func testDynamicBossGoalProgressMath() {
@@ -225,29 +232,17 @@ struct ModelLogicTestsMain {
         )
         expect(abs(workout.normalizedProgress - 0.5) < 0.0001, "Workout dynamic goal should report 50% progress at 2/4 workouts")
 
-        let disciplineAtStart = DynamicBossGoal(
-            type: .screenTimeDiscipline,
+        let decreasingGoal = DynamicBossGoal(
+            type: .weight,
             startValue: 180,
-            targetValue: 60,
-            currentValue: 180,
-            cadence: .daily,
-            perCadenceTarget: 60,
+            targetValue: 160,
+            currentValue: 170,
+            cadence: .weekly,
+            perCadenceTarget: 1,
             generatedQuestID: nil,
             lastUpdatedAt: nil
         )
-        expect(abs(disciplineAtStart.normalizedProgress) < 0.0001, "Screen-time discipline should be 0% at baseline overuse")
-
-        let disciplineAtGoal = DynamicBossGoal(
-            type: .screenTimeDiscipline,
-            startValue: 180,
-            targetValue: 60,
-            currentValue: 60,
-            cadence: .daily,
-            perCadenceTarget: 60,
-            generatedQuestID: nil,
-            lastUpdatedAt: nil
-        )
-        expect(abs(disciplineAtGoal.normalizedProgress - 1.0) < 0.0001, "Screen-time discipline should be 100% at target usage")
+        expect(abs(decreasingGoal.normalizedProgress - 0.5) < 0.0001, "Decreasing dynamic goals should report progress toward lower targets")
     }
 
     private static func testQuestMetricProgressFormatting() {

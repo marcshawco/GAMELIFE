@@ -18,7 +18,6 @@ struct PermissionManagerView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var permissionManager = PermissionManager.shared
     @StateObject private var healthKitManager = HealthKitManager.shared
-    @StateObject private var screenTimeManager = ScreenTimeManager.shared
     @StateObject private var locationManager = LocationManager.shared
     @StateObject private var notificationManager = NotificationManager.shared
 
@@ -77,14 +76,6 @@ struct PermissionManagerView: View {
                     lastUpdateText: relativeText(healthKitManager.lastSyncDate),
                     backgroundActive: healthKitManager.backgroundDeliveryEnabled
                 )
-                if AppFeatureFlags.screenTimeEnabled {
-                    NeuralLinkSignalRow(
-                        title: "Mind Activity",
-                        connected: permissionManager.screenTimeEnabled,
-                        lastUpdateText: relativeText(screenTimeManager.lastSyncDate),
-                        backgroundActive: screenTimeManager.isUsageMonitoringActive
-                    )
-                }
                 NeuralLinkSignalRow(
                     title: "World Position",
                     connected: permissionManager.locationEnabled,
@@ -169,8 +160,6 @@ struct PermissionManagerView: View {
                     if permissionManager.isEnabled(for: .vitalSigns) {
                         permissionManager.openHealthApp()
                     }
-                case .mindActivity:
-                    try await permissionManager.requestScreenTime()
                 case .worldPosition:
                     if permissionManager.status(for: .worldPosition) == .denied {
                         permissionManager.openSystemSettings()
@@ -253,7 +242,6 @@ struct NeuralLinkRow: View {
     private func iconName(for type: NeuralLinkType) -> String {
         switch type {
         case .vitalSigns: return "heart.fill"
-        case .mindActivity: return "brain.head.profile"
         case .worldPosition: return "location.fill"
         case .systemMessages: return "bell.fill"
         }
@@ -262,7 +250,6 @@ struct NeuralLinkRow: View {
     private func description(for type: NeuralLinkType) -> String {
         switch type {
         case .vitalSigns: return "HealthKit data (steps, workouts, sleep)"
-        case .mindActivity: return "Screen Time API"
         case .worldPosition: return "Core Location"
         case .systemMessages: return "Push Notifications"
         }
@@ -327,7 +314,6 @@ struct NeuralLinkExplanation: View {
     private func iconName(for type: NeuralLinkType) -> String {
         switch type {
         case .vitalSigns: return "heart.fill"
-        case .mindActivity: return "brain.head.profile"
         case .worldPosition: return "location.fill"
         case .systemMessages: return "bell.fill"
         }
@@ -340,12 +326,6 @@ struct NeuralLinkExplanation: View {
                 "Auto-track steps, distance, calories, and hydration",
                 "Monitor sleep for VIT stat progress",
                 "Auto-complete workout count quests (ex: 3 workouts per week)"
-            ]
-        case .mindActivity:
-            return [
-                "Track reading app usage for INT quests",
-                "Monitor social media avoidance for WIL",
-                "Block distracting apps during Training"
             ]
         case .worldPosition:
             return [

@@ -11,7 +11,6 @@ import SwiftUI
 import Combine
 import HealthKit
 import CoreLocation
-import FamilyControls
 import UserNotifications
 
 // MARK: - Permission Manager
@@ -26,13 +25,11 @@ class PermissionManager: ObservableObject {
     // MARK: - Published Permission States
 
     @Published var healthKitEnabled = false
-    @Published var screenTimeEnabled = false
     @Published var locationEnabled = false
     @Published var notificationsEnabled = false
 
     // Detailed status
     @Published var healthKitStatus: PermissionStatus = .notDetermined
-    @Published var screenTimeStatus: PermissionStatus = .notDetermined
     @Published var locationStatus: PermissionStatus = .notDetermined
     @Published var notificationStatus: PermissionStatus = .notDetermined
 
@@ -80,7 +77,6 @@ class PermissionManager: ObservableObject {
 
     func checkAllPermissions() async {
         await checkHealthKitStatus()
-        await checkScreenTimeStatus()
         checkLocationStatus()
         await checkNotificationStatus()
     }
@@ -132,51 +128,6 @@ class PermissionManager: ObservableObject {
             try await HealthKitManager.shared.requestAuthorization()
             await checkHealthKitStatus()
         } catch {
-            throw PermissionError.denied
-        }
-    }
-
-    // MARK: - Screen Time
-
-    func checkScreenTimeStatus() async {
-        guard AppFeatureFlags.screenTimeEnabled else {
-            screenTimeStatus = .unavailable
-            screenTimeEnabled = false
-            return
-        }
-
-        let center = AuthorizationCenter.shared
-
-        switch center.authorizationStatus {
-        case .approved:
-            screenTimeStatus = .authorized
-            screenTimeEnabled = true
-            ScreenTimeManager.shared.startUsageMonitoring()
-        case .denied:
-            screenTimeStatus = .denied
-            screenTimeEnabled = false
-        case .notDetermined:
-            screenTimeStatus = .notDetermined
-            screenTimeEnabled = false
-        @unknown default:
-            screenTimeStatus = .notDetermined
-            screenTimeEnabled = false
-        }
-    }
-
-    func requestScreenTime() async throws {
-        guard AppFeatureFlags.screenTimeEnabled else {
-            screenTimeStatus = .unavailable
-            screenTimeEnabled = false
-            throw PermissionError.unavailable
-        }
-
-        do {
-            try await ScreenTimeManager.shared.requestAuthorization()
-            ScreenTimeManager.shared.startUsageMonitoring()
-            await checkScreenTimeStatus()
-        } catch {
-            await checkScreenTimeStatus()
             throw PermissionError.denied
         }
     }
@@ -301,7 +252,6 @@ class PermissionManager: ObservableObject {
     func neuralLinkName(for permission: NeuralLinkType) -> String {
         switch permission {
         case .vitalSigns: return "Vital Signs"
-        case .mindActivity: return "Mind Activity"
         case .worldPosition: return "World Position"
         case .systemMessages: return "System Messages"
         }
@@ -310,7 +260,6 @@ class PermissionManager: ObservableObject {
     func neuralLinkDescription(for permission: NeuralLinkType) -> String {
         switch permission {
         case .vitalSigns: return "Connect to HealthKit for automatic progress tracking"
-        case .mindActivity: return "Connect to Screen Time for app usage tracking"
         case .worldPosition: return "Connect to Location for geofence-based quests"
         case .systemMessages: return "Receive alerts and quest reminders"
         }
@@ -319,7 +268,6 @@ class PermissionManager: ObservableObject {
     func neuralLinkIcon(for permission: NeuralLinkType) -> String {
         switch permission {
         case .vitalSigns: return "heart.fill"
-        case .mindActivity: return "brain.head.profile"
         case .worldPosition: return "location.fill"
         case .systemMessages: return "bell.fill"
         }
@@ -328,7 +276,6 @@ class PermissionManager: ObservableObject {
     func status(for permission: NeuralLinkType) -> PermissionStatus {
         switch permission {
         case .vitalSigns: return healthKitStatus
-        case .mindActivity: return screenTimeStatus
         case .worldPosition: return locationStatus
         case .systemMessages: return notificationStatus
         }
@@ -337,7 +284,6 @@ class PermissionManager: ObservableObject {
     func isEnabled(for permission: NeuralLinkType) -> Bool {
         switch permission {
         case .vitalSigns: return healthKitEnabled
-        case .mindActivity: return screenTimeEnabled
         case .worldPosition: return locationEnabled
         case .systemMessages: return notificationsEnabled
         }
@@ -348,23 +294,18 @@ class PermissionManager: ObservableObject {
 
 enum NeuralLinkType: String, CaseIterable, Identifiable {
     case vitalSigns = "Vital Signs"
-    case mindActivity = "Mind Activity"
     case worldPosition = "World Position"
     case systemMessages = "System Messages"
 
     var id: String { rawValue }
 
     static var betaAvailableCases: [NeuralLinkType] {
-        if AppFeatureFlags.screenTimeEnabled {
-            return allCases
-        }
-        return allCases.filter { $0 != .mindActivity }
+        allCases
     }
 
     var color: Color {
         switch self {
         case .vitalSigns: return SystemTheme.statVitality
-        case .mindActivity: return SystemTheme.statIntelligence
         case .worldPosition: return SystemTheme.statAgility
         case .systemMessages: return SystemTheme.primaryBlue
         }

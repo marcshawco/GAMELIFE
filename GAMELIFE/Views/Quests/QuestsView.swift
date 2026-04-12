@@ -21,7 +21,6 @@ struct QuestsView: View {
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @StateObject private var locationManager = LocationManager.shared
     @StateObject private var healthKitManager = HealthKitManager.shared
-    @StateObject private var screenTimeManager = ScreenTimeManager.shared
     @StateObject private var permissionManager = PermissionManager.shared
     @State private var showAddSheet = false
     @State private var questToEdit: DailyQuest?
@@ -96,7 +95,6 @@ struct QuestsView: View {
                                         quest: quest,
                                         locationManager: locationManager,
                                         healthKitManager: healthKitManager,
-                                        screenTimeManager: screenTimeManager,
                                         permissionManager: permissionManager,
                                         liveProgressTick: liveProgressTick,
                                         impactBossText: bossImpactText(for: quest),
@@ -286,7 +284,6 @@ struct QuestsView: View {
         }
 
         locationManager.requestSingleLocationRefresh()
-        QuestManager.shared.checkExtensionCompletions()
 
         await runWithTimeout(seconds: 20) {
             await gameEngine.refreshExternalTrackingTransaction()
@@ -753,7 +750,6 @@ struct QuestRowView: View {
     let quest: DailyQuest
     @ObservedObject var locationManager: LocationManager
     @ObservedObject var healthKitManager: HealthKitManager
-    @ObservedObject var screenTimeManager: ScreenTimeManager
     @ObservedObject var permissionManager: PermissionManager
     let liveProgressTick: Date
     let impactBossText: String?
@@ -820,7 +816,6 @@ struct QuestRowView: View {
                             quest: quest,
                             locationManager: locationManager,
                             healthKitManager: healthKitManager,
-                            screenTimeManager: screenTimeManager,
                             permissionManager: permissionManager,
                             displayedProgress: displayedProgress
                         )
@@ -1033,7 +1028,6 @@ private struct QuestTrackingDiagnosticsRow: View {
     let quest: DailyQuest
     @ObservedObject var locationManager: LocationManager
     @ObservedObject var healthKitManager: HealthKitManager
-    @ObservedObject var screenTimeManager: ScreenTimeManager
     @ObservedObject var permissionManager: PermissionManager
     let displayedProgress: Double
 
@@ -1050,33 +1044,6 @@ private struct QuestTrackingDiagnosticsRow: View {
             return (
                 "heart.text.square.fill",
                 "Detected \(current)/\(target) \(quest.unit) • Synced \(syncText)",
-                SystemTheme.primaryBlue
-            )
-
-        case .screenTime:
-            guard AppFeatureFlags.screenTimeEnabled else {
-                return ("pause.circle.fill", "Usage tracking is temporarily disabled for this beta.", SystemTheme.textTertiary)
-            }
-            guard permissionManager.screenTimeEnabled else {
-                return ("exclamationmark.triangle.fill", "Screen Time access missing. Connect Mind Activity in Neural Links.", SystemTheme.warningOrange)
-            }
-            guard screenTimeManager.isMonitorExtensionInstalled else {
-                return (
-                    "app.badge.checkmark",
-                    "Screen Time monitor extension is not bundled in this build. Quest usage cannot auto-update yet.",
-                    SystemTheme.warningOrange
-                )
-            }
-
-            let progressPct = Int(displayedProgress * 100)
-            let syncText = relativeTimestamp(screenTimeManager.lastSyncDate)
-            let selectionMissing = quest.screenTimeSelectionData == nil && (quest.screenTimeCategory?.isEmpty ?? true)
-            if selectionMissing {
-                return ("apps.iphone.badge.plus", "No apps/categories linked yet. Edit quest to select tracking targets.", SystemTheme.warningOrange)
-            }
-            return (
-                "apps.iphone",
-                "Auto-tracking active • \(progressPct)% complete • Synced \(syncText)",
                 SystemTheme.primaryBlue
             )
 

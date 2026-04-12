@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT/GAMELIFE.xcodeproj"
-SCREEN_TIME_FLAG_FILE="$ROOT/GAMELIFE/Models/QuestModels.swift"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -12,23 +11,18 @@ fail() {
 
 echo "Running static regression checks..."
 
-if grep -q 'static let screenTimeEnabled = true' "$SCREEN_TIME_FLAG_FILE"; then
-  SCREEN_TIME_ENABLED=1
-else
-  SCREEN_TIME_ENABLED=0
-fi
-
 grep -q 'INFOPLIST_KEY_NSHealthShareUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthShareUsageDescription"
 grep -q 'INFOPLIST_KEY_NSHealthUpdateUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthUpdateUsageDescription"
 grep -q 'INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "' "$PROJECT/project.pbxproj" || fail "Missing NSLocationWhenInUseUsageDescription"
 grep -q 'INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "' "$PROJECT/project.pbxproj" || fail "Missing NSLocationAlwaysAndWhenInUseUsageDescription"
 
-if [[ "$SCREEN_TIME_ENABLED" -eq 1 ]]; then
-  grep -q 'com.apple.developer.family-controls' "$ROOT/GAMELIFE/GAMELIFE.entitlements" || fail "Missing Family Controls entitlement"
-else
-  if grep -q 'com.apple.developer.family-controls' "$ROOT/GAMELIFE/GAMELIFE.entitlements"; then
-    fail "Family Controls entitlement should be disabled in beta mode"
-  fi
+REMOVED_ENTITLEMENT='com.apple.developer.family-''controls'
+if grep -q "$REMOVED_ENTITLEMENT" "$ROOT/GAMELIFE/GAMELIFE.entitlements"; then
+  fail "Family Controls entitlement should not be present"
+fi
+REMOVED_TRACKING_PATTERN='Family''Controls|Managed''Settings|Device''Activity|Family''Activity''Picker|Authorization''Center|Screen''TimeManager|GAMELIFE''Monitor|screen''TimeDataDidUpdate'
+if grep -RInE "$REMOVED_TRACKING_PATTERN" "$ROOT/GAMELIFE" "$ROOT/README.md" "$PROJECT/project.pbxproj" >/dev/null; then
+  fail "Removed tracking API remnants found"
 fi
 
 if grep -RInF '.preferredColorScheme(.dark)' "$ROOT/GAMELIFE" >/dev/null; then
@@ -54,15 +48,9 @@ grep -Fq 'loadDailyQuests() ?? []' "$ROOT/GAMELIFE/Services/GameEngine.swift" ||
 grep -q 'case \.location: return "Location"' "$ROOT/GAMELIFE/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing Address tracking segment"
 grep -q 'Text(\"Schedule\")' "$ROOT/GAMELIFE/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing unified schedule section"
 grep -q 'Toggle(\"Enable Reminder\"' "$ROOT/GAMELIFE/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing reminder toggle"
-grep -q 'screenTimeSelectionData' "$ROOT/GAMELIFE/Models/QuestModels.swift" || fail "DailyQuest missing Screen Time selection payload"
-grep -q 'GAMELIFEMonitor.appex in Embed App Extensions' "$PROJECT/project.pbxproj" || fail "GAMELIFEMonitor appex is not embedded"
-grep -q 'com.apple.deviceactivity.monitor-extension' "$ROOT/GAMELIFEMonitor-Info.plist" || fail "Monitor extension NSExtensionPointIdentifier missing"
-grep -q 'sendCompletionNotification' "$ROOT/GAMELIFEMonitor/GAMELIFEMonitor.swift" || fail "Monitor extension completion notification missing"
 grep -q 'case workoutCount = \"workoutCount\"' "$ROOT/GAMELIFE/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing workout-count HealthKit option"
 grep -q 'healthKitDataDidUpdate' "$ROOT/GAMELIFE/Services/HealthKitManager.swift" || fail "HealthKit update notification missing"
 grep -q 'healthKitDataDidUpdate' "$ROOT/GAMELIFE/Services/GameEngine.swift" || fail "GameEngine should react to HealthKit updates"
-grep -q 'screenTimeDataDidUpdate' "$ROOT/GAMELIFE/Services/GameEngine.swift" || fail "GameEngine should react to Screen Time updates"
-grep -q 'checkQuestProgress(for quest: DailyQuest)' "$ROOT/GAMELIFE/Services/ScreenTimeManager.swift" || fail "Screen Time quest progress evaluator missing"
 grep -q 'minimumVisitMinutes: configuredMinimumStay' "$ROOT/GAMELIFE/Services/LocationManager.swift" || fail "Location quest dwell-time configuration missing"
 grep -q 'failForAppExit' "$ROOT/GAMELIFE/Services/TrainingManager.swift" || fail "Training manager missing app-exit fail handler"
 grep -q 'phase == .background && trainingManager.isActive' "$ROOT/GAMELIFE/Views/Training/TrainingView.swift" || fail "Training view missing background fail trigger"

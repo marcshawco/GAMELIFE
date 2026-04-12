@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FamilyControls
 import CoreLocation
 import MapKit
 import Combine
@@ -54,8 +53,6 @@ struct QuestFormSheet: View {
     @State private var unit = "times"
 
     // Tracking-specific state
-    @State private var showScreenTimePicker = false
-    @State private var screenTimeSelection = FamilyActivitySelection()
     @State private var healthKitType: HealthKitQuestType = .steps
     @State private var locationAddress = ""
     @State private var locationCoordinate: LocationCoordinate?
@@ -105,9 +102,8 @@ struct QuestFormSheet: View {
         let hasTitle = !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasStats = !selectedStats.isEmpty
         let hasLocationAddress = trackingType != .location || !locationAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasScreenTimeSelection = trackingType != .screenTime || !AppFeatureFlags.screenTimeEnabled || (screenTimeSelection.applicationTokens.isEmpty == false || screenTimeSelection.categoryTokens.isEmpty == false)
         let hasValidatedLocation = trackingType != .location || locationCoordinate != nil
-        return hasTitle && hasStats && hasLocationAddress && hasScreenTimeSelection && hasValidatedLocation
+        return hasTitle && hasStats && hasLocationAddress && hasValidatedLocation
     }
 
     var body: some View {
@@ -302,9 +298,6 @@ struct QuestFormSheet: View {
                     .disabled(!isValid || isSaving)
                 }
             }
-            .sheet(isPresented: $showScreenTimePicker) {
-                ScreenTimeLinkSheet(selection: $screenTimeSelection)
-            }
             .sheet(isPresented: $showCreateBossSheet) {
                 BossFormSheet()
             }
@@ -329,10 +322,6 @@ struct QuestFormSheet: View {
             .keyboardDismissToolbar()
             .onAppear(perform: loadExistingQuest)
             .onChange(of: trackingType) { _, newType in
-                if !AppFeatureFlags.screenTimeEnabled && newType == .screenTime {
-                    trackingType = .manual
-                    return
-                }
                 if newType == .location && targetValue < 5 {
                     targetValue = 45
                 }
@@ -405,51 +394,6 @@ struct QuestFormSheet: View {
                 .buttonStyle(.plain)
                 Text(healthKitType.unit)
                     .foregroundStyle(SystemTheme.textSecondary)
-            }
-
-        case .screenTime:
-            if !AppFeatureFlags.screenTimeEnabled {
-                Text("Usage tracking is temporarily disabled for this beta.")
-                    .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textTertiary)
-            } else {
-                Button {
-                    showScreenTimePicker = true
-                } label: {
-                    HStack {
-                        Image(systemName: "apps.iphone")
-                            .foregroundStyle(SystemTheme.primaryBlue)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Select Apps/Categories")
-                                .foregroundStyle(SystemTheme.textPrimary)
-                            let selectedCount = screenTimeSelection.applicationTokens.count + screenTimeSelection.categoryTokens.count
-                            Text(selectedCount == 0 ? "No selections yet" : "\(selectedCount) selection(s) linked")
-                                .font(SystemTypography.captionSmall)
-                                .foregroundStyle(selectedCount == 0 ? SystemTheme.textTertiary : SystemTheme.primaryBlue)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(SystemTheme.textTertiary)
-                    }
-                }
-
-                HStack {
-                    Text("Target duration")
-                        .foregroundStyle(SystemTheme.textSecondary)
-                    Spacer()
-                    Button {
-                        HapticManager.shared.selection()
-                        activeWheelInput = .screenTimeTarget
-                    } label: {
-                        wheelInputPill(label: "Minutes", value: "\(Int(targetValue))")
-                    }
-                    .buttonStyle(.plain)
-                    Text("minutes")
-                        .foregroundStyle(SystemTheme.textSecondary)
-                }
             }
 
         case .location:
@@ -634,12 +578,6 @@ struct QuestFormSheet: View {
             } else {
                 Text("Progress auto-tracked with Apple Health (including data synced from Fitness, Strava, Peloton, and more).")
             }
-        case .screenTime:
-            if AppFeatureFlags.screenTimeEnabled {
-                Text("Progress auto-tracked with Screen Time APIs.")
-            } else {
-                Text("Usage tracking is temporarily disabled in this beta.")
-            }
         case .location:
             Text("Validate with Apple Maps first. Quest auto-completes after staying within the configured radius (\(radiusLabel)) for the configured duration.")
         case .timer:
@@ -663,9 +601,6 @@ struct QuestFormSheet: View {
         difficulty = quest.difficulty
         selectedStats = Set(quest.targetStats)
         trackingType = quest.trackingType
-        if !AppFeatureFlags.screenTimeEnabled && trackingType == .screenTime {
-            trackingType = .manual
-        }
         frequency = quest.resolvedFrequency
         targetValue = quest.targetValue
         unit = quest.unit
@@ -683,13 +618,6 @@ struct QuestFormSheet: View {
         } else if let restoredCoordinate = locationCoordinate {
             locationValidationMessage = "Using saved validated address: \(restoredCoordinate.locationName)"
             locationValidationIsError = false
-        }
-
-        if AppFeatureFlags.screenTimeEnabled,
-           quest.trackingType == .screenTime,
-           let selectionData = quest.screenTimeSelectionData,
-           let selection = ScreenTimeManager.shared.decodeSelection(from: selectionData) {
-            screenTimeSelection = selection
         }
 
         if quest.trackingType == .location, quest.unit == "visits", quest.targetValue <= 1 {
@@ -762,18 +690,13 @@ struct QuestFormSheet: View {
         }
 
         let now = Date()
-        let resolvedTrackingType: QuestTrackingType =
-            (!AppFeatureFlags.screenTimeEnabled && trackingType == .screenTime) ? .manual : trackingType
+        let resolvedTrackingType = trackingType
         let previousFrequency = existingQuest?.resolvedFrequency
         let expiresAt: Date
         if let existingQuest, previousFrequency == frequency {
             expiresAt = existingQuest.expiresAt
         } else {
             expiresAt = frequency.nextResetDate(from: now)
-        }
-
-        if resolvedTrackingType == .screenTime {
-            ScreenTimeManager.shared.selectedAppsToTrack = screenTimeSelection
         }
 
         let newQuest = DailyQuest(
@@ -792,8 +715,6 @@ struct QuestFormSheet: View {
             createdAt: existingQuest?.createdAt ?? now,
             expiresAt: expiresAt,
             healthKitIdentifier: resolvedTrackingType == .healthKit ? healthKitType.identifier : nil,
-            screenTimeCategory: resolvedTrackingType == .screenTime ? ScreenTimeManager.shared.getSelectionSummary(screenTimeSelection) : nil,
-            screenTimeSelectionData: resolvedTrackingType == .screenTime ? ScreenTimeManager.shared.encodeSelection(screenTimeSelection) : nil,
             locationCoordinate: resolvedCoordinate,
             locationAddress: resolvedTrackingType == .location ? trimmedAddress : nil,
             linkedBossID: selectedBossID,
@@ -915,7 +836,6 @@ struct QuestFormSheet: View {
         switch trackingType {
         case .manual: return "Complete this task to grow stronger."
         case .healthKit: return "Tracked via Apple Health."
-        case .screenTime: return "Tracked via Screen Time."
         case .location:
             let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
             let minimumMinutes = Int(max(5, targetValue))
@@ -930,8 +850,6 @@ struct QuestFormSheet: View {
         switch trackingType {
         case .healthKit:
             return healthKitType.unit
-        case .screenTime:
-            return "minutes"
         case .location:
             return "minutes"
         default:
@@ -943,7 +861,6 @@ struct QuestFormSheet: View {
         switch type {
         case .manual: return "Manual"
         case .healthKit: return "Health"
-        case .screenTime: return "Usage"
         case .location: return "Location"
         case .timer: return "Timer"
         }
@@ -967,8 +884,6 @@ struct QuestFormSheet: View {
             return Array(1...100).map { WheelValueOption(value: Double($0), label: "\($0)") }
         case .healthTarget:
             return healthTargetOptions
-        case .screenTimeTarget:
-            return Array(stride(from: 5, through: 360, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
         case .locationDuration:
             return Array(stride(from: 5, through: 240, by: 5)).map { WheelValueOption(value: Double($0), label: "\($0) min") }
         case .locationRadius:
@@ -1000,7 +915,7 @@ struct QuestFormSheet: View {
 
     private func wheelBinding(for input: QuestWheelInput) -> Binding<Double> {
         switch input {
-        case .manualTarget, .healthTarget, .screenTimeTarget, .locationDuration:
+        case .manualTarget, .healthTarget, .locationDuration:
             return $targetValue
         case .locationRadius:
             return $locationRadiusMeters
@@ -1081,7 +996,6 @@ struct QuestFormSheet: View {
 private enum QuestWheelInput: String, Identifiable {
     case manualTarget
     case healthTarget
-    case screenTimeTarget
     case locationDuration
     case locationRadius
 
@@ -1091,7 +1005,6 @@ private enum QuestWheelInput: String, Identifiable {
         switch self {
         case .manualTarget: return "Quest Target"
         case .healthTarget: return "Health Target"
-        case .screenTimeTarget: return "Usage Limit"
         case .locationDuration: return "Minimum Stay"
         case .locationRadius: return "Tracking Radius"
         }
@@ -1101,7 +1014,6 @@ private enum QuestWheelInput: String, Identifiable {
         switch self {
         case .manualTarget: return "Choose how many actions define success for this quest."
         case .healthTarget: return "Set the amount needed for this auto-tracked target."
-        case .screenTimeTarget: return "Pick the number of minutes tied to completion."
         case .locationDuration: return "Set how long the user must stay at the location."
         case .locationRadius: return "Choose how tight the location tracking zone should be."
         }
