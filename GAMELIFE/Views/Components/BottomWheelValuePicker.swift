@@ -33,7 +33,7 @@ struct BottomWheelValuePickerSheet: View {
 
     var body: some View {
         ZStack {
-            Color.black
+            SystemTheme.backgroundPrimary
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -60,7 +60,7 @@ struct BottomWheelValuePickerSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(SystemTypography.titleSmall)
-                .foregroundStyle(.white)
+                .foregroundStyle(SystemTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
@@ -85,7 +85,7 @@ struct BottomWheelValuePickerSheet: View {
     private var pickerBar: some View {
         VStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(Color.white.opacity(0.35))
+                .fill(SystemTheme.textTertiary.opacity(0.45))
                 .frame(width: 54, height: 5)
                 .padding(.top, 2)
                 .padding(.bottom, 12)
@@ -105,7 +105,7 @@ struct BottomWheelValuePickerSheet: View {
 
                 Text(confirmTitle)
                     .font(SystemTypography.body)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SystemTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .allowsTightening(true)
@@ -139,7 +139,7 @@ struct BottomWheelValuePickerSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(red: 0.11, green: 0.11, blue: 0.12))
+                .fill(SystemTheme.backgroundElevated)
                 .ignoresSafeArea(edges: .bottom)
         )
     }
