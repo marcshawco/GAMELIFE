@@ -54,7 +54,7 @@ struct QuestFormSheet: View {
 
     // Tracking-specific state
     @State private var healthKitType: HealthKitQuestType = .steps
-    @State private var showHealthTypeOptions = false
+    @State private var showHealthTypePicker = false
     @State private var locationAddress = ""
     @State private var locationCoordinate: LocationCoordinate?
     @State private var locationRadiusMeters: Double = 804.67
@@ -320,6 +320,12 @@ struct QuestFormSheet: View {
                     confirmTitle: "Apply"
                 )
             }
+            .sheet(isPresented: $showHealthTypePicker) {
+                BottomHealthTypePickerSheet(
+                    selection: $healthKitType,
+                    accentColor: SystemTheme.primaryBlue
+                )
+            }
             .keyboardDismissToolbar()
             .onAppear(perform: loadExistingQuest)
             .onChange(of: trackingType) { _, newType in
@@ -376,72 +382,27 @@ struct QuestFormSheet: View {
             }
 
         case .healthKit:
-            VStack(alignment: .leading, spacing: 10) {
+            HStack {
                 Text("Health Data Type")
-                    .font(SystemTypography.caption)
                     .foregroundStyle(SystemTheme.textSecondary)
-
+                Spacer()
                 Button {
                     HapticManager.shared.selection()
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
-                        showHealthTypeOptions.toggle()
-                    }
+                    showHealthTypePicker = true
                 } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: healthKitType.icon)
-                            .foregroundStyle(SystemTheme.primaryBlue)
-                            .frame(width: 24)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(healthKitType.displayName)
-                                .font(SystemTypography.body)
-                                .foregroundStyle(SystemTheme.textPrimary)
-                            Text("Source: Apple Health")
-                                .font(SystemTypography.captionSmall)
-                                .foregroundStyle(SystemTheme.textTertiary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(SystemTheme.textTertiary)
-                            .rotationEffect(.degrees(showHealthTypeOptions ? 180 : 0))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(SystemTheme.backgroundSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: SystemRadius.small)
-                            .stroke(SystemTheme.borderSecondary, lineWidth: 1)
-                    )
+                    wheelInputPill(label: "Metric", value: healthKitType.displayName)
                 }
                 .buttonStyle(.plain)
+            }
 
-                if showHealthTypeOptions {
-                    VStack(spacing: 6) {
-                        ForEach(HealthKitQuestType.allCases, id: \.self) { type in
-                            Button {
-                                HapticManager.shared.selection()
-                                healthKitType = type
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
-                                    showHealthTypeOptions = false
-                                }
-                            } label: {
-                                HealthTypeOptionRow(
-                                    type: type,
-                                    isSelected: healthKitType == type
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(8)
-                    .background(SystemTheme.backgroundTertiary.opacity(0.75))
-                    .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+            HStack {
+                Image(systemName: healthKitType.icon)
+                    .foregroundStyle(SystemTheme.primaryBlue)
+                    .frame(width: 22)
+                Text("Source: Apple Health")
+                    .font(SystemTypography.captionSmall)
+                    .foregroundStyle(SystemTheme.textTertiary)
+                Spacer()
             }
 
             HStack {
@@ -1103,42 +1064,122 @@ private struct AddressSuggestion: Identifiable, Equatable {
     }
 }
 
-private struct HealthTypeOptionRow: View {
-    let type: HealthKitQuestType
-    let isSelected: Bool
+private struct BottomHealthTypePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @Binding var selection: HealthKitQuestType
+    let accentColor: Color
+
+    @State private var draftSelection: HealthKitQuestType = .steps
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: type.icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(isSelected ? SystemTheme.backgroundPrimary : SystemTheme.primaryBlue)
-                .frame(width: 26, height: 26)
-                .background(isSelected ? SystemTheme.primaryBlue : SystemTheme.primaryBlue.opacity(0.12))
-                .clipShape(Circle())
+        ZStack {
+            SystemTheme.backgroundPrimary
+                .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(type.displayName)
-                    .font(SystemTypography.bodySmall)
-                    .foregroundStyle(SystemTheme.textPrimary)
-                Text(type.unit)
-                    .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textTertiary)
+            VStack(spacing: 0) {
+                header
+                    .padding(.horizontal, 22)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
+
+                pickerBar
             }
-
-            Spacer()
-
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(SystemTheme.primaryBlue)
-            }
+            .padding(.bottom, 8)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .background(isSelected ? SystemTheme.primaryBlue.opacity(0.08) : SystemTheme.backgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
-        .overlay(
-            RoundedRectangle(cornerRadius: SystemRadius.small)
-                .stroke(isSelected ? SystemTheme.primaryBlue.opacity(0.45) : Color.clear, lineWidth: 1)
+        .presentationDetents([.fraction(0.5)])
+        .presentationDragIndicator(.visible)
+        .onAppear {
+            draftSelection = selection
+        }
+        .onChange(of: draftSelection) { _, _ in
+            HapticManager.shared.selection()
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Health Parameter")
+                .font(SystemTypography.titleSmall)
+                .foregroundStyle(SystemTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .allowsTightening(true)
+
+            Rectangle()
+                .fill(accentColor)
+                .frame(width: 42, height: 4)
+                .clipShape(Capsule())
+
+            Text("Choose which Apple Health metric completes this quest.")
+                .font(SystemTypography.caption)
+                .foregroundStyle(SystemTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
+                .allowsTightening(true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var pickerBar: some View {
+        VStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(SystemTheme.textTertiary.opacity(0.45))
+                .frame(width: 54, height: 5)
+                .padding(.top, 2)
+                .padding(.bottom, 12)
+
+            HStack {
+                Button {
+                    HapticManager.shared.selection()
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .frame(width: 44, height: 44)
+                }
+
+                Spacer()
+
+                Text("Apply")
+                    .font(SystemTypography.body)
+                    .foregroundStyle(SystemTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .allowsTightening(true)
+
+                Spacer()
+
+                Button {
+                    selection = draftSelection
+                    HapticManager.shared.success()
+                    dismiss()
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(accentColor)
+                        .frame(width: 44, height: 44)
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
+
+            Picker("Health Parameter", selection: $draftSelection) {
+                ForEach(HealthKitQuestType.allCases, id: \.self) { type in
+                    Text(type.displayName)
+                        .tag(type)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(height: 196)
+            .clipped()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(SystemTheme.backgroundElevated)
+                .ignoresSafeArea(edges: .bottom)
         )
     }
 }
