@@ -53,6 +53,12 @@ final class CloudKitSyncManager: ObservableObject {
         guard !didStart else { return }
         didStart = true
 
+        guard !isSimulatorRuntime else {
+            isCloudKitAvailable = false
+            lastSyncEvent = "CloudKit sync disabled in Simulator."
+            return
+        }
+
         Task { @MainActor [weak self] in
             await self?.refreshAvailability()
         }
@@ -64,6 +70,7 @@ final class CloudKitSyncManager: ObservableObject {
         bossFights: [BossFight],
         recentActivity: [ActivityLogEntry]
     ) {
+        guard !isSimulatorRuntime else { return }
         guard isCloudKitAvailable else { return }
         guard !uploadsMuted else { return }
 
@@ -100,6 +107,7 @@ final class CloudKitSyncManager: ObservableObject {
     }
 
     func fetchLatestSnapshotIfNewer(force: Bool = false) async -> CloudGameStateSnapshot? {
+        guard !isSimulatorRuntime else { return nil }
         if !didStart {
             start()
         }
@@ -145,6 +153,14 @@ final class CloudKitSyncManager: ObservableObject {
 
     // MARK: - Private
 
+    private var isSimulatorRuntime: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+
     private var deviceID: String {
         if let existing = defaults.string(forKey: cloudSyncDeviceIDKey), !existing.isEmpty {
             return existing
@@ -162,6 +178,12 @@ final class CloudKitSyncManager: ObservableObject {
     }
 
     private func refreshAvailability() async {
+        guard !isSimulatorRuntime else {
+            isCloudKitAvailable = false
+            lastSyncEvent = "CloudKit sync disabled in Simulator."
+            return
+        }
+
         lastAvailabilityCheckDate = Date()
         do {
             let status = try await accountStatus()
