@@ -364,6 +364,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "PRAXIS reads Health data like steps, active energy, and exercise minutes to automatically track quest progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "PRAXIS requests HealthKit access only to support Apple Health permission compatibility. PRAXIS does not write Health data.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "PRAXIS uses your location to support location-based quests and visit tracking.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PRAXIS uses your location while the app is open to support location-based quests.";
 				INFOPLIST_KEY_UIAppFonts_0 = "Resources/Fonts/Good Times Rg.otf";
@@ -416,6 +417,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "PRAXIS reads Health data like steps, active energy, and exercise minutes to automatically track quest progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "PRAXIS requests HealthKit access only to support Apple Health permission compatibility. PRAXIS does not write Health data.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "PRAXIS uses your location to support location-based quests and visit tracking.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PRAXIS uses your location while the app is open to support location-based quests.";
 				INFOPLIST_KEY_UIAppFonts_0 = "Resources/Fonts/Good Times Rg.otf";

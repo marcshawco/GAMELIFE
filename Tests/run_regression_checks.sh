@@ -12,9 +12,7 @@ fail() {
 echo "Running static regression checks..."
 
 grep -q 'INFOPLIST_KEY_NSHealthShareUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthShareUsageDescription"
-if grep -q 'INFOPLIST_KEY_NSHealthUpdateUsageDescription' "$PROJECT/project.pbxproj"; then
-  fail "Health update usage description should not be present while HealthKit access is read-only"
-fi
+grep -q 'INFOPLIST_KEY_NSHealthUpdateUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthUpdateUsageDescription required by App Store HealthKit validation"
 if grep -q 'INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription' "$PROJECT/project.pbxproj"; then
   fail "Clinical health records usage description should not be present without clinical record access"
 fi
