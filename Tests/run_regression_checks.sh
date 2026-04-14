@@ -12,9 +12,17 @@ fail() {
 echo "Running static regression checks..."
 
 grep -q 'INFOPLIST_KEY_NSHealthShareUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthShareUsageDescription"
-grep -q 'INFOPLIST_KEY_NSHealthUpdateUsageDescription' "$PROJECT/project.pbxproj" || fail "Missing NSHealthUpdateUsageDescription"
+if grep -q 'INFOPLIST_KEY_NSHealthUpdateUsageDescription' "$PROJECT/project.pbxproj"; then
+  fail "Health update usage description should not be present while HealthKit access is read-only"
+fi
+if grep -q 'INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription' "$PROJECT/project.pbxproj"; then
+  fail "Clinical health records usage description should not be present without clinical record access"
+fi
+grep -Fq 'requestAuthorization(toShare: [], read: readTypes)' "$ROOT/GAMELIFE/Services/HealthKitManager.swift" || fail "HealthKit authorization should remain read-only"
 grep -q 'INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "' "$PROJECT/project.pbxproj" || fail "Missing NSLocationWhenInUseUsageDescription"
 grep -q 'INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "' "$PROJECT/project.pbxproj" || fail "Missing NSLocationAlwaysAndWhenInUseUsageDescription"
+grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/GAMELIFE/PrivacyInfo.xcprivacy" || fail "App privacy manifest missing UserDefaults required-reason declaration"
+grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/PRAXISWidgets/PrivacyInfo.xcprivacy" || fail "Widget privacy manifest missing UserDefaults required-reason declaration"
 
 REMOVED_ENTITLEMENT='com.apple.developer.family-''controls'
 if grep -q "$REMOVED_ENTITLEMENT" "$ROOT/GAMELIFE/GAMELIFE.entitlements"; then
