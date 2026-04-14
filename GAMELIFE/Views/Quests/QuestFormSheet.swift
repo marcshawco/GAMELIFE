@@ -54,6 +54,7 @@ struct QuestFormSheet: View {
 
     // Tracking-specific state
     @State private var healthKitType: HealthKitQuestType = .steps
+    @State private var showHealthTypeOptions = false
     @State private var locationAddress = ""
     @State private var locationCoordinate: LocationCoordinate?
     @State private var locationRadiusMeters: Double = 804.67
@@ -375,9 +376,71 @@ struct QuestFormSheet: View {
             }
 
         case .healthKit:
-            Picker("Data Type", selection: $healthKitType) {
-                ForEach(HealthKitQuestType.allCases, id: \.self) { type in
-                    Text(type.displayName).tag(type)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Health Data Type")
+                    .font(SystemTypography.caption)
+                    .foregroundStyle(SystemTheme.textSecondary)
+
+                Button {
+                    HapticManager.shared.selection()
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+                        showHealthTypeOptions.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: healthKitType.icon)
+                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .frame(width: 24)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(healthKitType.displayName)
+                                .font(SystemTypography.body)
+                                .foregroundStyle(SystemTheme.textPrimary)
+                            Text("Source: Apple Health")
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.textTertiary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(SystemTheme.textTertiary)
+                            .rotationEffect(.degrees(showHealthTypeOptions ? 180 : 0))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(SystemTheme.backgroundSecondary)
+                    .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SystemRadius.small)
+                            .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if showHealthTypeOptions {
+                    VStack(spacing: 6) {
+                        ForEach(HealthKitQuestType.allCases, id: \.self) { type in
+                            Button {
+                                HapticManager.shared.selection()
+                                healthKitType = type
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+                                    showHealthTypeOptions = false
+                                }
+                            } label: {
+                                HealthTypeOptionRow(
+                                    type: type,
+                                    isSelected: healthKitType == type
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(8)
+                    .background(SystemTheme.backgroundTertiary.opacity(0.75))
+                    .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
 
@@ -1040,6 +1103,46 @@ private struct AddressSuggestion: Identifiable, Equatable {
     }
 }
 
+private struct HealthTypeOptionRow: View {
+    let type: HealthKitQuestType
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: type.icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isSelected ? SystemTheme.backgroundPrimary : SystemTheme.primaryBlue)
+                .frame(width: 26, height: 26)
+                .background(isSelected ? SystemTheme.primaryBlue : SystemTheme.primaryBlue.opacity(0.12))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(type.displayName)
+                    .font(SystemTypography.bodySmall)
+                    .foregroundStyle(SystemTheme.textPrimary)
+                Text(type.unit)
+                    .font(SystemTypography.captionSmall)
+                    .foregroundStyle(SystemTheme.textTertiary)
+            }
+
+            Spacer()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(SystemTheme.primaryBlue)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(isSelected ? SystemTheme.primaryBlue.opacity(0.08) : SystemTheme.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
+        .overlay(
+            RoundedRectangle(cornerRadius: SystemRadius.small)
+                .stroke(isSelected ? SystemTheme.primaryBlue.opacity(0.45) : Color.clear, lineWidth: 1)
+        )
+    }
+}
+
 @MainActor
 private final class AddressAutocompleteProvider: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published private(set) var suggestions: [AddressSuggestion] = []
@@ -1119,6 +1222,20 @@ enum HealthKitQuestType: String, CaseIterable {
         case .sleep: return "Sleep"
         case .water: return "Water Intake"
         case .mindfulness: return "Mindful Minutes"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .steps: return "figure.walk"
+        case .distance: return "figure.walk.motion"
+        case .activeEnergy: return "flame.fill"
+        case .exerciseMinutes: return "timer"
+        case .workoutCount: return "figure.run"
+        case .standHours: return "figure.stand"
+        case .sleep: return "bed.double.fill"
+        case .water: return "drop.fill"
+        case .mindfulness: return "brain.head.profile"
         }
     }
 
