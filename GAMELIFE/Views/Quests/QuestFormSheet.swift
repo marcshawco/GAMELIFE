@@ -76,6 +76,7 @@ struct QuestFormSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var activeWheelInput: QuestWheelInput?
+    @State private var showValidationFeedback = false
 
     private var linkableBosses: [BossFight] {
         gameEngine.activeBossFights.sorted {
@@ -100,18 +101,71 @@ struct QuestFormSheet: View {
     }
 
     private var isValid: Bool {
-        let hasTitle = !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasStats = !selectedStats.isEmpty
         let hasLocationAddress = trackingType != .location || !locationAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasValidatedLocation = trackingType != .location || locationCoordinate != nil
         return hasTitle && hasStats && hasLocationAddress && hasValidatedLocation
+    }
+
+    private var hasTitle: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasStats: Bool {
+        !selectedStats.isEmpty
+    }
+
+    private var hasLocationAddress: Bool {
+        trackingType != .location || !locationAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasValidatedLocation: Bool {
+        trackingType != .location || locationCoordinate != nil
+    }
+
+    private var validationSummaryText: String {
+        if isValid {
+            return mode.isEditing ? "Ready to save this quest." : "Ready to create this quest."
+        }
+
+        var missing: [String] = []
+        if !hasTitle { missing.append("name") }
+        if !hasStats { missing.append("stat") }
+        if trackingType == .location {
+            if !hasLocationAddress {
+                missing.append("address")
+            } else if !hasValidatedLocation {
+                missing.append("validated address")
+            }
+        }
+
+        return "Required before \(mode.isEditing ? "saving" : "creating"): \(missing.joined(separator: ", "))."
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Quest Title", text: $title)
+                    questReadinessCard
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 6, trailing: 16))
+
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("Quest Title", text: $title)
+                            .onChange(of: title) { _, _ in
+                                if isValid {
+                                    showValidationFeedback = false
+                                }
+                            }
+
+                        if showValidationFeedback && !hasTitle {
+                            Label("Give this quest a name so it can be created.", systemImage: "exclamationmark.triangle.fill")
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.warningOrange)
+                        }
+                    }
+
                     TextField("Description (optional)", text: $description)
                 } header: {
                     Text("Quest Details")
@@ -211,9 +265,20 @@ struct QuestFormSheet: View {
                         .contentShape(Rectangle())
                     }
                 } header: {
-                    Text("Target Stats (Select 1-3)")
+                    HStack(spacing: 6) {
+                        Text("Target Stats (Select 1-3)")
+                        if showValidationFeedback && !hasStats {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(SystemTheme.warningOrange)
+                        }
+                    }
                 } footer: {
-                    Text("Selected stats receive XP when this quest is completed.")
+                    if showValidationFeedback && !hasStats {
+                        Text("Select at least one stat. This tells PRAXIS where to award XP when the quest is completed.")
+                            .foregroundStyle(SystemTheme.warningOrange)
+                    } else {
+                        Text("Selected stats receive XP when this quest is completed.")
+                    }
                 }
 
                 Section {
@@ -296,13 +361,14 @@ struct QuestFormSheet: View {
                     Button(mode.isEditing ? "Save" : "Create") {
                         Task { await saveQuest() }
                     }
-                    .disabled(!isValid || isSaving)
+                    .fontWeight(isValid ? .semibold : .regular)
+                    .disabled(isSaving)
                 }
             }
             .sheet(isPresented: $showCreateBossSheet) {
                 BossFormSheet()
             }
-            .alert("Unable to Save Quest", isPresented: Binding(
+            .alert(mode.isEditing ? "Unable to Save Quest" : "Unable to Create Quest", isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
             )) {
@@ -355,6 +421,121 @@ struct QuestFormSheet: View {
                 addressAutocomplete.updateQuery(locationAddress)
             }
         }
+    }
+
+    private var questReadinessCard: some View {
+        let accentColor = isValid
+            ? SystemTheme.successGreen
+            : (showValidationFeedback ? SystemTheme.warningOrange : SystemTheme.primaryBlue)
+
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.16))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: isValid ? "checkmark.seal.fill" : "checklist")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(accentColor)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isValid ? "Quest ready" : "Quest requirements")
+                        .font(SystemTypography.titleSmall)
+                        .foregroundStyle(SystemTheme.textPrimary)
+                    Text(validationSummaryText)
+                        .font(SystemTypography.caption)
+                        .foregroundStyle(showValidationFeedback && !isValid ? SystemTheme.warningOrange : SystemTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            VStack(spacing: 8) {
+                requirementRow(
+                    title: "Name",
+                    detail: hasTitle ? title.trimmingCharacters(in: .whitespacesAndNewlines) : "Enter a quest title",
+                    isComplete: hasTitle,
+                    showWarning: showValidationFeedback
+                )
+
+                requirementRow(
+                    title: "Stat",
+                    detail: hasStats ? "\(selectedStats.count) selected" : "Choose at least one target stat",
+                    isComplete: hasStats,
+                    showWarning: showValidationFeedback
+                )
+
+                if trackingType == .location {
+                    requirementRow(
+                        title: "Address",
+                        detail: hasLocationAddress ? "Address entered" : "Enter a location address",
+                        isComplete: hasLocationAddress,
+                        showWarning: showValidationFeedback
+                    )
+
+                    requirementRow(
+                        title: "Validation",
+                        detail: hasValidatedLocation ? "Apple Maps validated" : "Validate address before creating",
+                        isComplete: hasValidatedLocation,
+                        showWarning: showValidationFeedback
+                    )
+                }
+            }
+
+            if showValidationFeedback && !isValid {
+                Text("Tip: the Create button will explain what is missing, but the quest can only be created after every required item above is checked.")
+                    .font(SystemTypography.captionSmall)
+                    .foregroundStyle(SystemTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(SystemTheme.backgroundSecondary)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(accentColor.opacity(showValidationFeedback || isValid ? 0.9 : 0.35), lineWidth: showValidationFeedback || isValid ? 1.5 : 1)
+        )
+        .shadow(
+            color: accentColor.opacity(showValidationFeedback || isValid ? 0.18 : 0.08),
+            radius: showValidationFeedback || isValid ? 12 : 6,
+            x: 0,
+            y: 4
+        )
+        .animation(.easeInOut(duration: SystemTheme.animationFast), value: isValid)
+        .animation(.easeInOut(duration: SystemTheme.animationFast), value: showValidationFeedback)
+    }
+
+    private func requirementRow(title: String, detail: String, isComplete: Bool, showWarning: Bool) -> some View {
+        let color = isComplete ? SystemTheme.successGreen : (showWarning ? SystemTheme.warningOrange : SystemTheme.textTertiary)
+
+        return HStack(spacing: 10) {
+            Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(SystemTypography.mono(12, weight: .bold))
+                    .foregroundStyle(SystemTheme.textPrimary)
+                Text(detail)
+                    .font(SystemTypography.captionSmall)
+                    .foregroundStyle(color)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(color.opacity(isComplete || showWarning ? 0.1 : 0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder
@@ -615,6 +796,10 @@ struct QuestFormSheet: View {
         } else if selectedStats.count < 3 {
             selectedStats.insert(stat)
         }
+
+        if isValid {
+            showValidationFeedback = false
+        }
     }
 
     private func loadExistingQuest() {
@@ -660,7 +845,10 @@ struct QuestFormSheet: View {
     }
 
     private func saveQuest() async {
-        guard isValid else { return }
+        guard isValid else {
+            presentValidationFeedback()
+            return
+        }
         isSaving = true
         defer { isSaving = false }
 
@@ -748,6 +936,12 @@ struct QuestFormSheet: View {
 
         gameEngine.saveQuest(newQuest, replacing: existingQuest?.id)
         dismiss()
+    }
+
+    private func presentValidationFeedback() {
+        showValidationFeedback = true
+        HapticManager.shared.warning()
+        errorMessage = validationSummaryText
     }
 
     private func validateLocationAddress() async {
