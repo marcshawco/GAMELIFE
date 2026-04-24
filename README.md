@@ -125,6 +125,55 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 
 ## Architecture
 
+```mermaid
+graph TD
+    User(["User"])
+
+    subgraph iOS["iOS App — GAMELIFE"]
+        Views["**SwiftUI Views**\nStatus · Quests · Training · Bosses · Shop · Settings"]
+        GE["**GameEngine** @MainActor\n━━━━━━━━━━━━━━━━━━━━━━\nPlayer · Quests · Bosses · Activity Logs\nXP / Leveling · Stats · Economy\nDeath Mechanics · Sync Orchestration"]
+
+        subgraph Managers["Service Layer"]
+            HKM["HealthKitManager"]
+            LocM["LocationManager"]
+            NotifM["NotificationManager"]
+            CKM["CloudKitSyncManager"]
+            WCM["WatchConnectivityManager"]
+            TrM["TrainingManager"]
+            PenM["PenaltyManager"]
+            MktM["MarketplaceManager"]
+        end
+
+        subgraph Persistence["Local Persistence"]
+            UD["UserDefaults\nPlayerDataManager · QuestDataManager\nBossDataManager · AchievementDataManager"]
+            Cache["RuntimeCacheManager\nQuest Order · HealthKit Snapshots · Location State"]
+        end
+    end
+
+    subgraph Extensions["App Extensions"]
+        Watch["watchOS App\nGAMELIFEWatch + Extension"]
+        Widgets["Home Screen Widgets\nPRAXISWidgets\nStatus · Quests · Boss"]
+    end
+
+    subgraph Platform["Apple Platform Integrations"]
+        HK["HealthKit\nSteps · Sleep · Workouts\nWeight · Body Fat · Hydration"]
+        Loc["Core Location\nGeofencing · Dwell Time\nApple Maps Validation"]
+        CK["CloudKit\niCloud Private DB\nCross-Device Sync"]
+        Notif["UserNotifications\nReminders · Alerts · Smart Engagement"]
+    end
+
+    User --> Views
+    Views <-->|"@EnvironmentObject / @Published"| GE
+    GE --> Managers
+    GE -->|"WidgetSnapshotStore + App Group"| Widgets
+    Managers --> Persistence
+    HKM <--> HK
+    LocM <--> Loc
+    CKM <-->|"Debounced 1.5s"| CK
+    NotifM --> Notif
+    WCM <-->|"WatchConnectivity"| Watch
+```
+
 ### Source of Truth
 
 `GameEngine` (`@MainActor`) owns canonical game state:
