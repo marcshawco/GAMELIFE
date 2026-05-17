@@ -349,12 +349,21 @@ struct QuestFormSheet: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(SystemTheme.backgroundPrimary)
+            .background(
+                ZStack {
+                    GW.bg
+                    GWAurora()
+                }
+                .ignoresSafeArea()
+            )
             .navigationTitle(mode.isEditing ? "Edit Quest" : "Create Quest")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(GW.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundStyle(GW.mute)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -362,9 +371,11 @@ struct QuestFormSheet: View {
                         Task { await saveQuest() }
                     }
                     .fontWeight(isValid ? .semibold : .regular)
+                    .foregroundStyle(GW.cyan)
                     .disabled(isSaving)
                 }
             }
+            .preferredColorScheme(.dark)
             .sheet(isPresented: $showCreateBossSheet) {
                 BossFormSheet()
             }
