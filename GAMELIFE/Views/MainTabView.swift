@@ -58,8 +58,8 @@ struct MainTabView: View {
                     }
                     .tag(2)
 
-                // Tab 3: Bosses (Projects & Long-term Goals)
-                BossesView()
+                // Tab 3: Bosses (Projects & Long-term Goals) — Glasswork direction
+                GlassworkBossesView()
                     .tabItem {
                         Label(LocalizedStringKey("Bosses"), systemImage: "bolt.shield.fill")
                     }
