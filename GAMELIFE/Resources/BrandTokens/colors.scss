@@ -1,0 +1,16 @@
+// PRAXIS · Brand color tokens
+$px-velvet: #0B0717; // Primary surface — 70% of any screen
+$px-surface: #150D26; // Cards, raised UI — 15%
+$px-ink: #F5F1FF; // Headlines, stat values
+$px-ink-soft: #D7CFEC; // Body copy on dark
+$px-mute: #A89DC8; // Labels, mono, secondary
+$px-hairline: rgba(255,255,255,0.08); // 1px borders
+$px-cyan: #3DE8E0; // System voice, gradient L
+$px-pink: #FF5BB0; // Energy, gradient R
+$px-gold: #F4C557; // Loot, value, ceremony
+$px-amber: #FFB347; // XP gain, warning soft
+$px-good: #5BE38E; // Streaks, positive only
+$px-danger: #FF4D6D; // HP loss, destructive
+
+$px-grad: linear-gradient(135deg, $px-cyan, $px-pink);
+$px-grad-gold: linear-gradient(135deg, #FFE08A, $px-gold);

@@ -123,55 +123,130 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 - Widget deep links into quests and bosses
 - Guided onboarding flow for first-run activation
 
+## Brand + Design System
+
+Two design directions ship side-by-side:
+
+- **System (live UI)** — the Solo Leveling-inspired "System" chrome currently on the tabs.
+  Tokens in `GAMELIFE/Design/SystemTheme.swift` (Color · Typography · Spacing · Radius
+  · GlowModifier · SystemCardModifier · HolographicBorderModifier).
+
+- **Glasswork (preview)** — direction 02 of the PRAXIS redesign. Frosted dark UI with
+  aurora background, cyan→pink system gradient, Space Grotesk numerals, JetBrains Mono
+  system voice. Lives in `GAMELIFE/Views/Glasswork/` and renders through
+  `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat · Economy
+  · Ceremony). Standalone — does not touch the live tabs or `GameEngine`.
+
+### Prism brand assets
+
+The PRAXIS Brand v1.0 package (`PRAXIS 2.0/`) ships into the iOS target as:
+
+- `Assets.xcassets/AppIconPrism.appiconset/` — iOS 18 single-size light/dark/tinted
+  alt icon. Sits alongside the existing `AppIconPraxis` / `AppIconPhoenix*` sets.
+- `Assets.xcassets/Praxis{Wordmark,Monogram}*.imageset/` — vector wordmark + P
+  monogram in gradient / ink / black variants, available as `Image("PraxisWordmarkGradient")`,
+  etc.
+- `Design/PraxisBrandColors.swift` — `Color.px*` design tokens
+  (`pxVelvet`, `pxSurface`, `pxInk`, `pxInkSoft`, `pxMute`, `pxCyan`, `pxPink`,
+  `pxGold`, `pxAmber`, `pxGood`, `pxDanger`) and `LinearGradient.pxSystem`.
+- `Resources/BrandTokens/` — `colors.css`, `colors.scss`, `tokens.json` for web /
+  cross-platform consumers.
+
+The HTML brand guidelines (`PRAXIS Brand Guidelines.html`, `Brand Board.html`,
+`Prism Icons.html`) and their supporting JSX live in `PRAXIS 2.0/` as the canonical
+reference; they are not bundled into the app.
+
 ## Architecture
 
 ```mermaid
-graph TD
-    User(["User"])
+flowchart LR
+    User(("User"))
 
-    subgraph iOS["iOS App — GAMELIFE"]
-        Views["**SwiftUI Views**\nStatus · Quests · Training · Bosses · Shop · Settings"]
-        GE["**GameEngine** @MainActor\n━━━━━━━━━━━━━━━━━━━━━━\nPlayer · Quests · Bosses · Activity Logs\nXP / Leveling · Stats · Economy\nDeath Mechanics · Sync Orchestration"]
+    subgraph App["iOS App Target: GAMELIFE"]
+        direction TB
 
-        subgraph Managers["Service Layer"]
-            HKM["HealthKitManager"]
-            LocM["LocationManager"]
-            NotifM["NotificationManager"]
-            CKM["CloudKitSyncManager"]
-            WCM["WatchConnectivityManager"]
-            TrM["TrainingManager"]
-            PenM["PenaltyManager"]
-            MktM["MarketplaceManager"]
+        Root["GAMELIFEApp\nRootView\nSplash / FirstLaunchSetup / MainTabView"]
+        Tabs["SwiftUI Tabs\nStatus · Quests · Training · Bosses · Shop\nSettings + onboarding flows"]
+
+        Engine["GameEngine @MainActor\nCanonical game state\nPlayer · Quests · Bosses · Activity Log\nXP · Stats · Gold · HP · Streaks\nQuest completion / undo · boss damage · death mechanics"]
+
+        subgraph Services["Service Managers"]
+            direction LR
+            HealthSvc["HealthKitManager\nDaily metrics + observer queries"]
+            LocationSvc["LocationManager\nQuest geofences + dwell time"]
+            NotifySvc["NotificationManager\nQuest reminders + engagement alerts"]
+            CloudSvc["CloudKitSyncManager\nPrivate DB snapshot sync"]
+            WatchSvc["WatchConnectivityManager\niPhone to Watch snapshots + commands"]
+            TrainingSvc["TrainingManager\nFocus sessions + fail/complete outcomes"]
+            MarketSvc["MarketplaceManager\nRewards + consumables"]
+            AnalyticsSvc["AnalyticsManager\nLocal usage analytics"]
+            PermissionSvc["PermissionManager\nNeural Link setup state"]
+            DeepLinkSvc["DeepLinkManager\npraxis:// route handling"]
         end
 
-        subgraph Persistence["Local Persistence"]
-            UD["UserDefaults\nPlayerDataManager · QuestDataManager\nBossDataManager · AchievementDataManager"]
-            Cache["RuntimeCacheManager\nQuest Order · HealthKit Snapshots · Location State"]
+        subgraph LocalState["Local State"]
+            direction LR
+            Defaults["UserDefaults JSON stores\nPlayerDataManager\nQuestDataManager\nActivityLogDataManager\nLocationDataManager\nSettingsManager"]
+            RuntimeCache["RuntimeCacheManager\nQuest order\nHealth daily snapshot\nLocation runtime snapshot\nAchievement / marketplace / status UI cache"]
+            AppGroup["App Group UserDefaults\ngroup.com.gamelife.shared\nWidgetSnapshotPayload"]
         end
     end
 
-    subgraph Extensions["App Extensions"]
-        Watch["watchOS App\nGAMELIFEWatch + Extension"]
-        Widgets["Home Screen Widgets\nPRAXISWidgets\nStatus · Quests · Boss"]
+    subgraph Extensions["Companion Surfaces"]
+        direction TB
+        Widgets["PRAXISWidgets\nStatus widget\nNext Up widget\nBoss widget"]
+        Watch["GAMELIFEWatch + Extension\nWatchHomeView\nWatchSessionStore"]
     end
 
-    subgraph Platform["Apple Platform Integrations"]
-        HK["HealthKit\nSteps · Sleep · Workouts\nWeight · Body Fat · Hydration"]
-        Loc["Core Location\nGeofencing · Dwell Time\nApple Maps Validation"]
-        CK["CloudKit\niCloud Private DB\nCross-Device Sync"]
-        Notif["UserNotifications\nReminders · Alerts · Smart Engagement"]
+    subgraph Apple["Apple Frameworks"]
+        direction TB
+        HealthKit["HealthKit\nSteps · workouts · sleep · stand\nWater · mindfulness · distance\nWeight · body fat"]
+        CoreLocation["Core Location + Maps\nAuthorization\nGeofence monitoring\nAddress validation"]
+        UserNotifications["UserNotifications\nLocal reminders\nCompletion alerts\nInactivity shutdown"]
+        CloudKit["CloudKit Private Database\nGameStateSnapshot records\nDebounced uploads\nForeground / timer fetches"]
+        WatchConnectivity["WatchConnectivity\nApplication context\nReachable messages\nQueued quest completions"]
+        WidgetKit["WidgetKit\nTimeline reloads\nDeep links back into app"]
     end
 
-    User --> Views
-    Views <-->|"@EnvironmentObject / @Published"| GE
-    GE --> Managers
-    GE -->|"WidgetSnapshotStore + App Group"| Widgets
-    Managers --> Persistence
-    HKM <--> HK
-    LocM <--> Loc
-    CKM <-->|"Debounced 1.5s"| CK
-    NotifM --> Notif
-    WCM <-->|"WatchConnectivity"| Watch
+    User --> Root --> Tabs
+    Tabs <-->|"@EnvironmentObject + @Published updates"| Engine
+    Tabs -->|"User actions\ncreate / complete / undo\ntrain / buy / configure"| Engine
+    Tabs -->|"Pull to refresh"| HealthSvc
+    Tabs -->|"Location refresh"| LocationSvc
+    Tabs -->|"Permission setup"| PermissionSvc
+
+    HealthKit <-->|"read-only authorization\nmetric refresh"| HealthSvc
+    HealthSvc -->|"healthKitDataDidUpdate\nprogress + auto-completion"| Engine
+
+    CoreLocation <-->|"monitor regions\nlocation updates"| LocationSvc
+    LocationSvc -->|"locationVisitCompleted"| Engine
+
+    Engine -->|"schedule / refresh reminders"| NotifySvc --> UserNotifications
+    Engine -->|"training rewards / failures"| TrainingSvc
+    Engine -->|"shop purchases / recovery items"| MarketSvc
+    Engine -->|"feature + screen events"| AnalyticsSvc
+    PermissionSvc --> HealthSvc
+    PermissionSvc --> LocationSvc
+    DeepLinkSvc -->|"route tab + target item"| Tabs
+
+    Engine <-->|"load on launch\nsave every 30s + on mutation"| Defaults
+    HealthSvc --> RuntimeCache
+    LocationSvc --> RuntimeCache
+    Defaults --> Engine
+
+    Engine -->|"save()"| AppGroup
+    AppGroup --> Widgets
+    Widgets --> WidgetKit
+    WidgetKit -->|"praxis://status\npraxis://quests\npraxis://bosses"| DeepLinkSvc
+
+    Engine -->|"queueUpload\n1.5s debounce"| CloudSvc
+    CloudSvc <-->|"latest snapshot if newer"| CloudKit
+    CloudSvc -->|"apply remote snapshot"| Engine
+
+    Engine -->|"publishSnapshot"| WatchSvc
+    WatchSvc <-->|"snapshot + completeQuest command"| WatchConnectivity
+    WatchConnectivity <-->|"application context / messages"| Watch
+    Watch -->|"complete quest from wrist"| WatchConnectivity
 ```
 
 ### Source of Truth
