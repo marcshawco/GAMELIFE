@@ -145,8 +145,14 @@ Two design directions ship side-by-side:
 
 The PRAXIS Brand v1.0 package (`PRAXIS 2.0/`) ships into the iOS target as:
 
-- `Assets.xcassets/AppIconPrism.appiconset/` — iOS 18 single-size light/dark/tinted
-  alt icon. Sits alongside the existing `AppIconPraxis` / `AppIconPhoenix*` sets.
+- **Prism alternate app icons — three colorways**, selectable from Settings → App Icon:
+    - `AppIconPrism` — *Signal* (cyan → pink). Primary direction.
+    - `AppIconPrismSolar` — *Solar* (gold → crimson). Warm alternate.
+    - `AppIconPrismVerdant` — *Verdant* (mint → periwinkle). Cool alternate.
+
+  Each set ships iOS 18 light / dark / tinted appearances generated from the
+  Prism SVG geometry (see `PRAXIS 2.0/brand/prism-variants.jsx`). The Apple
+  App Tint pipeline recolors the tinted asset to the user's chosen system tint.
 - `Assets.xcassets/Praxis{Wordmark,Monogram}*.imageset/` — vector wordmark + P
   monogram in gradient / ink / black variants, available as `Image("PraxisWordmarkGradient")`,
   etc.

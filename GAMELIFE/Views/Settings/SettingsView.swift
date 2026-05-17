@@ -388,6 +388,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     case cream
     case white
     case appTint
+    case prismSignal
+    case prismSolar
+    case prismVerdant
 
     var id: String { rawValue }
 
@@ -397,6 +400,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .cream: return "AppIconPhoenixIvoryV2"
         case .white: return "AppIconPhoenixWhiteV2"
         case .appTint: return "AppIconPhoenixDarkV2"
+        case .prismSignal: return "AppIconPrism"
+        case .prismSolar: return "AppIconPrismSolar"
+        case .prismVerdant: return "AppIconPrismVerdant"
         }
     }
 
@@ -406,6 +412,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .cream: return "Cream"
         case .white: return "White"
         case .appTint: return "App Tint"
+        case .prismSignal: return "Prism · Signal"
+        case .prismSolar: return "Prism · Solar"
+        case .prismVerdant: return "Prism · Verdant"
         }
     }
 
@@ -415,6 +424,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .cream: return "AppIconPreviewIvory"
         case .white: return "AppIconPreviewWhite"
         case .appTint: return "AppIconPreviewDark"
+        case .prismSignal: return "AppIconPreviewPrismSignal"
+        case .prismSolar: return "AppIconPreviewPrismSolar"
+        case .prismVerdant: return "AppIconPreviewPrismVerdant"
         }
     }
 
@@ -424,6 +436,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .cream
         case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .white
         case "AppIconPhoenixDark", "AppIconPhoenixDarkV2": self = .appTint
+        case "AppIconPrism": self = .prismSignal
+        case "AppIconPrismSolar": self = .prismSolar
+        case "AppIconPrismVerdant": self = .prismVerdant
         default: return nil
         }
     }
