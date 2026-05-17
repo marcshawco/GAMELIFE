@@ -65,8 +65,8 @@ struct MainTabView: View {
                     }
                     .tag(3)
 
-                // Tab 4: Shop (Rewards Marketplace)
-                ShopView()
+                // Tab 4: Shop (Rewards Marketplace) — Glasswork direction
+                GlassworkShopView()
                     .tabItem {
                         Label(LocalizedStringKey("Shop"), systemImage: "bag.fill")
                     }

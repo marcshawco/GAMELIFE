@@ -137,14 +137,16 @@ Two design directions ship side-by-side:
     - `Views/Glasswork/Screens/` — pure-mock gallery screens used by
       `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat ·
       Economy · Ceremony). Reachable from **Settings → Design Preview**.
-    - `Views/Glasswork/Live/` — production screens wired to `GameEngine`. Currently:
-      `GlassworkStatusView` (Status), `GlassworkQuestsView` +
-      `GlassworkQuestClearedModal` (Quests), `GlassworkBossesView` +
-      `GlassworkBossFightView` (Bosses · tap a boss to enter the fight, tap a
-      pending micro-task or STRIKE NOW to deal damage), and
-      `GlassworkTrainingView` (Training · duration picker → live timer ring
-      ticking against `gameEngine.activeDungeon`, ABANDON calls
-      `failDungeon()`). Shop tab migrates in the next version.
+    - `Views/Glasswork/Live/` — production screens wired to `GameEngine` /
+      `MarketplaceManager`. All five primary tabs are now Glasswork:
+        - `GlassworkStatusView` (Status)
+        - `GlassworkQuestsView` + `GlassworkQuestClearedModal` (Quests)
+        - `GlassworkTrainingView` (Training · duration picker → live timer ring
+          ticking against `gameEngine.activeDungeon`)
+        - `GlassworkBossesView` + `GlassworkBossFightView` (Bosses · tap a
+          pending micro-task or STRIKE NOW to deal damage)
+        - `GlassworkShopView` (Shop · featured hero + category filter +
+          tappable 2-col grid bound to `MarketplaceManager.availableRewards`)
     - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
       PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
       stack, voice samples, Prism colorways, application rules). Reachable from
