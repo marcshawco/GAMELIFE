@@ -139,10 +139,12 @@ Two design directions ship side-by-side:
       Economy · Ceremony). Reachable from **Settings → Design Preview**.
     - `Views/Glasswork/Live/` — production screens wired to `GameEngine`. Currently:
       `GlassworkStatusView` (Status), `GlassworkQuestsView` +
-      `GlassworkQuestClearedModal` (Quests), and `GlassworkBossesView` +
+      `GlassworkQuestClearedModal` (Quests), `GlassworkBossesView` +
       `GlassworkBossFightView` (Bosses · tap a boss to enter the fight, tap a
-      pending micro-task or STRIKE NOW to deal damage). Training / Shop tabs
-      migrate in subsequent versions.
+      pending micro-task or STRIKE NOW to deal damage), and
+      `GlassworkTrainingView` (Training · duration picker → live timer ring
+      ticking against `gameEngine.activeDungeon`, ABANDON calls
+      `failDungeon()`). Shop tab migrates in the next version.
     - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
       PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
       stack, voice samples, Prism colorways, application rules). Reachable from

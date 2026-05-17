@@ -51,8 +51,8 @@ struct MainTabView: View {
                     }
                     .tag(1)
 
-                // Tab 2: Training (Focus Timer - formerly Dungeon)
-                TrainingView()
+                // Tab 2: Training (Focus Timer - formerly Dungeon) — Glasswork direction
+                GlassworkTrainingView()
                     .tabItem {
                         Label(LocalizedStringKey("Training"), systemImage: "timer")
                     }
