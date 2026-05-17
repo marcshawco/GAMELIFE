@@ -138,8 +138,10 @@ Two design directions ship side-by-side:
       `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat ·
       Economy · Ceremony). Reachable from **Settings → Design Preview**.
     - `Views/Glasswork/Live/` — production screens wired to `GameEngine`. Currently:
-      `GlassworkStatusView` replaces the SystemTheme Status tab. Other tabs migrate
-      in subsequent versions.
+      `GlassworkStatusView` replaces the Status tab and `GlassworkQuestsView`
+      replaces the Quests tab — tap a quest's checkbox to clear it and watch
+      `GlassworkQuestClearedModal` overlay with the live XP / gold / stat-gain
+      payload. Bosses / Training / Shop tabs migrate in subsequent versions.
     - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
       PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
       stack, voice samples, Prism colorways, application rules). Reachable from

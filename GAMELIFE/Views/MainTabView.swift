@@ -44,8 +44,8 @@ struct MainTabView: View {
                     }
                     .tag(0)
 
-                // Tab 1: Quests (Daily/Micro Tasks)
-                QuestsView()
+                // Tab 1: Quests (Daily/Micro Tasks) — Glasswork direction
+                GlassworkQuestsView()
                     .tabItem {
                         Label(LocalizedStringKey("Quests"), systemImage: "list.bullet.rectangle")
                     }
