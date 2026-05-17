@@ -121,7 +121,10 @@ struct GlassworkStatusView: View {
     }
 
     private var hpStreakStrip: some View {
-        HStack(spacing: 10) {
+        // `.frame(maxWidth: .infinity)` on each card lets the HStack split
+        // width evenly *before* the inner GWBar (which uses GeometryReader)
+        // can claim it all. Cards stay short via `.fixedSize` on vertical.
+        HStack(alignment: .top, spacing: 10) {
             GWCard(paddingX: 14, paddingY: 10) {
                 VStack(spacing: 8) {
                     HStack(alignment: .firstTextBaseline) {
@@ -141,8 +144,9 @@ struct GlassworkStatusView: View {
                           ),
                           glow: false)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .layoutPriority(1.4)
+            .frame(maxWidth: .infinity)
 
             GWCard(paddingX: 14, paddingY: 10) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -162,7 +166,9 @@ struct GlassworkStatusView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var nextUpCard: some View {
