@@ -126,8 +126,20 @@ struct PermissionManagerView: View {
                 Text("Manage detailed permissions in iOS Settings")
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(
+            ZStack {
+                GW.bg
+                GWAurora()
+            }
+            .ignoresSafeArea()
+        )
         .navigationTitle("Neural Links")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(GW.bg, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        .accentColor(GW.cyan)
         .onAppear {
             Task {
                 await refreshPermissions()
