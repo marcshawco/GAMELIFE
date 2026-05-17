@@ -252,8 +252,20 @@ struct SettingsView: View {
                 Text("About")
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(
+            ZStack {
+                GW.bg
+                GWAurora()
+            }
+            .ignoresSafeArea()
+        )
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(GW.bg, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        .accentColor(GW.cyan)
         .alert("Reset Quest Progress?", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
@@ -624,7 +636,13 @@ struct AppIconPickerView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .background(SystemTheme.backgroundPrimary.ignoresSafeArea())
+        .background(
+            ZStack {
+                GW.bg
+                GWAurora()
+            }
+            .ignoresSafeArea()
+        )
         .navigationTitle("App Icon")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

@@ -72,7 +72,7 @@ struct MainTabView: View {
                     }
                     .tag(4)
             }
-            .tint(SystemTheme.primaryBlue)
+            .tint(GW.cyan)
 
             // System Message Banner Overlay
             if let message = currentSystemMessage {
