@@ -131,11 +131,15 @@ Two design directions ship side-by-side:
   Tokens in `GAMELIFE/Design/SystemTheme.swift` (Color · Typography · Spacing · Radius
   · GlowModifier · SystemCardModifier · HolographicBorderModifier).
 
-- **Glasswork (preview)** — direction 02 of the PRAXIS redesign. Frosted dark UI with
-  aurora background, cyan→pink system gradient, Space Grotesk numerals, JetBrains Mono
-  system voice. Lives in `GAMELIFE/Views/Glasswork/` and renders through
-  `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat · Economy
-  · Ceremony). Standalone — does not touch the live tabs or `GameEngine`.
+- **Glasswork (live, in progress)** — direction 02 of the PRAXIS redesign. Frosted
+  dark UI with aurora background, cyan→pink system gradient, Space Grotesk numerals,
+  JetBrains Mono system voice. Lives in `GAMELIFE/Views/Glasswork/`:
+    - `Views/Glasswork/Screens/` — pure-mock gallery screens used by
+      `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat ·
+      Economy · Ceremony). Reachable from **Settings → Design Preview**.
+    - `Views/Glasswork/Live/` — production screens wired to `GameEngine`. Currently:
+      `GlassworkStatusView` replaces the SystemTheme Status tab. Other tabs migrate
+      in subsequent versions.
 
 ### Prism brand assets
 

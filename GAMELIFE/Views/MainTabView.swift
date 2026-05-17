@@ -37,8 +37,8 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                // Tab 0: Status (Player Profile & Stats)
-                StatusView()
+                // Tab 0: Status (Player Profile & Stats) — Glasswork direction
+                GlassworkStatusView()
                     .tabItem {
                         Label(LocalizedStringKey("Status"), systemImage: "person.fill")
                     }
