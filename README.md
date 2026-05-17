@@ -147,6 +147,10 @@ Two design directions ship side-by-side:
           pending micro-task or STRIKE NOW to deal damage)
         - `GlassworkShopView` (Shop · featured hero + category filter +
           tappable 2-col grid bound to `MarketplaceManager.availableRewards`)
+      Auxiliary surfaces:
+        - `GlassworkActivityLogView` — full system log grouped by day,
+          bound to `gameEngine.recentActivity`. Reached from Status →
+          MOMENTS card → "VIEW ALL".
       Ceremony moments overlay over the tabs:
         - `GlassworkLevelUpView` — heavy aurora + gold rays + prev→new
           numerals + UNLOCKED rewards. Auto-fires when

@@ -12,6 +12,7 @@ import SwiftUI
 
 struct GlassworkStatusView: View {
     @EnvironmentObject var gameEngine: GameEngine
+    @State private var showActivityLog = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -24,6 +25,7 @@ struct GlassworkStatusView: View {
                         radarCard
                         hpStreakStrip
                         nextUpCard
+                        momentsCard
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16)
@@ -34,6 +36,12 @@ struct GlassworkStatusView: View {
         }
         .foregroundStyle(GW.ink)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showActivityLog) {
+            NavigationStack {
+                GlassworkActivityLogView()
+            }
+            .preferredColorScheme(.dark)
+        }
     }
 
     // MARK: subviews
@@ -184,6 +192,78 @@ struct GlassworkStatusView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var momentsCard: some View {
+        let recent = Array(gameEngine.recentActivity.sorted { $0.timestamp > $1.timestamp }.prefix(3))
+        return GWCard(paddingX: 14, paddingY: 12) {
+            VStack(spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("SYSTEM · MOMENTS")
+                        .font(GW.mono(10, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Button { showActivityLog = true } label: {
+                        Text("VIEW ALL")
+                            .font(GW.mono(10, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundStyle(GW.cyan)
+                    }
+                    .buttonStyle(.plain)
+                }
+                if recent.isEmpty {
+                    Text("Complete a quest to populate your log.")
+                        .font(GW.sans(12))
+                        .foregroundStyle(GW.mute)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    ForEach(recent) { entry in
+                        momentRow(entry)
+                    }
+                }
+            }
+        }
+    }
+
+    private func momentRow(_ e: ActivityLogEntry) -> some View {
+        let tint = momentTint(for: e.type)
+        return HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(timeLabel(e.timestamp))
+                .font(GW.mono(9))
+                .foregroundStyle(GW.mute)
+                .frame(width: 40, alignment: .leading)
+            Text(e.title)
+                .font(GW.sans(12))
+                .foregroundStyle(GW.inkSoft)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            Circle().fill(tint).frame(width: 6, height: 6)
+                .shadow(color: tint, radius: 3)
+        }
+    }
+
+    private func momentTint(for type: ActivityLogType) -> Color {
+        switch type {
+        case .questCompleted:      return GW.cyan
+        case .bossDefeated:        return GW.danger
+        case .rewardConsumed:      return GW.amber
+        case .achievementUnlocked: return GW.gold
+        }
+    }
+
+    private func timeLabel(_ d: Date) -> String {
+        let cal = Calendar.current
+        let f = DateFormatter()
+        if cal.isDateInToday(d) {
+            f.dateFormat = "HH:mm"
+            return f.string(from: d)
+        } else if cal.isDateInYesterday(d) {
+            return "Yest."
+        } else {
+            f.dateFormat = "d MMM"
+            return f.string(from: d)
         }
     }
 
