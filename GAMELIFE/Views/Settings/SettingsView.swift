@@ -190,6 +190,19 @@ struct SettingsView: View {
                 Text("Statistics")
             }
 
+            // Design Preview Section
+            Section {
+                NavigationLink {
+                    GlassworkGalleryView()
+                } label: {
+                    Label("Glasswork Redesign Preview", systemImage: "sparkles")
+                }
+            } header: {
+                Text("Design Preview")
+            } footer: {
+                Text("Direction 02 — aurora-on-velvet · cyan→pink. Standalone preview with mock data; live tabs are unchanged.")
+            }
+
             // Danger Zone Section
             Section {
                 Button {
