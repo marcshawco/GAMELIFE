@@ -11,6 +11,7 @@ import SwiftUI
 
 struct GlassworkBossesView: View {
     @EnvironmentObject var gameEngine: GameEngine
+    @State private var showSummonSheet = false
 
     var body: some View {
         NavigationStack {
@@ -44,6 +45,9 @@ struct GlassworkBossesView: View {
             .foregroundStyle(GW.ink)
             .preferredColorScheme(.dark)
             .toolbar(.hidden)
+        }
+        .sheet(isPresented: $showSummonSheet) {
+            BossFormSheet()
         }
     }
 
@@ -86,30 +90,34 @@ struct GlassworkBossesView: View {
     }
 
     private var summonCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                .foregroundStyle(GW.hairline)
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [3]))
-                        .foregroundStyle(GW.mute)
-                    Text("+").font(GW.mono(16)).foregroundStyle(GW.mute)
+        Button { showSummonSheet = true } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                    .foregroundStyle(GW.hairline)
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [3]))
+                            .foregroundStyle(GW.mute)
+                        Text("+").font(GW.mono(16)).foregroundStyle(GW.mute)
+                    }
+                    .frame(width: 32, height: 32)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Summon a new boss")
+                            .font(GW.sans(13, weight: .medium))
+                            .foregroundStyle(GW.ink)
+                        Text("A LONG-FORM GOAL · 30–90 DAYS")
+                            .font(GW.mono(9))
+                            .tracking(0.5)
+                            .foregroundStyle(GW.mute)
+                    }
+                    Spacer()
                 }
-                .frame(width: 32, height: 32)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Summon a new boss")
-                        .font(GW.sans(13, weight: .medium))
-                        .foregroundStyle(GW.ink)
-                    Text("A LONG-FORM GOAL · 30–90 DAYS")
-                        .font(GW.mono(9))
-                        .tracking(0.5)
-                        .foregroundStyle(GW.mute)
-                }
+                .padding(14)
             }
-            .padding(14)
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: Boss card

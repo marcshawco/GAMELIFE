@@ -835,15 +835,29 @@ struct BossFormSheet: View {
                     Text("Defeat Rewards")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(
+                ZStack {
+                    GW.bg
+                    GWAurora()
+                }
+                .ignoresSafeArea()
+            )
             .navigationTitle("Create Boss")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(GW.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .preferredColorScheme(.dark)
+            .accentColor(GW.cyan)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundStyle(GW.mute)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") { createBoss() }
+                        .foregroundStyle(isValid ? GW.cyan : GW.mute)
                         .disabled(!isValid)
                 }
             }

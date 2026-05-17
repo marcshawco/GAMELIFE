@@ -155,6 +155,21 @@ Two design directions ship side-by-side:
         - `GlassworkLevelUpView` — heavy aurora + gold rays + prev→new
           numerals + UNLOCKED rewards. Auto-fires when
           `gameEngine.showLevelUpAlert` flips true.
+        - `DeathPenaltySummaryView` (in `MainTabView.swift`) — danger-
+          tinted aurora, [ SYSTEM · DEFEAT ] header, RANK / CURRENCY /
+          STAT LOSS Glasswork cards. Fires from
+          `gameEngine.deathPenaltySummary`.
+
+      Outer chrome:
+        - `MainTabView` tab-bar tint = `GW.cyan` so selected tab icons
+          read in System cyan.
+        - `SystemMessageBanner` (used by `SystemMessageHelper.show…`)
+          re-skinned to the [ SYSTEM · TITLE ] bracket motif with
+          accent hairline + dual shadow.
+        - Settings + AppIconPicker + Permissions screens + Quest Form
+          + Boss Form + Onboarding + First Launch all sit on the
+          velvet+aurora backdrop with toolbarBackground = `GW.bg` and
+          `accentColor = GW.cyan` — same engine logic, new chrome.
     - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
       PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
       stack, voice samples, Prism colorways, application rules). Reachable from
