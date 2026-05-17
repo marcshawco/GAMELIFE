@@ -112,6 +112,14 @@ struct MainTabView: View {
         .sheet(item: $gameEngine.deathPenaltySummary) { summary in
             DeathPenaltySummaryView(summary: summary)
         }
+        .fullScreenCover(isPresented: $gameEngine.showLevelUpAlert) {
+            if let data = gameEngine.lastLevelUpData {
+                GlassworkLevelUpView(data: data) {
+                    gameEngine.showLevelUpAlert = false
+                }
+                .presentationBackground(.clear)
+            }
+        }
     }
 }
 

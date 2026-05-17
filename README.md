@@ -138,7 +138,7 @@ Two design directions ship side-by-side:
       `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat ·
       Economy · Ceremony). Reachable from **Settings → Design Preview**.
     - `Views/Glasswork/Live/` — production screens wired to `GameEngine` /
-      `MarketplaceManager`. All five primary tabs are now Glasswork:
+      `MarketplaceManager`. All five primary tabs are Glasswork:
         - `GlassworkStatusView` (Status)
         - `GlassworkQuestsView` + `GlassworkQuestClearedModal` (Quests)
         - `GlassworkTrainingView` (Training · duration picker → live timer ring
@@ -147,6 +147,10 @@ Two design directions ship side-by-side:
           pending micro-task or STRIKE NOW to deal damage)
         - `GlassworkShopView` (Shop · featured hero + category filter +
           tappable 2-col grid bound to `MarketplaceManager.availableRewards`)
+      Ceremony moments overlay over the tabs:
+        - `GlassworkLevelUpView` — heavy aurora + gold rays + prev→new
+          numerals + UNLOCKED rewards. Auto-fires when
+          `gameEngine.showLevelUpAlert` flips true.
     - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
       PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
       stack, voice samples, Prism colorways, application rules). Reachable from
