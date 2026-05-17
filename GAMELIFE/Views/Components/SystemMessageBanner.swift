@@ -37,12 +37,12 @@ struct SystemMessage: Identifiable, Equatable {
 
         var color: Color {
             switch self {
-            case .info: return SystemTheme.primaryBlue
-            case .success: return SystemTheme.successGreen
-            case .warning: return SystemTheme.warningOrange
-            case .critical: return SystemTheme.criticalRed
-            case .levelUp: return SystemTheme.goldColor
-            case .questComplete: return SystemTheme.successGreen
+            case .info: return GW.cyan
+            case .success: return GW.good
+            case .warning: return GW.amber
+            case .critical: return GW.danger
+            case .levelUp: return GW.gold
+            case .questComplete: return GW.cyan
             }
         }
 
@@ -108,19 +108,20 @@ struct SystemMessageBanner: View {
         HStack(spacing: 12) {
             // Icon
             Image(systemName: message.type.icon)
-                .font(.system(size: 24))
+                .font(.system(size: 22))
                 .foregroundStyle(message.type.color)
-                .glow(color: message.type.color, radius: 8)
+                .shadow(color: message.type.color.opacity(0.6), radius: 6)
 
             // Content
             VStack(alignment: .leading, spacing: 2) {
-                Text("[SYSTEM] \(message.title)")
-                    .font(SystemTypography.systemMessage)
+                Text("[ SYSTEM · \(message.title.uppercased()) ]")
+                    .font(GW.mono(11, weight: .medium))
+                    .tracking(1.6)
                     .foregroundStyle(message.type.color)
 
                 Text(message.message)
-                    .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .font(GW.sans(12))
+                    .foregroundStyle(GW.inkSoft)
                     .lineLimit(2)
             }
 
@@ -131,23 +132,38 @@ struct SystemMessageBanner: View {
                 dismissBanner()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SystemTheme.textTertiary)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(GW.mute)
                     .padding(8)
             }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: SystemRadius.medium)
-                .fill(SystemTheme.backgroundTertiary)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    LinearGradient(colors: [Color.white.opacity(0.07), Color.white.opacity(0.02)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: SystemRadius.medium)
-                .stroke(message.type.color.opacity(0.5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(message.type.color.opacity(0.4), lineWidth: 1)
         )
-        .glow(color: message.type.color, radius: 5)
-        .padding(.horizontal, 16)
+        .overlay(alignment: .top) {
+            // Accent hairline along the top edge in the message color
+            Rectangle()
+                .fill(LinearGradient(colors: [.clear, message.type.color, .clear],
+                                     startPoint: .leading, endPoint: .trailing))
+                .frame(height: 1)
+                .padding(.horizontal, 14)
+                .offset(y: -0.5)
+        }
+        .shadow(color: message.type.color.opacity(0.25), radius: 12, y: 6)
+        .shadow(color: .black.opacity(0.4), radius: 18, y: 12)
+        .padding(.horizontal, 14)
         .padding(.top, 8)
         .offset(y: offsetY)
         .opacity(opacity)
