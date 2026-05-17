@@ -197,10 +197,15 @@ struct SettingsView: View {
                 } label: {
                     Label("Glasswork Redesign Preview", systemImage: "sparkles")
                 }
+                NavigationLink {
+                    BrandGuidelinesView()
+                } label: {
+                    Label("PRAXIS Brand Guidelines", systemImage: "book.closed")
+                }
             } header: {
                 Text("Design Preview")
             } footer: {
-                Text("Direction 02 — aurora-on-velvet · cyan→pink. Standalone preview with mock data; live tabs are unchanged.")
+                Text("Direction 02 — aurora-on-velvet · cyan→pink. The gallery shows mock screens; the brand guidelines render palette, type, voice, and the Prism colorways.")
             }
 
             // Danger Zone Section

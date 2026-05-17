@@ -140,6 +140,10 @@ Two design directions ship side-by-side:
     - `Views/Glasswork/Live/` — production screens wired to `GameEngine`. Currently:
       `GlassworkStatusView` replaces the SystemTheme Status tab. Other tabs migrate
       in subsequent versions.
+    - `Views/Glasswork/BrandGuidelinesView.swift` — in-app rendering of the
+      PRAXIS Brand Guidelines v1.0 (cover, palette with usage proportions, type
+      stack, voice samples, Prism colorways, application rules). Reachable from
+      **Settings → Design Preview → PRAXIS Brand Guidelines**.
 
 ### Prism brand assets
 
