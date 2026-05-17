@@ -38,8 +38,16 @@ struct GlassworkTrainingView: View {
     // MARK: Idle / start screen
 
     private var startScreen: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
+        // Compose the start screen as a vertically centered column so the
+        // pick-a-session card sits in the middle of the available space
+        // until the dungeon is actually running. GeometryReader lets the
+        // inner VStack stretch to at least the screen height so the
+        // Spacers actually do their job.
+        GeometryReader { geo in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 18) {
+                    Spacer(minLength: 24)
+
                 VStack(spacing: 6) {
                     Text("[ DUNGEON · DEEP FOCUS ]")
                         .font(GW.mono(10, weight: .medium))
@@ -55,7 +63,6 @@ struct GlassworkTrainingView: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 280)
                 }
-                .padding(.top, 8)
                 .frame(maxWidth: .infinity)
 
                 GWCard(paddingX: 14, paddingY: 14) {
@@ -113,17 +120,18 @@ struct GlassworkTrainingView: View {
                 }
                 .padding(.horizontal, 16)
 
-                Spacer(minLength: 16)
+                    GWButton(label: "ENTER DUNGEON", variant: .primary) {
+                        let title = sessionTitle.trimmingCharacters(in: .whitespaces).isEmpty
+                            ? "Deep Work Session" : sessionTitle
+                        gameEngine.startDungeon(minutes: pickedDuration, title: title)
+                    }
+                    .padding(.horizontal, 22)
 
-                GWButton(label: "ENTER DUNGEON", variant: .primary) {
-                    let title = sessionTitle.trimmingCharacters(in: .whitespaces).isEmpty
-                        ? "Deep Work Session" : sessionTitle
-                    gameEngine.startDungeon(minutes: pickedDuration, title: title)
+                    Spacer(minLength: 24)
                 }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 120)
+                .frame(maxWidth: .infinity, minHeight: geo.size.height)
+                .padding(.bottom, 110)
             }
-            .padding(.top, 32)
         }
     }
 

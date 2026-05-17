@@ -15,27 +15,43 @@ struct GlassworkStatusView: View {
     @State private var showActivityLog = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ZStack {
-                GW.bg.ignoresSafeArea()
-                GWAurora().ignoresSafeArea()
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 14) {
-                        topChip
-                        radarCard
-                        hpStreakStrip
-                        nextUpCard
-                        momentsCard
-                        Spacer(minLength: 0)
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+                ZStack {
+                    GW.bg.ignoresSafeArea()
+                    GWAurora().ignoresSafeArea()
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 14) {
+                            topChip
+                            radarCard
+                            hpStreakStrip
+                            nextUpCard
+                            momentsCard
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 110)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 110)
                 }
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
         }
         .foregroundStyle(GW.ink)
         .preferredColorScheme(.dark)
+        .accentColor(GW.cyan)
         .sheet(isPresented: $showActivityLog) {
             NavigationStack {
                 GlassworkActivityLogView()
