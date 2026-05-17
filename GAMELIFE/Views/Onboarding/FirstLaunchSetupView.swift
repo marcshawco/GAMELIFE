@@ -43,8 +43,10 @@ struct FirstLaunchSetupView: View {
 
     var body: some View {
         ZStack {
-            // Background
-            SystemTheme.backgroundPrimary
+            // Background — Glasswork velvet + aurora
+            GW.bg
+                .ignoresSafeArea()
+            GWAurora()
                 .ignoresSafeArea()
 
             // Animated particles

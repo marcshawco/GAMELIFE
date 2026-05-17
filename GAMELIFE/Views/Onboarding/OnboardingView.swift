@@ -18,8 +18,10 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Background
-            SystemTheme.backgroundPrimary
+            // Background — Glasswork velvet + aurora
+            GW.bg
+                .ignoresSafeArea()
+            GWAurora()
                 .ignoresSafeArea()
 
             // Animated particles
@@ -73,6 +75,8 @@ struct OnboardingView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
+        .accentColor(GW.cyan)
     }
 }
 
