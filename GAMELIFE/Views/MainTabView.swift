@@ -166,73 +166,124 @@ struct DeathPenaltySummaryView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("You were defeated.")
-                        .font(SystemTypography.titleMedium)
-                        .foregroundStyle(SystemTheme.criticalRed)
-
-                    Text("You missed \(summary.missedQuestCount) required quest\(summary.missedQuestCount == 1 ? "" : "s"). Health was restored, and penalties were applied.")
-                        .font(SystemTypography.body)
-                        .foregroundStyle(SystemTheme.textSecondary)
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Rank")
-                            .font(SystemTypography.systemMessage)
-                            .foregroundStyle(SystemTheme.textTertiary)
-                        Text(summary.wasDemoted ? "\(summary.previousRank.rawValue) → \(summary.newRank.rawValue)" : "\(summary.previousRank.rawValue) (no demotion)")
-                            .font(SystemTypography.mono(16, weight: .bold))
-                            .foregroundStyle(summary.wasDemoted ? SystemTheme.warningOrange : SystemTheme.textPrimary)
+            ZStack {
+                GW.bg.ignoresSafeArea()
+                Canvas { ctx, size in
+                    let w = size.width, h = size.height
+                    func ellipse(_ c: CGPoint, _ rx: CGFloat, _ ry: CGFloat, _ color: Color) {
+                        let rect = CGRect(x: c.x - rx, y: c.y - ry, width: rx * 2, height: ry * 2)
+                        let g = Gradient(colors: [color, color.opacity(0)])
+                        ctx.fill(Path(ellipseIn: rect),
+                                 with: .radialGradient(g, center: c,
+                                                       startRadius: 0,
+                                                       endRadius: max(rx, ry)))
                     }
-                    .padding()
-                    .systemCard()
+                    ellipse(CGPoint(x: w * 0.5, y: h * 0.0), w * 0.9, h * 0.5, GW.danger.opacity(0.35))
+                    ellipse(CGPoint(x: w * 0.5, y: h * 1.0), w * 0.7, h * 0.5, GW.danger.opacity(0.15))
+                }
+                .ignoresSafeArea()
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Currency")
-                            .font(SystemTypography.systemMessage)
-                            .foregroundStyle(SystemTheme.textTertiary)
-                        Text("-\(summary.goldLost) Gold")
-                            .font(SystemTypography.mono(15, weight: .bold))
-                            .foregroundStyle(SystemTheme.goldColor)
-                        Text("\(summary.goldRemaining) Gold remaining")
-                            .font(SystemTypography.caption)
-                            .foregroundStyle(SystemTheme.textSecondary)
-                    }
-                    .padding()
-                    .systemCard()
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("[ SYSTEM · DEFEAT ]")
+                            .font(GW.mono(10, weight: .medium))
+                            .tracking(3)
+                            .foregroundStyle(GW.danger)
+                        Text("You were defeated.")
+                            .font(GW.display(28, weight: .bold))
+                            .tracking(-0.5)
+                            .foregroundStyle(GW.ink)
+                        Text("You missed \(summary.missedQuestCount) required quest\(summary.missedQuestCount == 1 ? "" : "s"). Health was restored, and penalties were applied.")
+                            .font(GW.sans(13))
+                            .foregroundStyle(GW.mute)
+                            .lineSpacing(3)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Stat Loss (\(summary.statLossPercent)%)")
-                            .font(SystemTypography.systemMessage)
-                            .foregroundStyle(SystemTheme.textTertiary)
-                        ForEach(summary.statLosses) { loss in
-                            HStack {
-                                Label(loss.stat.rawValue, systemImage: loss.stat.icon)
-                                    .font(SystemTypography.caption)
-                                    .foregroundStyle(loss.stat.color)
-                                Spacer()
-                                Text("-\(loss.lost)")
-                                    .font(SystemTypography.mono(13, weight: .bold))
-                                    .foregroundStyle(SystemTheme.criticalRed)
+                        GWCard(paddingX: 14, paddingY: 12) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("RANK")
+                                    .font(GW.mono(9, weight: .medium))
+                                    .tracking(2)
+                                    .foregroundStyle(GW.mute)
+                                Text(summary.wasDemoted ? "\(summary.previousRank.rawValue) → \(summary.newRank.rawValue)" : "\(summary.previousRank.rawValue) · NO DEMOTION")
+                                    .font(GW.display(18, weight: .bold))
+                                    .foregroundStyle(summary.wasDemoted ? GW.amber : GW.ink)
+                            }
+                        }
+
+                        GWCard(paddingX: 14, paddingY: 12) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("CURRENCY")
+                                    .font(GW.mono(9, weight: .medium))
+                                    .tracking(2)
+                                    .foregroundStyle(GW.mute)
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("−\(summary.goldLost.formatted()) g")
+                                        .font(GW.display(20, weight: .bold))
+                                        .foregroundStyle(GW.danger)
+                                    Spacer()
+                                    Text("\(summary.goldRemaining.formatted()) remaining")
+                                        .font(GW.mono(10))
+                                        .foregroundStyle(GW.mute)
+                                }
+                            }
+                        }
+
+                        GWCard(paddingX: 14, paddingY: 12) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Text("STAT LOSS")
+                                        .font(GW.mono(9, weight: .medium))
+                                        .tracking(2)
+                                        .foregroundStyle(GW.mute)
+                                    Spacer()
+                                    Text("−\(summary.statLossPercent)%")
+                                        .font(GW.mono(9, weight: .bold))
+                                        .tracking(2)
+                                        .foregroundStyle(GW.danger)
+                                }
+                                ForEach(summary.statLosses) { loss in
+                                    HStack {
+                                        Text(loss.stat.rawValue)
+                                            .font(GW.mono(11, weight: .bold))
+                                            .tracking(1.2)
+                                            .foregroundStyle(loss.stat.color)
+                                        Text(loss.stat.rawValue == "STR" ? "Strength"
+                                             : loss.stat.rawValue == "INT" ? "Intelligence"
+                                             : loss.stat.rawValue == "AGI" ? "Agility"
+                                             : loss.stat.rawValue == "VIT" ? "Vitality"
+                                             : loss.stat.rawValue == "WIL" ? "Willpower"
+                                             : loss.stat.rawValue == "SPI" ? "Spirit"
+                                             : "")
+                                            .font(GW.sans(12))
+                                            .foregroundStyle(GW.inkSoft)
+                                        Spacer()
+                                        Text("−\(loss.lost)")
+                                            .font(GW.mono(12, weight: .bold))
+                                            .foregroundStyle(GW.danger)
+                                    }
+                                }
                             }
                         }
                     }
-                    .padding()
-                    .systemCard()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
-                .padding()
             }
-            .background(SystemTheme.backgroundPrimary.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Continue") {
-                        dismiss()
-                    }
+                    Button("Continue") { dismiss() }
+                        .font(GW.sans(14, weight: .semibold))
+                        .foregroundStyle(GW.cyan)
                 }
             }
+            .toolbarBackground(GW.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .navigationTitle("Death Report")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .foregroundStyle(GW.ink)
+        .preferredColorScheme(.dark)
     }
 }
 
