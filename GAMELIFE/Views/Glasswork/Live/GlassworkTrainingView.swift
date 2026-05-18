@@ -66,9 +66,13 @@ struct GlassworkTrainingView: View {
         GeometryReader { geo in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
-                    Spacer(minLength: 16)
+                    Spacer(minLength: 8)
 
                     header
+
+                    hunterLogStrip
+
+                    quickStartRow
 
                     sessionCard
 
@@ -95,7 +99,9 @@ struct GlassworkTrainingView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
+            PulsingRune()
+                .frame(width: 64, height: 64)
             HStack(spacing: 6) {
                 BreathingDot(color: GW.cyan, size: 6)
                 Text("[ DUNGEON · DEEP FOCUS ]")
@@ -115,6 +121,118 @@ struct GlassworkTrainingView: View {
                 .frame(maxWidth: 280)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: Hunter log strip — quick stats above the picker
+
+    private var hunterLogStrip: some View {
+        let cleared = gameEngine.player.dungeonsClearedCount
+        let streak = gameEngine.player.currentStreak
+        let level = gameEngine.player.level
+        return HStack(spacing: 10) {
+            statTile(value: "\(cleared)", label: "CLEARED", tint: GW.cyan)
+            statTile(value: "\(streak)", label: "STREAK · D", tint: GW.amber)
+            statTile(value: "LV \(level)", label: "HUNTER", tint: GW.pink)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func statTile(value: String, label: String, tint: Color) -> some View {
+        GWCard(paddingX: 10, paddingY: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(GW.mono(8, weight: .medium))
+                    .tracking(1.4)
+                    .foregroundStyle(GW.mute)
+                Text(value)
+                    .font(GW.display(20, weight: .bold))
+                    .foregroundStyle(tint)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: Quick-start presets — visual entry points for common sessions
+
+    private struct Preset {
+        let label: String
+        let glyph: String
+        let minutes: Int
+        let blurb: String
+    }
+
+    private var presets: [Preset] {
+        [
+            Preset(label: "SPRINT",   glyph: "bolt.fill",       minutes: 15, blurb: "Quick burn"),
+            Preset(label: "POMODORO", glyph: "circle.hexagonpath.fill", minutes: 25, blurb: "Classic 25"),
+            Preset(label: "DEEP",     glyph: "moon.stars.fill", minutes: 45, blurb: "Real work"),
+            Preset(label: "MARATHON", glyph: "flame.fill",      minutes: 90, blurb: "All in"),
+        ]
+    }
+
+    private var quickStartRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(presets, id: \.label) { p in
+                    presetCard(p)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private func presetCard(_ p: Preset) -> some View {
+        let isSelected = pickedDuration == p.minutes && !showCustomEditor
+        return Button {
+            pickedDuration = p.minutes
+            showCustomEditor = false
+            customDurationFocused = false
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Image(systemName: p.glyph)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isSelected ? GW.cyan : GW.mute)
+                Text(p.label)
+                    .font(GW.mono(10, weight: .bold))
+                    .tracking(1.4)
+                    .foregroundStyle(isSelected ? GW.cyan : GW.inkSoft)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(p.minutes)")
+                        .font(GW.display(20, weight: .bold))
+                        .foregroundStyle(isSelected ? GW.cyan : GW.ink)
+                    Text("M")
+                        .font(GW.mono(10))
+                        .foregroundStyle(GW.mute)
+                }
+                Text(p.blurb)
+                    .font(GW.mono(8))
+                    .tracking(0.8)
+                    .foregroundStyle(GW.mute)
+            }
+            .padding(12)
+            .frame(width: 110, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        LinearGradient(
+                            colors: isSelected
+                                ? [GW.cyan.opacity(0.10), GW.pink.opacity(0.05)]
+                                : [Color.white.opacity(0.04), Color.clear],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(
+                                isSelected ? GW.cyan.opacity(0.45) : GW.hairline,
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .shadow(color: isSelected ? GW.cyan.opacity(0.18) : .clear, radius: 12)
+        }
+        .buttonStyle(.plain)
     }
 
     private var sessionCard: some View {
@@ -541,6 +659,55 @@ struct GlassworkTrainingView: View {
             }
         }
         .opacity(0.55)
+    }
+}
+
+// MARK: - PulsingRune — a Prism-style rotating-square glyph that pulses
+
+private struct PulsingRune: View {
+    @State private var rotation: Double = 0
+    @State private var pulse: CGFloat = 0.85
+
+    var body: some View {
+        ZStack {
+            // Halo
+            Circle()
+                .fill(
+                    RadialGradient(colors: [GW.pink.opacity(0.35), .clear],
+                                   center: .center,
+                                   startRadius: 0,
+                                   endRadius: 48)
+                )
+                .scaleEffect(pulse)
+
+            // Outer hairline
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(GW.cyan.opacity(0.5), lineWidth: 1.5)
+                .frame(width: 44, height: 44)
+                .rotationEffect(.degrees(45 + rotation))
+
+            // Inner gradient face
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(GW.grad)
+                .frame(width: 28, height: 28)
+                .rotationEffect(.degrees(45 + rotation))
+                .shadow(color: GW.pink.opacity(0.45), radius: 12)
+
+            // White spark
+            Circle()
+                .fill(Color.white.opacity(0.95))
+                .frame(width: 4, height: 4)
+                .offset(x: -10, y: -10)
+                .rotationEffect(.degrees(rotation))
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 24).repeatForever(autoreverses: false)) {
+                rotation = 360
+            }
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
+                pulse = 1.15
+            }
+        }
     }
 }
 
