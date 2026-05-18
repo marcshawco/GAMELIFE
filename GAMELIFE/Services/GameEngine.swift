@@ -740,6 +740,63 @@ class GameEngine: ObservableObject {
         save()
     }
 
+    /// End a dungeon early without penalty. Awards XP / gold / stat XP
+    /// scaled by elapsed progress so the Hunter keeps proportional credit
+    /// for time invested. If `progress >= 1`, this is equivalent to
+    /// completing the dungeon naturally.
+    func endDungeonEarly() {
+        guard let dungeon = activeDungeon else { return }
+
+        dungeonTimer?.invalidate()
+        dungeonTimer = nil
+
+        if dungeon.isComplete {
+            completeDungeon()
+            return
+        }
+
+        let progress = max(0, min(1, dungeon.progress))
+        let partialXP = Int((Double(dungeon.xpReward) * progress).rounded())
+        let partialGold = Int((Double(dungeon.goldReward) * progress).rounded())
+        let elapsedMinutes = max(0, dungeon.elapsedSeconds / 60)
+
+        if partialXP > 0 {
+            _ = awardXP(partialXP)
+        }
+        if partialGold > 0 {
+            player.gold += partialGold
+        }
+        if progress > 0 {
+            for statType in dungeon.targetStats {
+                let baseStatXP = GameFormulas.statXP(difficulty: dungeon.difficulty) * 2
+                let scaled = Int((Double(baseStatXP) * progress).rounded())
+                if scaled > 0 {
+                    awardStatXP(statType, amount: scaled)
+                }
+            }
+            player.dungeonsClearedCount += 1
+        }
+
+        let detail: String
+        if partialGold > 0 {
+            detail = "+\(partialXP) XP · +\(partialGold) g · \(elapsedMinutes) min · \(Int(progress * 100))%"
+        } else {
+            detail = "+\(partialXP) XP · \(elapsedMinutes) min · \(Int(progress * 100))%"
+        }
+        recordExternalActivity(
+            type: .questCompleted,
+            title: "Dungeon ended · \(dungeon.title)",
+            detail: detail
+        )
+
+        activeDungeon?.fail()
+        isInDungeon = false
+        activeDungeon = nil
+
+        evaluateAchievementsIfNeeded()
+        save()
+    }
+
     // MARK: - Loot Box System
 
     /// Open a loot box and collect rewards

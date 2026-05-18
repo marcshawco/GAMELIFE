@@ -149,8 +149,12 @@ Two design directions ship side-by-side:
       `MarketplaceManager`. All five primary tabs are Glasswork:
         - `GlassworkStatusView` (Status)
         - `GlassworkQuestsView` + `GlassworkQuestClearedModal` (Quests)
-        - `GlassworkTrainingView` (Training · duration picker → live timer ring
-          ticking against `gameEngine.activeDungeon`)
+        - `GlassworkTrainingView` (Training · 15 / 25 / 45 / 60 / 90 / custom
+          duration picker → live timer ring ticking against
+          `gameEngine.activeDungeon`. **Ending early awards proportional
+          XP / gold** via `gameEngine.endDungeonEarly()` — no penalty, just
+          partial credit for time invested. Active view also shows live
+          elapsed time, earned-so-far totals, and a breathing-dot status.)
         - `GlassworkBossesView` + `GlassworkBossFightView` (Bosses · tap a
           pending micro-task or STRIKE NOW to deal damage)
         - `GlassworkShopView` (Shop · featured hero + category filter +
