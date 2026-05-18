@@ -453,13 +453,16 @@ struct StatRow: View {
 // MARK: - App Icon Support
 
 enum AppIconOption: String, CaseIterable, Identifiable {
-    /// Signal — primary AppIcon. Selecting clears any alt-icon override
-    /// so iOS shows the bundle's default Prism artwork.
+    /// Signal — primary AppIcon. Selecting clears any alt-icon override.
     case signal
-    /// Gold — S-Rank ceremonial alternate. Gold→amber facets.
+    /// Gold — gold → amber ceremonial alternate (S-Rank vibe).
     case gold
-    /// Crimson — Boss Raid alternate. Pink→crimson facets.
+    /// Crimson — pink → crimson on plum-black (Boss Raid vibe).
     case crimson
+    /// Solar — gold → crimson on coffee.
+    case solar
+    /// Verdant — mint → periwinkle on deep ink.
+    case verdant
 
     var id: String { rawValue }
 
@@ -468,6 +471,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .signal:  return nil
         case .gold:    return "AppIconPrismGold"
         case .crimson: return "AppIconPrismCrimson"
+        case .solar:   return "AppIconPrismSolar"
+        case .verdant: return "AppIconPrismVerdant"
         }
     }
 
@@ -476,6 +481,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .signal:  return "Prism · Signal"
         case .gold:    return "Prism · Gold"
         case .crimson: return "Prism · Crimson"
+        case .solar:   return "Prism · Solar"
+        case .verdant: return "Prism · Verdant"
         }
     }
 
@@ -484,6 +491,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .signal:  return "Cyan → pink · primary"
         case .gold:    return "S-Rank ceremonial alternate"
         case .crimson: return "Boss Raid alternate"
+        case .solar:   return "Gold → crimson · warm alternate"
+        case .verdant: return "Mint → periwinkle · cool alternate"
         }
     }
 
@@ -492,34 +501,34 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         case .signal:  return "AppIconPreviewPrismSignal"
         case .gold:    return "AppIconPreviewPrismGold"
         case .crimson: return "AppIconPreviewPrismCrimson"
+        case .solar:   return "AppIconPreviewPrismSolar"
+        case .verdant: return "AppIconPreviewPrismVerdant"
         }
     }
 
     /// Resolve the current alternate-icon name into an option. Legacy
-    /// Phoenix / pre-rename names migrate to `.signal` so users who
-    /// previously picked Black/Cream/White/App Tint/Solar/Verdant land
+    /// Phoenix / pre-rename names migrate to `.signal` so old users land
     /// on the new default.
     init?(iconName: String?) {
         switch iconName {
         case nil,
              "AppIconPrism",
-             "AppIconPrismSolar", "AppIconPrismVerdant",
              "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
              "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
              "AppIconPhoenixDark",  "AppIconPhoenixDarkV2":
             self = .signal
         case "AppIconPrismGold":    self = .gold
         case "AppIconPrismCrimson": self = .crimson
+        case "AppIconPrismSolar":   self = .solar
+        case "AppIconPrismVerdant": self = .verdant
         default: return nil
         }
     }
 
-    /// Names that should be force-migrated back to nil (= default AppIcon)
-    /// so iOS isn't asked to resolve an alt icon whose assets have been
-    /// removed from the catalog.
+    /// Names that no longer have catalog assets — force-migrated to nil
+    /// so iOS doesn't try to resolve a dead alt-icon.
     static let legacyAlternateNames: Set<String> = [
         "AppIconPrism",
-        "AppIconPrismSolar", "AppIconPrismVerdant",
         "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
         "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
         "AppIconPhoenixDark",  "AppIconPhoenixDarkV2",
@@ -565,7 +574,6 @@ final class AppIconManager: ObservableObject {
             SystemMessageHelper.showWarning("Alternate app icons are not supported on this device.")
             return
         }
-        normalizeLegacyIconIfNeeded()
 
         let targetIconName = option.iconName
         let currentIconName = UIApplication.shared.alternateIconName
@@ -575,15 +583,23 @@ final class AppIconManager: ObservableObject {
         pendingIconDisplayName = option.displayName
 
         UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                self?.refreshCurrentIcon()
-            }
+            // iOS is known to surface a non-nil `error` (often
+            // "Resource temporarily unavailable" in the Simulator) even
+            // when the swap actually succeeded. Don't trust the error
+            // parameter — wait a beat, then verify by reading
+            // alternateIconName back. Only warn if the icon really
+            // didn't change.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                guard let self else { return }
+                let nowName = UIApplication.shared.alternateIconName
+                self.refreshCurrentIcon()
 
-            if let error {
-                DispatchQueue.main.async {
-                    self?.hasPendingIconChange = false
-                    self?.pendingIconDisplayName = nil
-                    SystemMessageHelper.showWarning("Could not change app icon: \(error.localizedDescription)")
+                if nowName != targetIconName {
+                    self.hasPendingIconChange = false
+                    self.pendingIconDisplayName = nil
+                    let reason = error?.localizedDescription
+                        ?? "Try again from the home screen."
+                    SystemMessageHelper.showWarning("Could not change app icon. \(reason)")
                 }
             }
         }
