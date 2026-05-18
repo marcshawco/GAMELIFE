@@ -141,7 +141,7 @@ struct GWBossFightScreen: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     private func sigilRing(glow: Color) -> some View {

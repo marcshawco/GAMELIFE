@@ -138,7 +138,7 @@ struct GWOnboardingScreen: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     private var rankBadge: some View {

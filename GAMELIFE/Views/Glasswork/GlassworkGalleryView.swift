@@ -104,7 +104,7 @@ struct GlassworkGalleryView: View {
             .toolbarBackground(GW.bg, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
-        .preferredColorScheme(.dark)
+        
         .foregroundStyle(GW.ink)
         .accentColor(GW.cyan)
     }
@@ -199,7 +199,7 @@ private struct SystemShowcasePage: View {
                 .padding(20)
             }
         }
-        .preferredColorScheme(.dark)
+        
         .foregroundStyle(GW.ink)
     }
 }

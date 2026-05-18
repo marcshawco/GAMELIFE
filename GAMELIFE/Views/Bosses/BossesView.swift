@@ -847,7 +847,7 @@ struct BossFormSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(GW.bg, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .preferredColorScheme(.dark)
+            
             .accentColor(GW.cyan)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

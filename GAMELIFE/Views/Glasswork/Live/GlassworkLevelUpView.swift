@@ -69,7 +69,7 @@ struct GlassworkLevelUpView: View {
             .padding(.bottom, 32)
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) { raysOpacity = 1 }
             withAnimation(.spring(response: 0.55, dampingFraction: 0.55).delay(0.15)) {

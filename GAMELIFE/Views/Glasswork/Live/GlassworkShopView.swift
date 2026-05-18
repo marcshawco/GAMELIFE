@@ -43,7 +43,7 @@ struct GlassworkShopView: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: header / featured

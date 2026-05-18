@@ -375,7 +375,7 @@ struct QuestFormSheet: View {
                     .disabled(isSaving)
                 }
             }
-            .preferredColorScheme(.dark)
+            
             .sheet(isPresented: $showCreateBossSheet) {
                 BossFormSheet()
             }

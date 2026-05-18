@@ -31,7 +31,7 @@ struct GlassworkBossFightView: View {
                     .font(GW.sans(14))
                     .foregroundStyle(GW.mute)
             }
-            .preferredColorScheme(.dark)
+            
         }
     }
 
@@ -126,7 +126,7 @@ struct GlassworkBossFightView: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden)
     }

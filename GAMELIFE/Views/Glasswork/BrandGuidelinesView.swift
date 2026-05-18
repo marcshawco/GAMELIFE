@@ -32,7 +32,7 @@ struct BrandGuidelinesView: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .navigationTitle("Brand Guidelines")
         .navigationBarTitleDisplayMode(.inline)
     }

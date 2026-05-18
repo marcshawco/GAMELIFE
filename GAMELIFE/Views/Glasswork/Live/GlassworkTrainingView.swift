@@ -32,7 +32,7 @@ struct GlassworkTrainingView: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: Idle / start screen

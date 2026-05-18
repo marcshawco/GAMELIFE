@@ -283,7 +283,7 @@ struct DeathPenaltySummaryView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 }
 

@@ -107,7 +107,7 @@ struct GlassworkQuestClearedModal: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .onAppear {
             withAnimation(.easeOut(duration: 0.6)) {
                 ringScale = 1

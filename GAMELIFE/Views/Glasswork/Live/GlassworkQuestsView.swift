@@ -67,7 +67,7 @@ struct GlassworkQuestsView: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .sheet(isPresented: $showAddSheet) {
             QuestFormSheet(mode: .add)
         }

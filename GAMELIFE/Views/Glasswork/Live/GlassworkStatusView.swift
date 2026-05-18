@@ -50,13 +50,13 @@ struct GlassworkStatusView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
         .accentColor(GW.cyan)
         .sheet(isPresented: $showActivityLog) {
             NavigationStack {
                 GlassworkActivityLogView()
             }
-            .preferredColorScheme(.dark)
+            
         }
     }
 

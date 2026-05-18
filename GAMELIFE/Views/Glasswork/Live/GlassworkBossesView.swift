@@ -43,7 +43,7 @@ struct GlassworkBossesView: View {
                 }
             }
             .foregroundStyle(GW.ink)
-            .preferredColorScheme(.dark)
+            
             .toolbar(.hidden)
         }
         .sheet(isPresented: $showSummonSheet) {

@@ -75,7 +75,7 @@ struct OnboardingView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        
         .accentColor(GW.cyan)
     }
 }

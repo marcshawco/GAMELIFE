@@ -52,7 +52,7 @@ struct GWQuestCompleteScreen: View {
             .frame(maxHeight: .infinity, alignment: .bottom)
             .padding(.bottom, 32)
         }
-        .preferredColorScheme(.dark)
+        
         .foregroundStyle(GW.ink)
     }
 

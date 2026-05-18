@@ -109,7 +109,7 @@ struct GWDungeonScreen: View {
             }
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     private func timerRing(pct: Double) -> some View {

@@ -11,11 +11,18 @@ import SwiftUI
 // MARK: - Aurora background block
 
 struct GWAurora: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         ZStack {
-            // Soft radial gradients overlaid like CSS radial-gradient stack
+            // Soft radial gradients overlaid like CSS radial-gradient stack.
+            // Dark: pink/cyan washes pop on velvet. Light: softer pastels.
             Canvas { ctx, size in
                 let w = size.width, h = size.height
+                let dark = colorScheme == .dark
+                let pinkA = dark ? 0.20 : 0.07
+                let cyanA = dark ? 0.12 : 0.06
+                let pinkB = dark ? 0.11 : 0.05
                 func auroraEllipse(_ center: CGPoint, _ rx: CGFloat, _ ry: CGFloat, _ c: Color) {
                     let rect = CGRect(x: center.x - rx, y: center.y - ry, width: rx * 2, height: ry * 2)
                     let g = Gradient(colors: [c, c.opacity(0)])
@@ -25,14 +32,18 @@ struct GWAurora: View {
                                                    startRadius: 0,
                                                    endRadius: max(rx, ry)))
                 }
-                auroraEllipse(CGPoint(x: w * 0.20, y: h * 0.00), w * 0.60, h * 0.40, GW.pink.opacity(0.20))
-                auroraEllipse(CGPoint(x: w * 1.00, y: h * 0.30), w * 0.70, h * 0.50, GW.cyan.opacity(0.12))
-                auroraEllipse(CGPoint(x: w * 0.50, y: h * 1.00), w * 0.90, h * 0.60, GW.pink.opacity(0.11))
+                auroraEllipse(CGPoint(x: w * 0.20, y: h * 0.00), w * 0.60, h * 0.40, GW.pink.opacity(pinkA))
+                auroraEllipse(CGPoint(x: w * 1.00, y: h * 0.30), w * 0.70, h * 0.50, GW.cyan.opacity(cyanA))
+                auroraEllipse(CGPoint(x: w * 0.50, y: h * 1.00), w * 0.90, h * 0.60, GW.pink.opacity(pinkB))
             }
-            // Dotted noise grid
+            // Dotted noise grid — adapts to mode so it stays visible without
+            // burning into the surface.
             Canvas { ctx, size in
                 let step: CGFloat = 14
-                let dot = Color.white.opacity(0.05)
+                let dark = colorScheme == .dark
+                let dot = dark
+                    ? Color.white.opacity(0.05)
+                    : Color.black.opacity(0.05)
                 let rows = Int(size.height / step) + 1
                 let cols = Int(size.width / step) + 1
                 for r in 0..<rows {
@@ -52,17 +63,28 @@ struct GWAurora: View {
 // MARK: - Frosted glass card
 
 struct GWCard<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
     var padding: EdgeInsets = EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14)
     var corner: CGFloat = 18
     var accent: Color? = nil
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        let dark = colorScheme == .dark
+        // Glass overlay: faint white in dark mode, faint dark tint in light.
+        let topTint    = dark ? Color.white.opacity(0.07) : Color.black.opacity(0.025)
+        let bottomTint = dark ? Color.white.opacity(0.02) : Color.black.opacity(0.01)
+        // Top-edge highlight (subtle inner glow): white in dark, very faint
+        // light tint in light mode.
+        let edgeTint   = dark ? Color.white.opacity(0.06) : Color.white.opacity(0.5)
+        // Outer shadow: darker on dark velvet, gentler on ivory.
+        let shadowTint = dark ? Color.black.opacity(0.35) : Color.black.opacity(0.10)
+
+        return ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: corner, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .overlay(
-                    LinearGradient(colors: [Color.white.opacity(0.07), Color.white.opacity(0.02)],
+                    LinearGradient(colors: [topTint, bottomTint],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
                 .overlay(
@@ -72,11 +94,11 @@ struct GWCard<Content: View>: View {
                 .overlay(
                     // Top edge highlight
                     RoundedRectangle(cornerRadius: corner, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        .stroke(edgeTint, lineWidth: 1)
                         .mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center))
                 )
                 .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 16)
+                .shadow(color: shadowTint, radius: dark ? 20 : 12, x: 0, y: dark ? 16 : 8)
 
             if let accent = accent {
                 Rectangle()
@@ -403,7 +425,7 @@ struct GWScreen<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 }
 

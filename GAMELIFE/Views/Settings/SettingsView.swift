@@ -264,7 +264,7 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(GW.bg, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-        .preferredColorScheme(.dark)
+        
         .accentColor(GW.cyan)
         .alert("Reset Quest Progress?", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -777,7 +777,17 @@ struct PlayerProfileView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(
+            ZStack {
+                GW.bg
+                GWAurora()
+            }
+            .ignoresSafeArea()
+        )
         .navigationTitle("Hunter Profile")
+        .toolbarBackground(GW.bg, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(isEditing ? "Save" : "Edit") {
@@ -789,6 +799,7 @@ struct PlayerProfileView: View {
                     }
                     isEditing.toggle()
                 }
+                .foregroundStyle(GW.cyan)
             }
         }
         .keyboardDismissToolbar()

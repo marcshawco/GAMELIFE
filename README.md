@@ -131,9 +131,17 @@ Two design directions ship side-by-side:
   Tokens in `GAMELIFE/Design/SystemTheme.swift` (Color · Typography · Spacing · Radius
   · GlowModifier · SystemCardModifier · HolographicBorderModifier).
 
-- **Glasswork (live, in progress)** — direction 02 of the PRAXIS redesign. Frosted
-  dark UI with aurora background, cyan→pink system gradient, Space Grotesk numerals,
-  JetBrains Mono system voice. Lives in `GAMELIFE/Views/Glasswork/`:
+- **Glasswork (live)** — direction 02 of the PRAXIS redesign. **Adaptive
+  light + dark variants** of the "aurora on velvet" direction:
+    - Dark: velvet indigo (`#0B0717`) + saturated pink/cyan radial wash.
+    - Light: warm ivory (`#FAF6FF`) + soft pastel pink/cyan wash.
+
+  `GW` tokens (surfaces, ink, hairlines) resolve through `UIColor`'s trait
+  closure, so a single token works in both modes — no view forces a
+  `colorScheme`. The user's choice in **Settings → Preferences → Use
+  System Appearance / Dark Mode** drives the whole app.
+
+  Lives in `GAMELIFE/Views/Glasswork/`:
     - `Views/Glasswork/Screens/` — pure-mock gallery screens used by
       `GlassworkGalleryView` (10 screens grouped by flow: Daily Loop · Combat ·
       Economy · Ceremony). Reachable from **Settings → Design Preview**.

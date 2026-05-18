@@ -117,7 +117,7 @@ struct GWLevelUpScreen: View {
             .padding(.bottom, 32)
         }
         .foregroundStyle(GW.ink)
-        .preferredColorScheme(.dark)
+        
     }
 
     private var unlockedCard: some View {

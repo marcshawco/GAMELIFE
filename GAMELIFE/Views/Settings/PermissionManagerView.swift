@@ -138,7 +138,7 @@ struct PermissionManagerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(GW.bg, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-        .preferredColorScheme(.dark)
+        
         .accentColor(GW.cyan)
         .onAppear {
             Task {
