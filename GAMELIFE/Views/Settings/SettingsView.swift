@@ -33,6 +33,41 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var showDeathMechanicInfo = false
 
+    // MARK: - Derived
+
+    /// 3-state appearance binding (System · Light · Dark) wired to the
+    /// existing `useSystemAppearance` + `preferDarkMode` AppStorage so
+    /// nothing else in the app needs to change to honor it.
+    private var appearanceBinding: Binding<AppearancePreference> {
+        Binding(
+            get: {
+                if useSystemAppearance { return .system }
+                return preferDarkMode ? .dark : .light
+            },
+            set: { new in
+                switch new {
+                case .system:
+                    useSystemAppearance = true
+                case .light:
+                    useSystemAppearance = false
+                    preferDarkMode = false
+                case .dark:
+                    useSystemAppearance = false
+                    preferDarkMode = true
+                }
+            }
+        )
+    }
+
+    /// "<MARKETING> (<BUILD>)" pulled live from the Info.plist so the
+    /// Settings row always reflects the latest pbxproj bump.
+    private var appVersionDisplay: String {
+        let info = Bundle.main.infoDictionary
+        let marketing = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = info?["CFBundleVersion"] as? String ?? "—"
+        return marketing == build ? marketing : "\(marketing) (\(build))"
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -96,11 +131,12 @@ struct SettingsView: View {
 
             // Preferences Section
             Section {
-                Toggle("Use System Appearance", isOn: $useSystemAppearance)
-
-                if !useSystemAppearance {
-                    Toggle("Dark Mode", isOn: $preferDarkMode)
+                Picker("Appearance", selection: appearanceBinding) {
+                    Text("System").tag(AppearancePreference.system)
+                    Text("Light").tag(AppearancePreference.light)
+                    Text("Dark").tag(AppearancePreference.dark)
                 }
+                .pickerStyle(.menu)
 
                 Toggle("Haptic Feedback", isOn: $hapticEnabled)
                     .onChange(of: hapticEnabled) { _, isEnabled in
@@ -190,24 +226,6 @@ struct SettingsView: View {
                 Text("Statistics")
             }
 
-            // Design Preview Section
-            Section {
-                NavigationLink {
-                    GlassworkGalleryView()
-                } label: {
-                    Label("Glasswork Redesign Preview", systemImage: "sparkles")
-                }
-                NavigationLink {
-                    BrandGuidelinesView()
-                } label: {
-                    Label("PRAXIS Brand Guidelines", systemImage: "book.closed")
-                }
-            } header: {
-                Text("Design Preview")
-            } footer: {
-                Text("Direction 02 — aurora-on-velvet · cyan→pink. The gallery shows mock screens; the brand guidelines render palette, type, voice, and the Prism colorways.")
-            }
-
             // Danger Zone Section
             Section {
                 Button {
@@ -233,7 +251,7 @@ struct SettingsView: View {
                 HStack {
                     Text("Version")
                     Spacer()
-                    Text("1.0.0")
+                    Text(appVersionDisplay)
                         .foregroundStyle(SystemTheme.textSecondary)
                 }
 
@@ -380,6 +398,12 @@ struct ConnectionStatusBadge: View {
     }
 }
 
+// MARK: - Appearance preference
+
+enum AppearancePreference: String, Hashable {
+    case system, light, dark
+}
+
 // MARK: - Stat Row
 
 struct StatRow: View {
@@ -401,71 +425,72 @@ struct StatRow: View {
 // MARK: - App Icon Support
 
 enum AppIconOption: String, CaseIterable, Identifiable {
-    case black
-    case cream
-    case white
-    case appTint
-    case prismSignal
-    case prismSolar
-    case prismVerdant
+    /// Signal is the primary AppIcon — selecting it clears any alt icon
+    /// override so the system shows the bundle's default Prism artwork.
+    case signal
+    case solar
+    case verdant
 
     var id: String { rawValue }
 
     var iconName: String? {
         switch self {
-        case .black: return nil
-        case .cream: return "AppIconPhoenixIvoryV2"
-        case .white: return "AppIconPhoenixWhiteV2"
-        case .appTint: return "AppIconPhoenixDarkV2"
-        case .prismSignal: return "AppIconPrism"
-        case .prismSolar: return "AppIconPrismSolar"
-        case .prismVerdant: return "AppIconPrismVerdant"
+        case .signal:  return nil
+        case .solar:   return "AppIconPrismSolar"
+        case .verdant: return "AppIconPrismVerdant"
         }
     }
 
     var displayName: String {
         switch self {
-        case .black: return "Black"
-        case .cream: return "Cream"
-        case .white: return "White"
-        case .appTint: return "App Tint"
-        case .prismSignal: return "Prism · Signal"
-        case .prismSolar: return "Prism · Solar"
-        case .prismVerdant: return "Prism · Verdant"
+        case .signal:  return "Prism · Signal"
+        case .solar:   return "Prism · Solar"
+        case .verdant: return "Prism · Verdant"
         }
     }
 
     var previewAssetName: String {
         switch self {
-        case .black: return "AppIconPreviewDefault"
-        case .cream: return "AppIconPreviewIvory"
-        case .white: return "AppIconPreviewWhite"
-        case .appTint: return "AppIconPreviewDark"
-        case .prismSignal: return "AppIconPreviewPrismSignal"
-        case .prismSolar: return "AppIconPreviewPrismSolar"
-        case .prismVerdant: return "AppIconPreviewPrismVerdant"
+        case .signal:  return "AppIconPreviewPrismSignal"
+        case .solar:   return "AppIconPreviewPrismSolar"
+        case .verdant: return "AppIconPreviewPrismVerdant"
         }
     }
 
+    /// Resolve the current alternate-icon name into an option. Legacy
+    /// Phoenix / pre-rename names migrate to `.signal` so users who
+    /// previously picked Black/Cream/White/App Tint/AppIconPrism land on
+    /// the new default.
     init?(iconName: String?) {
         switch iconName {
-        case nil: self = .black
-        case "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2": self = .cream
-        case "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2": self = .white
-        case "AppIconPhoenixDark", "AppIconPhoenixDarkV2": self = .appTint
-        case "AppIconPrism": self = .prismSignal
-        case "AppIconPrismSolar": self = .prismSolar
-        case "AppIconPrismVerdant": self = .prismVerdant
+        case nil,
+             "AppIconPrism",
+             "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
+             "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
+             "AppIconPhoenixDark",  "AppIconPhoenixDarkV2":
+            self = .signal
+        case "AppIconPrismSolar":   self = .solar
+        case "AppIconPrismVerdant": self = .verdant
         default: return nil
         }
     }
+
+    /// Names that should be force-migrated back to nil (= default AppIcon)
+    /// so iOS isn't asked to resolve an alt icon whose assets have been
+    /// removed from the catalog.
+    static let legacyAlternateNames: Set<String> = [
+        "AppIconPrism",
+        "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
+        "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
+        "AppIconPhoenixDark",  "AppIconPhoenixDarkV2",
+    ]
 }
 
 @MainActor
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
 
-    @Published private(set) var currentOption: AppIconOption = .black
+    @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
@@ -485,12 +510,12 @@ final class AppIconManager: ObservableObject {
     func refreshCurrentIcon() {
         isSupported = UIApplication.shared.supportsAlternateIcons
         guard isSupported else {
-            currentOption = .black
+            currentOption = .signal
             hasLegacyIconOverride = false
             return
         }
         let currentName = UIApplication.shared.alternateIconName
-        currentOption = AppIconOption(iconName: currentName) ?? .black
+        currentOption = AppIconOption(iconName: currentName) ?? .signal
         hasLegacyIconOverride = (currentName != nil && AppIconOption(iconName: currentName) == nil)
         reconcilePendingState(currentName: currentName)
     }
@@ -524,15 +549,17 @@ final class AppIconManager: ObservableObject {
         }
     }
 
+    /// Reset the alternate icon to the bundle default if it currently
+    /// points at a name that has been removed from the catalog (legacy
+    /// Phoenix variants, or the redundant pre-rename "AppIconPrism").
+    /// Silent — no toast — so users don't see warnings when iOS recovers.
     private func normalizeLegacyIconIfNeeded() {
         guard UIApplication.shared.supportsAlternateIcons else { return }
         guard let currentName = UIApplication.shared.alternateIconName else { return }
-        guard AppIconOption(iconName: currentName) == nil else { return }
+        guard AppIconOption.legacyAlternateNames.contains(currentName) ||
+                AppIconOption(iconName: currentName) == nil else { return }
 
-        UIApplication.shared.setAlternateIconName(nil) { [weak self] error in
-            if let error {
-                SystemMessageHelper.showWarning("Legacy icon reset failed: \(error.localizedDescription)")
-            }
+        UIApplication.shared.setAlternateIconName(nil) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.refreshCurrentIcon()
             }

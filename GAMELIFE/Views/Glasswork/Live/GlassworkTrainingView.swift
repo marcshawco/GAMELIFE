@@ -103,10 +103,11 @@ struct GlassworkTrainingView: View {
                     .tracking(3)
                     .foregroundStyle(GW.cyan)
             }
-            Text("Pick a session")
+            Text("Deep Focus Session")
                 .font(GW.display(28, weight: .semibold))
                 .tracking(-0.5)
                 .foregroundStyle(GW.ink)
+                .multilineTextAlignment(.center)
             Text("Phone face-down. The system rewards what you don't quit on.")
                 .font(GW.sans(12))
                 .foregroundStyle(GW.mute)
@@ -121,15 +122,30 @@ struct GlassworkTrainingView: View {
 
         return GWCard(paddingX: 14, paddingY: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("TASK")
-                    .font(GW.mono(9, weight: .medium))
-                    .tracking(2)
-                    .foregroundStyle(GW.mute)
+                HStack {
+                    Text("TASK · TAP TO EDIT")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(GW.mute)
+                }
                 TextField("Ship one PR review", text: $sessionTitle)
                     .font(GW.sans(15, weight: .medium))
                     .foregroundStyle(GW.ink)
                     .textFieldStyle(.plain)
                     .submitLabel(.done)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(GW.cyan.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(GW.cyan.opacity(0.20), lineWidth: 1)
+                            )
+                    )
 
                 Text("DURATION")
                     .font(GW.mono(9, weight: .medium))
@@ -173,7 +189,7 @@ struct GlassworkTrainingView: View {
             }
             durationChip(label: showCustomEditor || !durationOptions.contains(pickedDuration)
                                 ? "CUSTOM · \(pickedDuration)M"
-                                : "CUSTOM…",
+                                : "CUSTOM",
                          selected: showCustomEditor || !durationOptions.contains(pickedDuration)) {
                 showCustomEditor = true
                 customDuration = "\(pickedDuration)"
