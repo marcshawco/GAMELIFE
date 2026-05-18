@@ -453,52 +453,63 @@ struct StatRow: View {
 // MARK: - App Icon Support
 
 enum AppIconOption: String, CaseIterable, Identifiable {
-    /// Signal is the primary AppIcon — selecting it clears any alt icon
-    /// override so the system shows the bundle's default Prism artwork.
+    /// Signal — primary AppIcon. Selecting clears any alt-icon override
+    /// so iOS shows the bundle's default Prism artwork.
     case signal
-    case solar
-    case verdant
+    /// Gold — S-Rank ceremonial alternate. Gold→amber facets.
+    case gold
+    /// Crimson — Boss Raid alternate. Pink→crimson facets.
+    case crimson
 
     var id: String { rawValue }
 
     var iconName: String? {
         switch self {
         case .signal:  return nil
-        case .solar:   return "AppIconPrismSolar"
-        case .verdant: return "AppIconPrismVerdant"
+        case .gold:    return "AppIconPrismGold"
+        case .crimson: return "AppIconPrismCrimson"
         }
     }
 
     var displayName: String {
         switch self {
         case .signal:  return "Prism · Signal"
-        case .solar:   return "Prism · Solar"
-        case .verdant: return "Prism · Verdant"
+        case .gold:    return "Prism · Gold"
+        case .crimson: return "Prism · Crimson"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .signal:  return "Cyan → pink · primary"
+        case .gold:    return "S-Rank ceremonial alternate"
+        case .crimson: return "Boss Raid alternate"
         }
     }
 
     var previewAssetName: String {
         switch self {
         case .signal:  return "AppIconPreviewPrismSignal"
-        case .solar:   return "AppIconPreviewPrismSolar"
-        case .verdant: return "AppIconPreviewPrismVerdant"
+        case .gold:    return "AppIconPreviewPrismGold"
+        case .crimson: return "AppIconPreviewPrismCrimson"
         }
     }
 
     /// Resolve the current alternate-icon name into an option. Legacy
     /// Phoenix / pre-rename names migrate to `.signal` so users who
-    /// previously picked Black/Cream/White/App Tint/AppIconPrism land on
-    /// the new default.
+    /// previously picked Black/Cream/White/App Tint/Solar/Verdant land
+    /// on the new default.
     init?(iconName: String?) {
         switch iconName {
         case nil,
              "AppIconPrism",
+             "AppIconPrismSolar", "AppIconPrismVerdant",
              "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
              "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
              "AppIconPhoenixDark",  "AppIconPhoenixDarkV2":
             self = .signal
-        case "AppIconPrismSolar":   self = .solar
-        case "AppIconPrismVerdant": self = .verdant
+        case "AppIconPrismGold":    self = .gold
+        case "AppIconPrismCrimson": self = .crimson
         default: return nil
         }
     }
@@ -508,6 +519,7 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     /// removed from the catalog.
     static let legacyAlternateNames: Set<String> = [
         "AppIconPrism",
+        "AppIconPrismSolar", "AppIconPrismVerdant",
         "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
         "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
         "AppIconPhoenixDark",  "AppIconPhoenixDarkV2",
