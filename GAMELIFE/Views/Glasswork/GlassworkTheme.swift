@@ -119,16 +119,31 @@ enum GW {
     }
 
     // MARK: Type — system stand-ins for Inter Tight / Space Grotesk / JetBrains Mono
+    //
+    // When the user enables Settings → PRAXIS FONT, every role falls
+    // through to the bundled Good Times display face via SystemTypography,
+    // so the toggle actually flips the whole Glasswork surface. When off,
+    // the design's intended type stack is used (system mono / default /
+    // rounded as stand-ins for JetBrains Mono / Inter Tight / Space
+    // Grotesk).
+
+    private static var useCustomAppFont: Bool {
+        SettingsManager.shared.useCustomAppFont
+    }
+
     static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        if useCustomAppFont { return SystemTypography.mono(size, weight: weight) }
+        return .system(size: size, weight: weight, design: .monospaced)
     }
 
     static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .default)
+        if useCustomAppFont { return SystemTypography.sans(size, weight: weight) }
+        return .system(size: size, weight: weight, design: .default)
     }
 
     static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        .system(size: size, weight: weight, design: .rounded)
+        if useCustomAppFont { return SystemTypography.sans(size, weight: weight) }
+        return .system(size: size, weight: weight, design: .rounded)
     }
 }
 
