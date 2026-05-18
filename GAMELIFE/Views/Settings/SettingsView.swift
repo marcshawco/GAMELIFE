@@ -33,6 +33,8 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var showDeathMechanicInfo = false
 
+    @Environment(\.colorScheme) private var colorScheme
+
     // MARK: - Derived
 
     /// 3-state appearance binding (System · Light · Dark) wired to the
@@ -104,6 +106,7 @@ struct SettingsView: View {
             } header: {
                 Text("Hunter Profile")
             }
+            .listRowBackground(glassRowBackground)
 
             Section {
                 Picker("App Language", selection: $preferredLanguageCode) {
@@ -116,6 +119,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Change the app language without leaving PRAXIS. Widgets and notifications follow this setting where supported.")
             }
+            .listRowBackground(glassRowBackground)
 
             Section {
                 Picker("Open App To", selection: $defaultTab) {
@@ -128,6 +132,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Choose which tab PRAXIS opens to when you launch the app.")
             }
+            .listRowBackground(glassRowBackground)
 
             // Preferences Section
             Section {
@@ -191,6 +196,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Set your appearance, app icon, quests layout, alerts, font style, and death penalties in one place. Haptic Feedback is the master switch for taps, picker ticks, confirmations, and combat/training feedback. Turning off death penalties does not stop HP loss.")
             }
+            .listRowBackground(glassRowBackground)
 
             // Neural Links Section
             Section {
@@ -212,6 +218,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Connect PRAXIS to health and location data")
             }
+            .listRowBackground(glassRowBackground)
 
             // Statistics Section
             Section {
@@ -225,26 +232,21 @@ struct SettingsView: View {
             } header: {
                 Text("Statistics")
             }
+            .listRowBackground(glassRowBackground)
 
             // Danger Zone Section
             Section {
-                Button {
+                Button(role: .destructive) {
                     showResetConfirmation = true
                 } label: {
-                    Label("Reset Quest Progress", systemImage: "arrow.counterclockwise")
-                        .foregroundStyle(SystemTheme.warningOrange)
-                }
-
-                Button(role: .destructive) {
-                    showDeleteConfirmation = true
-                } label: {
-                    Label("Delete All Data", systemImage: "trash.fill")
+                    Label("Reset All", systemImage: "arrow.counterclockwise")
                 }
             } header: {
                 Text("Danger Zone")
             } footer: {
-                Text("These actions cannot be undone")
+                Text("Wipes your hunter back to Lv. 1 — clears quests, bosses, XP, gold, HP, streak, achievements, and onboarding. Settings stay. This cannot be undone.")
             }
+            .listRowBackground(glassRowBackground)
 
             // About Section
             Section {
@@ -269,6 +271,7 @@ struct SettingsView: View {
             } header: {
                 Text("About")
             }
+            .listRowBackground(glassRowBackground)
         }
         .scrollContentBackground(.hidden)
         .background(
@@ -284,13 +287,13 @@ struct SettingsView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         
         .accentColor(GW.cyan)
-        .alert("Reset Quest Progress?", isPresented: $showResetConfirmation) {
+        .alert("Reset everything?", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
-                resetDailyQuests()
+                resetAll()
             }
         } message: {
-            Text("This will reset progress on your current quests for the active cycle.")
+            Text("Wipes your hunter back to Lv. 1 — clears quests, bosses, XP, gold, HP, streak, achievements, and onboarding. Settings stay. This cannot be undone.")
         }
         .alert("Delete All Data?", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -337,11 +340,36 @@ struct SettingsView: View {
 
     // MARK: - Actions
 
-    private func resetDailyQuests() {
-        gameEngine.resetQuestProgressManually()
-        AnalyticsManager.shared.trackFeature("settings_reset_quest_progress")
+    /// Wipe the hunter back to a fresh profile while keeping user settings.
+    /// This is the "Reset All" Danger Zone action — destroys all game state
+    /// (player progression, quests, bosses, achievements, onboarding) but
+    /// preserves Appearance / Language / Haptic / PRAXIS Font etc.
+    private func resetAll() {
+        gameEngine.startFreshProfile(named: "Hunter")
+        MarketplaceManager.shared.resetForFreshStart()
+        NotificationManager.shared.clearAllQuestReminders()
+        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        AnalyticsManager.shared.trackFeature("settings_reset_all")
 
-        SystemMessageHelper.showInfo("Quests Reset", "Quest progress has been reset for the current cycle.")
+        SystemMessageHelper.show(SystemMessage(
+            type: .critical,
+            title: "Reset Complete",
+            message: "Hunter wiped to Lv. 1. Settings preserved."
+        ))
+    }
+
+    /// Glass-tinted row background applied to each Section so the Form
+    /// reads as floating frosted cards over the Glasswork aurora.
+    private var glassRowBackground: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .overlay(
+                LinearGradient(
+                    colors: [Color.white.opacity(colorScheme == .dark ? 0.06 : 0.025),
+                             Color.white.opacity(colorScheme == .dark ? 0.02 : 0.01)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
+            )
     }
 
     private func deleteAllData() {

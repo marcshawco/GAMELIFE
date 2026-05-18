@@ -17,7 +17,7 @@ struct GlassworkTrainingView: View {
 
     // Idle-screen state
     @State private var pickedDuration: Int = 45
-    @State private var sessionTitle: String = "Ship one PR review"
+    @State private var sessionTitle: String = "Study Session"
     @State private var customDuration: String = ""
     @State private var showCustomEditor: Bool = false
     @FocusState private var customDurationFocused: Bool
@@ -250,7 +250,7 @@ struct GlassworkTrainingView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(GW.mute)
                 }
-                TextField("Ship one PR review", text: $sessionTitle)
+                TextField("Study Session", text: $sessionTitle)
                     .font(GW.sans(15, weight: .medium))
                     .foregroundStyle(GW.ink)
                     .textFieldStyle(.plain)
