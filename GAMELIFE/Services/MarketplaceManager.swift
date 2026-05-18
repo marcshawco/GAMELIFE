@@ -171,6 +171,14 @@ class MarketplaceManager: ObservableObject {
                 cost: 5000,
                 category: .item,
                 icon: "star.fill"
+            ),
+            MarketplaceReward(
+                name: "Power Nap",
+                description: "20 guilt-free minutes face-down. Restores +20 HP and clears the head for the next quest.",
+                cost: 60,
+                category: .time,
+                icon: "moon.zzz",
+                healthRestore: 20
             )
         ]
     }

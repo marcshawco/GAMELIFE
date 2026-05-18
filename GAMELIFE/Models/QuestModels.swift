@@ -246,8 +246,11 @@ enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Goal types the user can pick from when creating a new dynamic boss.
+    /// `.bodyFat` is intentionally hidden — existing bosses targeting it
+    /// continue to work, but it's no longer offered to new bosses.
     static var betaSelectableTypes: [DynamicBossGoalType] {
-        allCases
+        allCases.filter { $0 != .bodyFat }
     }
 
     init(from decoder: Decoder) throws {

@@ -314,6 +314,10 @@ struct QuestFormSheet: View {
                                 Text(boss.title).tag(Optional(boss.id))
                             }
                         }
+                        // navigationLink keeps the Form's scroll position
+                        // stable instead of letting iOS' contextual menu
+                        // popup yank the scroll up to anchor on the row.
+                        .pickerStyle(.navigationLink)
                     }
                 } header: {
                     Text("Boss Link")
@@ -332,6 +336,7 @@ struct QuestFormSheet: View {
                                 .tag(option)
                         }
                     }
+                    .pickerStyle(.menu)
 
                     Toggle("Enable Reminder", isOn: $reminderEnabled)
 
