@@ -582,25 +582,16 @@ final class AppIconManager: ObservableObject {
         hasPendingIconChange = true
         pendingIconDisplayName = option.displayName
 
-        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
-            // iOS is known to surface a non-nil `error` (often
-            // "Resource temporarily unavailable" in the Simulator) even
-            // when the swap actually succeeded. Don't trust the error
-            // parameter — wait a beat, then verify by reading
-            // alternateIconName back. Only warn if the icon really
-            // didn't change.
+        // setAlternateIconName is famously flaky — iOS (especially the
+        // Simulator) often fires the completion with a non-nil error
+        // ("Resource temporarily unavailable") even though the swap
+        // succeeded. The error is unactionable to the user, and the
+        // picker's checkmark already reflects the real state because
+        // refreshCurrentIcon reads alternateIconName back. Silently
+        // attempt the swap, refresh, and trust the UI to show truth.
+        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                guard let self else { return }
-                let nowName = UIApplication.shared.alternateIconName
-                self.refreshCurrentIcon()
-
-                if nowName != targetIconName {
-                    self.hasPendingIconChange = false
-                    self.pendingIconDisplayName = nil
-                    let reason = error?.localizedDescription
-                        ?? "Try again from the home screen."
-                    SystemMessageHelper.showWarning("Could not change app icon. \(reason)")
-                }
+                self?.refreshCurrentIcon()
             }
         }
     }
