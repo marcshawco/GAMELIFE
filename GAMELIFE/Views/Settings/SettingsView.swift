@@ -538,6 +538,7 @@ enum AppIconOption: String, CaseIterable, Identifiable {
 @MainActor
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
+    private static let storedOptionKey = "selectedAppIconOption"
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
@@ -547,6 +548,21 @@ final class AppIconManager: ObservableObject {
     private var pendingOption: AppIconOption?
     private var pendingRequestID = UUID()
     private var cancellables = Set<AnyCancellable>()
+    private var storedOption: AppIconOption? {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: Self.storedOptionKey) else {
+                return nil
+            }
+            return AppIconOption(rawValue: rawValue)
+        }
+        set {
+            if let newValue {
+                UserDefaults.standard.set(newValue.rawValue, forKey: Self.storedOptionKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.storedOptionKey)
+            }
+        }
+    }
 
     private init() {
         normalizeLegacyIconIfNeeded()
@@ -566,14 +582,17 @@ final class AppIconManager: ObservableObject {
             hasPendingIconChange = false
             pendingIconDisplayName = nil
             pendingOption = nil
+            storedOption = nil
             return
         }
         let currentName = UIApplication.shared.alternateIconName
-        hasLegacyIconOverride = (currentName != nil && AppIconOption(iconName: currentName) == nil)
+        let systemOption = currentName.flatMap(AppIconOption.init(iconName:))
+        hasLegacyIconOverride = (currentName != nil && systemOption == nil)
 
         if hasPendingIconChange, let pendingOption {
-            if AppIconOption(iconName: currentName) == pendingOption {
+            if systemOption == pendingOption {
                 currentOption = pendingOption
+                storedOption = pendingOption
                 clearPendingIconChange()
             } else {
                 currentOption = pendingOption
@@ -581,7 +600,15 @@ final class AppIconManager: ObservableObject {
             return
         }
 
-        currentOption = AppIconOption(iconName: currentName) ?? .signal
+        if currentName != nil {
+            currentOption = systemOption ?? .signal
+            if let systemOption {
+                storedOption = systemOption
+            }
+            return
+        }
+
+        currentOption = storedOption ?? .signal
     }
 
     func setIcon(_ option: AppIconOption) {
@@ -591,13 +618,13 @@ final class AppIconManager: ObservableObject {
         }
 
         let targetIconName = option.iconName
-        let currentIconName = UIApplication.shared.alternateIconName
-        guard currentIconName != targetIconName else { return }
+        guard currentOption != option else { return }
 
         let requestID = UUID()
         pendingRequestID = requestID
         pendingOption = option
         currentOption = option
+        storedOption = option
         hasPendingIconChange = true
         pendingIconDisplayName = option.displayName
 
@@ -622,6 +649,7 @@ final class AppIconManager: ObservableObject {
         guard AppIconOption.legacyAlternateNames.contains(currentName) ||
                 AppIconOption(iconName: currentName) == nil else { return }
 
+        storedOption = .signal
         UIApplication.shared.setAlternateIconName(nil) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.refreshCurrentIcon()
@@ -657,11 +685,13 @@ final class AppIconManager: ObservableObject {
         let currentName = UIApplication.shared.alternateIconName
         if currentName == targetIconName {
             currentOption = targetOption
+            storedOption = targetOption
             clearPendingIconChange()
             return
         }
 
         currentOption = targetOption
+        storedOption = targetOption
         clearPendingIconChange()
     }
 
