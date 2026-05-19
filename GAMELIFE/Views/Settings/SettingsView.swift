@@ -569,9 +569,19 @@ final class AppIconManager: ObservableObject {
             return
         }
         let currentName = UIApplication.shared.alternateIconName
-        currentOption = AppIconOption(iconName: currentName) ?? .signal
         hasLegacyIconOverride = (currentName != nil && AppIconOption(iconName: currentName) == nil)
-        reconcilePendingState(currentName: currentName)
+
+        if hasPendingIconChange, let pendingOption {
+            if AppIconOption(iconName: currentName) == pendingOption {
+                currentOption = pendingOption
+                clearPendingIconChange()
+            } else {
+                currentOption = pendingOption
+            }
+            return
+        }
+
+        currentOption = AppIconOption(iconName: currentName) ?? .signal
     }
 
     func setIcon(_ option: AppIconOption) {
@@ -594,17 +604,12 @@ final class AppIconManager: ObservableObject {
         // iOS can report a transient error before alternateIconName has
         // settled, so verify the actual bundle state before accepting or
         // rolling back the user's selection.
-        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
-            DispatchQueue.main.async {
-                self?.verifyIconChange(
-                    requestID: requestID,
-                    targetOption: option,
-                    targetIconName: targetIconName,
-                    reportedError: error,
-                    remainingAttempts: 3
-                )
-            }
-        }
+        applyIconChange(
+            requestID: requestID,
+            targetOption: option,
+            targetIconName: targetIconName,
+            remainingAttempts: 4
+        )
     }
 
     /// Reset the alternate icon to the bundle default if it currently
@@ -624,24 +629,24 @@ final class AppIconManager: ObservableObject {
         }
     }
 
-    private func reconcilePendingState(currentName: String?) {
-        guard hasPendingIconChange else {
-            pendingIconDisplayName = nil
-            pendingOption = nil
-            return
-        }
+    private func applyIconChange(
+        requestID: UUID,
+        targetOption: AppIconOption,
+        targetIconName: String?,
+        remainingAttempts: Int
+    ) {
+        guard requestID == pendingRequestID else { return }
 
-        guard let pendingOption else {
-            hasPendingIconChange = false
-            pendingIconDisplayName = nil
-            self.pendingOption = nil
-            return
-        }
-
-        if AppIconOption(iconName: currentName) == pendingOption {
-            hasPendingIconChange = false
-            pendingIconDisplayName = nil
-            self.pendingOption = nil
+        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                self?.verifyIconChange(
+                    requestID: requestID,
+                    targetOption: targetOption,
+                    targetIconName: targetIconName,
+                    reportedError: error,
+                    remainingAttempts: remainingAttempts
+                )
+            }
         }
     }
 
@@ -657,31 +662,42 @@ final class AppIconManager: ObservableObject {
         let currentName = UIApplication.shared.alternateIconName
         if currentName == targetIconName {
             currentOption = targetOption
-            hasPendingIconChange = false
-            pendingIconDisplayName = nil
-            pendingOption = nil
+            clearPendingIconChange()
             return
         }
 
         guard remainingAttempts > 0 else {
-            refreshCurrentIcon()
-            if let reportedError {
-                SystemMessageHelper.showWarning("Couldn't switch app icon: \(reportedError.localizedDescription)")
-            } else {
-                SystemMessageHelper.showWarning("Couldn't switch app icon. Please try again.")
-            }
+            let actualOption = AppIconOption(iconName: currentName) ?? .signal
+            currentOption = actualOption
+            clearPendingIconChange()
+            SystemMessageHelper.showWarning(iconChangeFailureMessage(for: reportedError))
             return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.verifyIconChange(
-                requestID: requestID,
-                targetOption: targetOption,
-                targetIconName: targetIconName,
-                reportedError: reportedError,
-                remainingAttempts: remainingAttempts - 1
-            )
+        applyIconChange(
+            requestID: requestID,
+            targetOption: targetOption,
+            targetIconName: targetIconName,
+            remainingAttempts: remainingAttempts - 1
+        )
+    }
+
+    private func clearPendingIconChange() {
+        hasPendingIconChange = false
+        pendingIconDisplayName = nil
+        pendingOption = nil
+    }
+
+    private func iconChangeFailureMessage(for error: Error?) -> String {
+        guard let nsError = error as NSError? else {
+            return "Couldn't switch app icon. Please try again."
         }
+
+        if nsError.localizedDescription.localizedCaseInsensitiveContains("Resource temporarily unavailable") {
+            return "App icon switching is busy. Please try again in a moment."
+        }
+
+        return "Couldn't switch app icon: \(nsError.localizedDescription)"
     }
 }
 
