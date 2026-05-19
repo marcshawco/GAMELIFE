@@ -544,6 +544,8 @@ final class AppIconManager: ObservableObject {
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
     @Published private(set) var pendingIconDisplayName: String?
+    private var pendingOption: AppIconOption?
+    private var pendingRequestID = UUID()
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -561,6 +563,9 @@ final class AppIconManager: ObservableObject {
         guard isSupported else {
             currentOption = .signal
             hasLegacyIconOverride = false
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+            pendingOption = nil
             return
         }
         let currentName = UIApplication.shared.alternateIconName
@@ -579,19 +584,25 @@ final class AppIconManager: ObservableObject {
         let currentIconName = UIApplication.shared.alternateIconName
         guard currentIconName != targetIconName else { return }
 
+        let requestID = UUID()
+        pendingRequestID = requestID
+        pendingOption = option
+        currentOption = option
         hasPendingIconChange = true
         pendingIconDisplayName = option.displayName
 
-        // setAlternateIconName is famously flaky — iOS (especially the
-        // Simulator) often fires the completion with a non-nil error
-        // ("Resource temporarily unavailable") even though the swap
-        // succeeded. The error is unactionable to the user, and the
-        // picker's checkmark already reflects the real state because
-        // refreshCurrentIcon reads alternateIconName back. Silently
-        // attempt the swap, refresh, and trust the UI to show truth.
-        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                self?.refreshCurrentIcon()
+        // iOS can report a transient error before alternateIconName has
+        // settled, so verify the actual bundle state before accepting or
+        // rolling back the user's selection.
+        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.verifyIconChange(
+                    requestID: requestID,
+                    targetOption: option,
+                    targetIconName: targetIconName,
+                    reportedError: error,
+                    remainingAttempts: 3
+                )
             }
         }
     }
@@ -616,24 +627,66 @@ final class AppIconManager: ObservableObject {
     private func reconcilePendingState(currentName: String?) {
         guard hasPendingIconChange else {
             pendingIconDisplayName = nil
+            pendingOption = nil
             return
         }
 
-        guard let pendingName = pendingIconDisplayName else {
+        guard let pendingOption else {
             hasPendingIconChange = false
             pendingIconDisplayName = nil
+            self.pendingOption = nil
             return
         }
 
-        if AppIconOption(iconName: currentName)?.displayName == pendingName {
+        if AppIconOption(iconName: currentName) == pendingOption {
             hasPendingIconChange = false
             pendingIconDisplayName = nil
+            self.pendingOption = nil
+        }
+    }
+
+    private func verifyIconChange(
+        requestID: UUID,
+        targetOption: AppIconOption,
+        targetIconName: String?,
+        reportedError: Error?,
+        remainingAttempts: Int
+    ) {
+        guard requestID == pendingRequestID else { return }
+
+        let currentName = UIApplication.shared.alternateIconName
+        if currentName == targetIconName {
+            currentOption = targetOption
+            hasPendingIconChange = false
+            pendingIconDisplayName = nil
+            pendingOption = nil
+            return
+        }
+
+        guard remainingAttempts > 0 else {
+            refreshCurrentIcon()
+            if let reportedError {
+                SystemMessageHelper.showWarning("Couldn't switch app icon: \(reportedError.localizedDescription)")
+            } else {
+                SystemMessageHelper.showWarning("Couldn't switch app icon. Please try again.")
+            }
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.verifyIconChange(
+                requestID: requestID,
+                targetOption: targetOption,
+                targetIconName: targetIconName,
+                reportedError: reportedError,
+                remainingAttempts: remainingAttempts - 1
+            )
         }
     }
 }
 
 struct AppIconPickerView: View {
-    @StateObject private var appIconManager = AppIconManager.shared
+    @ObservedObject private var appIconManager = AppIconManager.shared
 
     var body: some View {
         ScrollView {
