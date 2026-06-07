@@ -7,10 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6461BC2F6F873CEAAB882044 /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14751F8460B92A8EDDA0A552 /* WatchHomeView.swift */; };
+		6D2051C5DB3BBE48333D3896 /* GAMELIFEWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5D046FAFF1D18B2E6D1246B1 /* GAMELIFEWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6D88A0E057DAF4E69F61CAB9 /* WatchSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E685B3AF9648AC53B5FA70D /* WatchSessionStore.swift */; };
+		7BBFA70684447A2CE2F065AF /* GAMELIFEWatchExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F0189E7F2A7C911E5F8F8BD0 /* GAMELIFEWatchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A0A9BB28310F8EA2D9359856 /* GAMELIFEWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F29E3EE06A5AE88424BB11 /* GAMELIFEWatchApp.swift */; };
 		B10100012F50000100AAA001 /* PRAXISWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B10100042F50000100AAA001 /* PRAXISWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		89D2C40CA5758A50A8382CC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 905CB4342F34C57C00529544 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 073217776B218BB0CC3C0EAD;
+			remoteInfo = GAMELIFEWatch;
+		};
 		B10100032F50000100AAA001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 905CB4342F34C57C00529544 /* Project object */;
@@ -18,9 +30,27 @@
 			remoteGlobalIDString = B10100072F50000100AAA001;
 			remoteInfo = PRAXISWidgets;
 		};
+		C4409CA398C242E3F0564EE7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 905CB4342F34C57C00529544 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 14A84E436126C22AC2483640;
+			remoteInfo = GAMELIFEWatchExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8EE31EE9A2E02E8D5DAB511B /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7BBFA70684447A2CE2F065AF /* GAMELIFEWatchExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A10100022F40000100AAA001 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -32,27 +62,63 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F5CDBB2938962CC5F1118FAD /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				6D2051C5DB3BBE48333D3896 /* GAMELIFEWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0E685B3AF9648AC53B5FA70D /* WatchSessionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchSessionStore.swift; sourceTree = "<group>"; };
+		14751F8460B92A8EDDA0A552 /* WatchHomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchHomeView.swift; sourceTree = "<group>"; };
+		59F29E3EE06A5AE88424BB11 /* GAMELIFEWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GAMELIFEWatchApp.swift; sourceTree = "<group>"; };
+		5D046FAFF1D18B2E6D1246B1 /* GAMELIFEWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GAMELIFEWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D6CD4DC90E20687F9178F39 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		905CB43C2F34C57C00529544 /* GAMELIFE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GAMELIFE.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DE1CB39CD312075D43AC20E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B10100042F50000100AAA001 /* PRAXISWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PRAXISWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0189E7F2A7C911E5F8F8BD0 /* GAMELIFEWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GAMELIFEWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		905CB43E2F34C57C00529544 /* GAMELIFE */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GAMELIFE;
 			sourceTree = "<group>";
 		};
 		B10100052F50000100AAA001 /* PRAXISWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = PRAXISWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		15611AD64FC8F5833C35B5DA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6F222796F35BBCC54A9AAC0B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		905CB4392F34C57C00529544 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -70,12 +136,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		659660C042EC369DF75E98C9 /* GAMELIFEWatch */ = {
+			isa = PBXGroup;
+			children = (
+				9DE1CB39CD312075D43AC20E /* Info.plist */,
+			);
+			path = GAMELIFEWatch;
+			sourceTree = "<group>";
+		};
 		905CB4332F34C57C00529544 = {
 			isa = PBXGroup;
 			children = (
 				905CB43E2F34C57C00529544 /* GAMELIFE */,
 				B10100052F50000100AAA001 /* PRAXISWidgets */,
 				905CB43D2F34C57C00529544 /* Products */,
+				659660C042EC369DF75E98C9 /* GAMELIFEWatch */,
+				A145F17742E2C5FE6FBC2E32 /* GAMELIFEWatchExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -84,13 +160,62 @@
 			children = (
 				905CB43C2F34C57C00529544 /* GAMELIFE.app */,
 				B10100042F50000100AAA001 /* PRAXISWidgets.appex */,
+				5D046FAFF1D18B2E6D1246B1 /* GAMELIFEWatch.app */,
+				F0189E7F2A7C911E5F8F8BD0 /* GAMELIFEWatchExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A145F17742E2C5FE6FBC2E32 /* GAMELIFEWatchExtension */ = {
+			isa = PBXGroup;
+			children = (
+				8D6CD4DC90E20687F9178F39 /* Info.plist */,
+				59F29E3EE06A5AE88424BB11 /* GAMELIFEWatchApp.swift */,
+				14751F8460B92A8EDDA0A552 /* WatchHomeView.swift */,
+				0E685B3AF9648AC53B5FA70D /* WatchSessionStore.swift */,
+			);
+			path = GAMELIFEWatchExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		073217776B218BB0CC3C0EAD /* GAMELIFEWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 057089DDBCD22D904DB192FF /* Build configuration list for PBXNativeTarget "GAMELIFEWatch" */;
+			buildPhases = (
+				3F23F2C7E9977262DF8CC4CC /* Sources */,
+				15611AD64FC8F5833C35B5DA /* Frameworks */,
+				9C88F316B616DD6464A5165F /* Resources */,
+				8EE31EE9A2E02E8D5DAB511B /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EDCED460F26A4C61CBCE18FE /* PBXTargetDependency */,
+			);
+			name = GAMELIFEWatch;
+			productName = GAMELIFEWatch;
+			productReference = 5D046FAFF1D18B2E6D1246B1 /* GAMELIFEWatch.app */;
+			productType = "com.apple.product-type.application.watchapp2";
+		};
+		14A84E436126C22AC2483640 /* GAMELIFEWatchExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F886279AA46DE0588C0F081F /* Build configuration list for PBXNativeTarget "GAMELIFEWatchExtension" */;
+			buildPhases = (
+				8C29E142D657B7700D6E04A5 /* Sources */,
+				6F222796F35BBCC54A9AAC0B /* Frameworks */,
+				1E5B29C17F9EEE958CD2122A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GAMELIFEWatchExtension;
+			productName = GAMELIFEWatchExtension;
+			productReference = F0189E7F2A7C911E5F8F8BD0 /* GAMELIFEWatchExtension.appex */;
+			productType = "com.apple.product-type.watchkit2-extension";
+		};
 		905CB43B2F34C57C00529544 /* GAMELIFE */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 905CB4472F34C57D00529544 /* Build configuration list for PBXNativeTarget "GAMELIFE" */;
@@ -99,11 +224,13 @@
 				905CB4392F34C57C00529544 /* Frameworks */,
 				905CB43A2F34C57C00529544 /* Resources */,
 				A10100022F40000100AAA001 /* Embed Foundation Extensions */,
+				F5CDBB2938962CC5F1118FAD /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B101000A2F50000100AAA001 /* PBXTargetDependency */,
+				7503D968175C2FEC28ADD7B2 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				905CB43E2F34C57C00529544 /* GAMELIFE */,
@@ -172,12 +299,28 @@
 			targets = (
 				905CB43B2F34C57C00529544 /* GAMELIFE */,
 				B10100072F50000100AAA001 /* PRAXISWidgets */,
+				073217776B218BB0CC3C0EAD /* GAMELIFEWatch */,
+				14A84E436126C22AC2483640 /* GAMELIFEWatchExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1E5B29C17F9EEE958CD2122A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		905CB43A2F34C57C00529544 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C88F316B616DD6464A5165F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -194,6 +337,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3F23F2C7E9977262DF8CC4CC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8C29E142D657B7700D6E04A5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0A9BB28310F8EA2D9359856 /* GAMELIFEWatchApp.swift in Sources */,
+				6461BC2F6F873CEAAB882044 /* WatchHomeView.swift in Sources */,
+				6D88A0E057DAF4E69F61CAB9 /* WatchSessionStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		905CB4382F34C57C00529544 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -211,10 +371,22 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		7503D968175C2FEC28ADD7B2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = GAMELIFEWatch;
+			target = 073217776B218BB0CC3C0EAD /* GAMELIFEWatch */;
+			targetProxy = 89D2C40CA5758A50A8382CC1 /* PBXContainerItemProxy */;
+		};
 		B101000A2F50000100AAA001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = B10100072F50000100AAA001 /* PRAXISWidgets */;
 			targetProxy = B10100032F50000100AAA001 /* PBXContainerItemProxy */;
+		};
+		EDCED460F26A4C61CBCE18FE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = GAMELIFEWatchExtension;
+			target = 14A84E436126C22AC2483640 /* GAMELIFEWatchExtension */;
+			targetProxy = C4409CA398C242E3F0564EE7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -354,7 +526,7 @@
 				CODE_SIGN_ENTITLEMENTS = GAMELIFE/GAMELIFE.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.19;
+				CURRENT_PROJECT_VERSION = 5.20;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PRAXIS;
@@ -379,7 +551,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.19;
+				MARKETING_VERSION = 5.20;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -407,7 +579,7 @@
 				CODE_SIGN_ENTITLEMENTS = GAMELIFE/GAMELIFE.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.19;
+				CURRENT_PROJECT_VERSION = 5.20;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PRAXIS;
@@ -432,7 +604,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.19;
+				MARKETING_VERSION = 5.20;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -457,7 +629,7 @@
 				CODE_SIGN_ENTITLEMENTS = PRAXISWidgets/PRAXISWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.19;
+				CURRENT_PROJECT_VERSION = 5.20;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "PRAXISWidgets-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
@@ -466,7 +638,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.19;
+				MARKETING_VERSION = 5.20;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.PRAXISWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -484,7 +656,7 @@
 				CODE_SIGN_ENTITLEMENTS = PRAXISWidgets/PRAXISWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.19;
+				CURRENT_PROJECT_VERSION = 5.20;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "PRAXISWidgets-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
@@ -493,7 +665,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.19;
+				MARKETING_VERSION = 5.20;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.PRAXISWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -504,9 +676,120 @@
 			};
 			name = Release;
 		};
+		C4F3C75AD9A6FBB7FEAA7CEC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5.20;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GAMELIFEWatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 5.20;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.12;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		D46BAEAFB6F49E92E4E42936 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5.20;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GAMELIFEWatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 5.20;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.12;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		DA96180F1837C9565B56F259 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5.20;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GAMELIFEWatch/Info.plist;
+				MARKETING_VERSION = 5.20;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.12;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		EA79C89BFB6816658BE0C0C8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5.20;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GAMELIFEWatch/Info.plist;
+				MARKETING_VERSION = 5.20;
+				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.12;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		057089DDBCD22D904DB192FF /* Build configuration list for PBXNativeTarget "GAMELIFEWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA79C89BFB6816658BE0C0C8 /* Release */,
+				DA96180F1837C9565B56F259 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		905CB4372F34C57C00529544 /* Build configuration list for PBXProject "GAMELIFE" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -530,6 +813,15 @@
 			buildConfigurations = (
 				B101000B2F50000100AAA001 /* Debug */,
 				B101000C2F50000100AAA001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F886279AA46DE0588C0F081F /* Build configuration list for PBXNativeTarget "GAMELIFEWatchExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D46BAEAFB6F49E92E4E42936 /* Release */,
+				C4F3C75AD9A6FBB7FEAA7CEC /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

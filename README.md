@@ -108,6 +108,7 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 ### watchOS
 
 - Watch app + extension included
+- Watch targets are wired into the Xcode project and shared scheme
 - WatchConnectivity relay for snapshots and quest actions
 
 ## Feature Highlights
@@ -372,7 +373,8 @@ Currently wired:
 ### Requirements
 
 - macOS + Xcode 16+
-- iOS 18+ simulator/device (iOS 26.2 simulator used in repo workflows)
+- iOS 18+ simulator/device
+- watchOS SDK for companion watch builds
 - Apple Developer account for full entitlement testing
 
 ### Build
@@ -380,10 +382,15 @@ Currently wired:
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 xcodebuild -project GAMELIFE.xcodeproj \
-  -scheme GAMELIFE \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -target GAMELIFE \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  SYMROOT=/tmp/gamelife_build_symroot \
+  OBJROOT=/tmp/gamelife_build_objroot \
   build
 ```
+
+Simulator scheme builds need a matching watchOS simulator runtime because the iOS app embeds the watch app.
 
 ### Run regression checks
 

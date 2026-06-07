@@ -118,22 +118,24 @@ swiftc -o /tmp/gamelife_app_icon_support_tests \
 /tmp/gamelife_app_icon_support_tests
 
 echo "Running project build..."
-DERIVED_DATA_PATH="/tmp/gamelife_regression_derived_data"
-rm -rf "$DERIVED_DATA_PATH"
+SYMROOT="/tmp/gamelife_regression_symroot"
+OBJROOT="/tmp/gamelife_regression_objroot"
+rm -rf "$SYMROOT" "$OBJROOT"
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 xcodebuild \
   -project "$PROJECT" \
-  -scheme GAMELIFE \
+  -target GAMELIFE \
   -configuration Debug \
-  -destination 'generic/platform=iOS' \
-  -derivedDataPath "$DERIVED_DATA_PATH" \
   CODE_SIGNING_ALLOWED=NO \
+  SYMROOT="$SYMROOT" \
+  OBJROOT="$OBJROOT" \
   build >/tmp/gamelife_regression_build.log 2>&1 || {
   tail -n 120 /tmp/gamelife_regression_build.log
   fail "xcodebuild failed"
 }
 
-APP_INFO_PLIST="$DERIVED_DATA_PATH/Build/Products/Debug-iphoneos/GAMELIFE.app/Info.plist"
+APP_INFO_PLIST="$SYMROOT/Debug-iphoneos/GAMELIFE.app/Info.plist"
+[[ -d "$SYMROOT/Debug-iphoneos/GAMELIFE.app/Watch/GAMELIFEWatch.app" ]] || fail "Built app missing embedded watch app"
 for icon_name in "${APP_ICON_NAMES[@]}"; do
   /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:$icon_name:CFBundleIconName" "$APP_INFO_PLIST" | grep -Fxq "$icon_name" || fail "Built Info.plist missing iPhone alternate icon $icon_name"
   /usr/libexec/PlistBuddy -c "Print :CFBundleIcons~ipad:CFBundleAlternateIcons:$icon_name:CFBundleIconName" "$APP_INFO_PLIST" | grep -Fxq "$icon_name" || fail "Built Info.plist missing iPad alternate icon $icon_name"
