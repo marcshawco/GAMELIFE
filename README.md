@@ -193,8 +193,10 @@ Two design directions ship side-by-side:
 
 The PRAXIS Brand v1.0 package (`PRAXIS 2.0/`) ships into the iOS target as:
 
-- **Prism alternate app icons — three colorways**, selectable from Settings → App Icon:
-    - `AppIconPrism` — *Signal* (cyan → pink). Primary direction.
+- **Prism alternate app icons**, selectable from Settings → App Icon:
+    - `AppIcon` — *Signal* (cyan → pink). Primary direction.
+    - `AppIconPrismGold` — *Gold* (gold → amber). Ceremonial alternate.
+    - `AppIconPrismCrimson` — *Crimson* (pink → crimson). Boss Raid alternate.
     - `AppIconPrismSolar` — *Solar* (gold → crimson). Warm alternate.
     - `AppIconPrismVerdant` — *Verdant* (mint → periwinkle). Cool alternate.
 
@@ -246,7 +248,7 @@ flowchart LR
             direction LR
             Defaults["UserDefaults JSON stores\nPlayerDataManager\nQuestDataManager\nActivityLogDataManager\nLocationDataManager\nSettingsManager"]
             RuntimeCache["RuntimeCacheManager\nQuest order\nHealth daily snapshot\nLocation runtime snapshot\nAchievement / marketplace / status UI cache"]
-            AppGroup["App Group UserDefaults\ngroup.com.gamelife.shared\nWidgetSnapshotPayload"]
+            AppGroup["App Group files\ngroup.com.gamelife.shared\nWidgetSnapshotPayload + language preference"]
         end
     end
 

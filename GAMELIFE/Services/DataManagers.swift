@@ -753,7 +753,7 @@ class SettingsManager {
         get { UserDefaults.standard.string(forKey: Keys.preferredLanguageCode) ?? AppLanguage.system.rawValue }
         set {
             UserDefaults.standard.set(newValue, forKey: Keys.preferredLanguageCode)
-            sharedDefaults?.set(newValue, forKey: Keys.preferredLanguageCode)
+            writeSharedPreferredLanguageCode(newValue)
         }
     }
 
@@ -832,17 +832,18 @@ class SettingsManager {
     // MARK: - Reset
 
     private let sharedAppGroupID = "group.com.gamelife.shared"
-    private lazy var sharedDefaults: UserDefaults? = {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedAppGroupID) != nil else {
-            return nil
-        }
-        return UserDefaults(suiteName: sharedAppGroupID)
+    private let sharedLanguagePreferenceFileName = "preferredLanguageCode.txt"
+    private lazy var sharedAppGroupContainerURL: URL? = {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedAppGroupID)
     }()
+    private var sharedLanguagePreferenceURL: URL? {
+        sharedAppGroupContainerURL?.appendingPathComponent(sharedLanguagePreferenceFileName)
+    }
 
     func resetAllSettings() {
         guard let domain = Bundle.main.bundleIdentifier else { return }
         UserDefaults.standard.removePersistentDomain(forName: domain)
-        sharedDefaults?.removeObject(forKey: Keys.preferredLanguageCode)
+        removeSharedPreferredLanguageCode()
     }
 
     func setDefaults() {
@@ -862,8 +863,28 @@ class SettingsManager {
         ]
 
         UserDefaults.standard.register(defaults: defaults)
-        if sharedDefaults?.object(forKey: Keys.preferredLanguageCode) == nil {
-            sharedDefaults?.set(AppLanguage.system.rawValue, forKey: Keys.preferredLanguageCode)
+        if let sharedLanguagePreferenceURL,
+           !FileManager.default.fileExists(atPath: sharedLanguagePreferenceURL.path) {
+            writeSharedPreferredLanguageCode(AppLanguage.system.rawValue)
+        }
+    }
+
+    private func writeSharedPreferredLanguageCode(_ code: String) {
+        guard let sharedLanguagePreferenceURL else { return }
+        do {
+            try code.write(to: sharedLanguagePreferenceURL, atomically: true, encoding: .utf8)
+        } catch {
+            print("[SYSTEM] Failed to write shared language preference: \(error)")
+        }
+    }
+
+    private func removeSharedPreferredLanguageCode() {
+        guard let sharedLanguagePreferenceURL,
+              FileManager.default.fileExists(atPath: sharedLanguagePreferenceURL.path) else { return }
+        do {
+            try FileManager.default.removeItem(at: sharedLanguagePreferenceURL)
+        } catch {
+            print("[SYSTEM] Failed to remove shared language preference: \(error)")
         }
     }
 }

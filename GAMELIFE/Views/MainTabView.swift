@@ -24,6 +24,13 @@ struct MainTabView: View {
 
     @State private var currentSystemMessage: SystemMessage?
 
+    private var bottomNavigationExtraPadding: CGFloat {
+        if #available(iOS 18.0, *) {
+            return 8
+        }
+        return 0
+    }
+
     // MARK: - Initialization
 
     init() {
@@ -73,6 +80,13 @@ struct MainTabView: View {
                     .tag(4)
             }
             .tint(GW.cyan)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if bottomNavigationExtraPadding > 0 {
+                    Color.clear
+                        .frame(height: bottomNavigationExtraPadding)
+                        .accessibilityHidden(true)
+                }
+            }
 
             // System Message Banner Overlay
             if let message = currentSystemMessage {

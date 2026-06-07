@@ -9,20 +9,23 @@ import AppIntents
 
 private enum WidgetLanguageSupport {
     static let appGroupID = "group.com.gamelife.shared"
-    static let preferredLanguageKey = "preferredLanguageCode"
+    static let preferredLanguageFileName = "preferredLanguageCode.txt"
 
     static var locale: Locale {
         Locale(identifier: resolvedLanguageCode)
     }
 
     private static var resolvedLanguageCode: String {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil,
-              let defaults = UserDefaults(suiteName: appGroupID),
-              let code = defaults.string(forKey: preferredLanguageKey),
-              code != "system" else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
             return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
         }
 
+        let preferenceURL = containerURL.appendingPathComponent(preferredLanguageFileName)
+        let code = (try? String(contentsOf: preferenceURL, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !code.isEmpty, code != "system" else {
+            return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
+        }
         let normalized = code.split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? code
         return normalized.isEmpty ? "en" : normalized
     }

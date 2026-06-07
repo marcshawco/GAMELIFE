@@ -55,20 +55,23 @@ final class WidgetSnapshotStore {
     static let shared = WidgetSnapshotStore()
 
     private let appGroupID = "group.com.gamelife.shared"
-    private let payloadKey = "widgetSnapshotPayload"
+    private let payloadFileName = "widgetSnapshotPayload.json"
     private let encoder = JSONEncoder()
-    private lazy var sharedDefaults: UserDefaults? = {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil else {
+    private lazy var sharedContainerURL: URL? = {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
             print("[SYSTEM] App Group container unavailable for \(appGroupID). Widget snapshot publishing disabled.")
             return nil
         }
-        return UserDefaults(suiteName: appGroupID)
+        return containerURL
     }()
+    private var payloadURL: URL? {
+        sharedContainerURL?.appendingPathComponent(payloadFileName)
+    }
 
     private init() {}
 
     func publish(player: Player, dailyQuests: [DailyQuest], bossFights: [BossFight]) {
-        guard let sharedDefaults else { return }
+        guard let payloadURL else { return }
 
         let sortedQuests = dailyQuests.sorted { lhs, rhs in
             let left = questPriorityScore(lhs, bossFights: bossFights, playerLevel: player.level)
@@ -132,12 +135,12 @@ final class WidgetSnapshotStore {
 
         do {
             let data = try encoder.encode(payload)
-            if let existingData = sharedDefaults.data(forKey: payloadKey),
+            if let existingData = try? Data(contentsOf: payloadURL),
                let existingPayload = try? JSONDecoder().decode(WidgetSnapshotPayload.self, from: existingData),
                !payload.hasMeaningfulDifferences(from: existingPayload) {
                 return
             }
-            sharedDefaults.set(data, forKey: payloadKey)
+            try data.write(to: payloadURL, options: .atomic)
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
             print("[SYSTEM] Failed to publish widget snapshot: \(error)")

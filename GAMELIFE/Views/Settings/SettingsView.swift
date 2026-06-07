@@ -450,91 +450,6 @@ struct StatRow: View {
     }
 }
 
-// MARK: - App Icon Support
-
-enum AppIconOption: String, CaseIterable, Identifiable {
-    /// Signal — primary AppIcon. Selecting clears any alt-icon override.
-    case signal
-    /// Gold — gold → amber ceremonial alternate (S-Rank vibe).
-    case gold
-    /// Crimson — pink → crimson on plum-black (Boss Raid vibe).
-    case crimson
-    /// Solar — gold → crimson on coffee.
-    case solar
-    /// Verdant — mint → periwinkle on deep ink.
-    case verdant
-
-    var id: String { rawValue }
-
-    var iconName: String? {
-        switch self {
-        case .signal:  return nil
-        case .gold:    return "AppIconPrismGold"
-        case .crimson: return "AppIconPrismCrimson"
-        case .solar:   return "AppIconPrismSolar"
-        case .verdant: return "AppIconPrismVerdant"
-        }
-    }
-
-    var displayName: String {
-        switch self {
-        case .signal:  return "Prism · Signal"
-        case .gold:    return "Prism · Gold"
-        case .crimson: return "Prism · Crimson"
-        case .solar:   return "Prism · Solar"
-        case .verdant: return "Prism · Verdant"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .signal:  return "Cyan → pink · primary"
-        case .gold:    return "S-Rank ceremonial alternate"
-        case .crimson: return "Boss Raid alternate"
-        case .solar:   return "Gold → crimson · warm alternate"
-        case .verdant: return "Mint → periwinkle · cool alternate"
-        }
-    }
-
-    var previewAssetName: String {
-        switch self {
-        case .signal:  return "AppIconPreviewPrismSignal"
-        case .gold:    return "AppIconPreviewPrismGold"
-        case .crimson: return "AppIconPreviewPrismCrimson"
-        case .solar:   return "AppIconPreviewPrismSolar"
-        case .verdant: return "AppIconPreviewPrismVerdant"
-        }
-    }
-
-    /// Resolve the current alternate-icon name into an option. Legacy
-    /// Phoenix / pre-rename names migrate to `.signal` so old users land
-    /// on the new default.
-    init?(iconName: String?) {
-        switch iconName {
-        case nil,
-             "AppIconPrism",
-             "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
-             "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
-             "AppIconPhoenixDark",  "AppIconPhoenixDarkV2":
-            self = .signal
-        case "AppIconPrismGold":    self = .gold
-        case "AppIconPrismCrimson": self = .crimson
-        case "AppIconPrismSolar":   self = .solar
-        case "AppIconPrismVerdant": self = .verdant
-        default: return nil
-        }
-    }
-
-    /// Names that no longer have catalog assets — force-migrated to nil
-    /// so iOS doesn't try to resolve a dead alt-icon.
-    static let legacyAlternateNames: Set<String> = [
-        "AppIconPrism",
-        "AppIconPhoenixIvory", "AppIconPhoenixIvoryV2",
-        "AppIconPhoenixWhite", "AppIconPhoenixWhiteV2",
-        "AppIconPhoenixDark",  "AppIconPhoenixDarkV2",
-    ]
-}
-
 @MainActor
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
@@ -585,56 +500,47 @@ final class AppIconManager: ObservableObject {
             storedOption = nil
             return
         }
-        let currentName = UIApplication.shared.alternateIconName
-        let systemOption = currentName.flatMap(AppIconOption.init(iconName:))
-        hasLegacyIconOverride = (currentName != nil && systemOption == nil)
+
+        let resolvedState = resolvedSystemState()
 
         if hasPendingIconChange, let pendingOption {
-            if systemOption == pendingOption {
-                currentOption = pendingOption
-                storedOption = pendingOption
+            if resolvedState.currentOption == pendingOption {
+                applyResolvedSystemState(resolvedState)
                 clearPendingIconChange()
             } else {
                 currentOption = pendingOption
+                hasLegacyIconOverride = resolvedState.hasLegacyIconOverride
             }
             return
         }
 
-        if currentName != nil {
-            currentOption = systemOption ?? .signal
-            if let systemOption {
-                storedOption = systemOption
-            }
-            return
-        }
-
-        currentOption = storedOption ?? .signal
+        applyResolvedSystemState(resolvedState)
     }
 
     func setIcon(_ option: AppIconOption) {
+        isSupported = UIApplication.shared.supportsAlternateIcons
         guard isSupported else {
             SystemMessageHelper.showWarning("Alternate app icons are not supported on this device.")
             return
         }
 
         let targetIconName = option.iconName
-        guard currentOption != option else { return }
+        let resolvedState = resolvedSystemState()
+        guard hasPendingIconChange || resolvedState.currentOption != option else {
+            applyResolvedSystemState(resolvedState)
+            return
+        }
+        guard pendingOption != option else { return }
 
         let requestID = UUID()
         pendingRequestID = requestID
         pendingOption = option
         currentOption = option
-        storedOption = option
         hasPendingIconChange = true
         pendingIconDisplayName = option.displayName
 
-        // iOS and the Simulator can report "Resource temporarily
-        // unavailable" even when the icon request is accepted. Make a
-        // single request, then refresh state after the system has had a
-        // beat to settle instead of retrying into the busy icon service.
         performIconChange(
             requestID: requestID,
-            targetOption: option,
             targetIconName: targetIconName
         )
     }
@@ -646,8 +552,11 @@ final class AppIconManager: ObservableObject {
     private func normalizeLegacyIconIfNeeded() {
         guard UIApplication.shared.supportsAlternateIcons else { return }
         guard let currentName = UIApplication.shared.alternateIconName else { return }
-        guard AppIconOption.legacyAlternateNames.contains(currentName) ||
-                AppIconOption(iconName: currentName) == nil else { return }
+        let resolvedState = AppIconStateResolver.resolve(
+            currentIconName: currentName,
+            storedOption: storedOption
+        )
+        guard resolvedState.shouldNormalizeIconName else { return }
 
         storedOption = .signal
         UIApplication.shared.setAlternateIconName(nil) { [weak self] _ in
@@ -659,7 +568,6 @@ final class AppIconManager: ObservableObject {
 
     private func performIconChange(
         requestID: UUID,
-        targetOption: AppIconOption,
         targetIconName: String?
     ) {
         guard requestID == pendingRequestID else { return }
@@ -668,7 +576,6 @@ final class AppIconManager: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 self?.finishIconChange(
                     requestID: requestID,
-                    targetOption: targetOption,
                     targetIconName: targetIconName
                 )
             }
@@ -677,22 +584,33 @@ final class AppIconManager: ObservableObject {
 
     private func finishIconChange(
         requestID: UUID,
-        targetOption: AppIconOption,
         targetIconName: String?
     ) {
         guard requestID == pendingRequestID else { return }
 
-        let currentName = UIApplication.shared.alternateIconName
-        if currentName == targetIconName {
-            currentOption = targetOption
-            storedOption = targetOption
+        let resolvedState = resolvedSystemState()
+        if UIApplication.shared.alternateIconName == targetIconName {
+            applyResolvedSystemState(resolvedState)
             clearPendingIconChange()
             return
         }
 
-        currentOption = targetOption
-        storedOption = targetOption
+        applyResolvedSystemState(resolvedState)
         clearPendingIconChange()
+        SystemMessageHelper.showWarning("App icon could not be changed. Please try again.")
+    }
+
+    private func resolvedSystemState() -> AppIconResolvedState {
+        AppIconStateResolver.resolve(
+            currentIconName: UIApplication.shared.alternateIconName,
+            storedOption: storedOption
+        )
+    }
+
+    private func applyResolvedSystemState(_ state: AppIconResolvedState) {
+        currentOption = state.currentOption
+        storedOption = state.storedOption
+        hasLegacyIconOverride = state.hasLegacyIconOverride
     }
 
     private func clearPendingIconChange() {

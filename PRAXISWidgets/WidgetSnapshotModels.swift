@@ -124,12 +124,11 @@ struct WidgetSnapshotPayload: Codable {
 
 enum WidgetSnapshotLoader {
     static let appGroupID = "group.com.gamelife.shared"
-    static let payloadKey = "widgetSnapshotPayload"
+    static let payloadFileName = "widgetSnapshotPayload.json"
 
     static func load() -> WidgetSnapshotPayload {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) != nil,
-              let defaults = UserDefaults(suiteName: appGroupID),
-              let data = defaults.data(forKey: payloadKey),
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID),
+              let data = try? Data(contentsOf: containerURL.appendingPathComponent(payloadFileName)),
               let payload = try? JSONDecoder().decode(WidgetSnapshotPayload.self, from: data) else {
             return .placeholder
         }

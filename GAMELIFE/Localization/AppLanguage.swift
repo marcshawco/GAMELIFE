@@ -51,7 +51,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         if let localeIdentifier {
             return Locale(identifier: localeIdentifier)
         }
-        return .autoupdatingCurrent
+        return Locale(identifier: Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en")
     }
 }
 

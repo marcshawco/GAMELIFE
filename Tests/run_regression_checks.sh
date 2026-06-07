@@ -22,6 +22,31 @@ grep -q 'INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "' "$PROJE
 grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/GAMELIFE/PrivacyInfo.xcprivacy" || fail "App privacy manifest missing UserDefaults required-reason declaration"
 grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/PRAXISWidgets/PrivacyInfo.xcprivacy" || fail "Widget privacy manifest missing UserDefaults required-reason declaration"
 
+APP_ICON_SUPPORT="$ROOT/GAMELIFE/Services/AppIconSupport.swift"
+APP_ICON_SETTINGS="$ROOT/GAMELIFE/Views/Settings/SettingsView.swift"
+APP_ICON_NAMES=(
+  AppIconPrismGold
+  AppIconPrismCrimson
+  AppIconPrismSolar
+  AppIconPrismVerdant
+)
+
+grep -q 'AppIconStateResolver.resolve' "$APP_ICON_SETTINGS" || fail "App icon manager should resolve state from the actual system icon"
+if grep -Fq 'currentOption = storedOption ?? .signal' "$APP_ICON_SETTINGS"; then
+  fail "App icon manager should not display stale stored selections when the system icon is default"
+fi
+for icon_name in "${APP_ICON_NAMES[@]}"; do
+  grep -Fq "$icon_name" "$PROJECT/project.pbxproj" || fail "Missing alternate app icon build setting for $icon_name"
+  grep -Fq "\"$icon_name\"" "$APP_ICON_SUPPORT" || fail "Missing AppIconOption mapping for $icon_name"
+  [[ -d "$ROOT/GAMELIFE/Assets.xcassets/$icon_name.appiconset" ]] || fail "Missing asset catalog appiconset for $icon_name"
+done
+grep -Fq 'TARGETED_DEVICE_FAMILY = "1,2";' "$PROJECT/project.pbxproj" || fail "App target should generate complete iPhone and iPad icon metadata"
+if grep -RInF 'UserDefaults(suiteName:' "$ROOT/GAMELIFE" "$ROOT/PRAXISWidgets" >/dev/null; then
+  fail "App/widget app-group bridge should use files instead of CFPrefs-backed suite defaults"
+fi
+grep -Fq 'if #available(iOS 18.0, *)' "$ROOT/GAMELIFE/Views/MainTabView.swift" || fail "Main tab view missing iOS 18 bottom navigation padding guard"
+grep -Fq 'safeAreaInset(edge: .bottom' "$ROOT/GAMELIFE/Views/MainTabView.swift" || fail "Main tab view missing bottom navigation safe-area padding"
+
 REMOVED_ENTITLEMENT='com.apple.developer.family-''controls'
 if grep -q "$REMOVED_ENTITLEMENT" "$ROOT/GAMELIFE/GAMELIFE.entitlements"; then
   fail "Family Controls entitlement should not be present"
@@ -86,17 +111,32 @@ swiftc -o /tmp/gamelife_model_logic_tests \
   "$ROOT/Tests/model_logic_tests.swift"
 /tmp/gamelife_model_logic_tests
 
+echo "Running app icon support tests..."
+swiftc -o /tmp/gamelife_app_icon_support_tests \
+  "$ROOT/GAMELIFE/Services/AppIconSupport.swift" \
+  "$ROOT/Tests/app_icon_support_tests.swift"
+/tmp/gamelife_app_icon_support_tests
+
 echo "Running project build..."
+DERIVED_DATA_PATH="/tmp/gamelife_regression_derived_data"
+rm -rf "$DERIVED_DATA_PATH"
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 xcodebuild \
   -project "$PROJECT" \
   -scheme GAMELIFE \
   -configuration Debug \
   -destination 'generic/platform=iOS' \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
   CODE_SIGNING_ALLOWED=NO \
   build >/tmp/gamelife_regression_build.log 2>&1 || {
   tail -n 120 /tmp/gamelife_regression_build.log
   fail "xcodebuild failed"
 }
+
+APP_INFO_PLIST="$DERIVED_DATA_PATH/Build/Products/Debug-iphoneos/GAMELIFE.app/Info.plist"
+for icon_name in "${APP_ICON_NAMES[@]}"; do
+  /usr/libexec/PlistBuddy -c "Print :CFBundleIcons:CFBundleAlternateIcons:$icon_name:CFBundleIconName" "$APP_INFO_PLIST" | grep -Fxq "$icon_name" || fail "Built Info.plist missing iPhone alternate icon $icon_name"
+  /usr/libexec/PlistBuddy -c "Print :CFBundleIcons~ipad:CFBundleAlternateIcons:$icon_name:CFBundleIconName" "$APP_INFO_PLIST" | grep -Fxq "$icon_name" || fail "Built Info.plist missing iPad alternate icon $icon_name"
+done
 
 echo "All regression checks passed."
