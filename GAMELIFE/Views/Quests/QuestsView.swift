@@ -772,9 +772,9 @@ struct QuestRowView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Button(action: onComplete) {
-                    Image(systemName: quest.status == .completed ? "checkmark.circle.fill" : "circle")
+                    Image(systemName: completionIconName)
                         .font(.system(size: 28))
-                        .foregroundStyle(quest.status == .completed ? SystemTheme.successGreen : SystemTheme.textTertiary)
+                        .foregroundStyle(completionIconColor)
                 }
                 .disabled(quest.status == .completed)
 
@@ -792,6 +792,13 @@ struct QuestRowView: View {
                             Image(systemName: quest.trackingType.icon)
                                 .font(.system(size: 12))
                                 .foregroundStyle(SystemTheme.primaryBlue)
+                        }
+
+                        if quest.isRepeatable {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                                .accessibilityLabel("Repeatable quest")
                         }
                     }
 
@@ -819,6 +826,14 @@ struct QuestRowView: View {
                             .foregroundStyle(SystemTheme.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
+
+                        if quest.isRepeatable {
+                            Label(repeatableStatusText, systemImage: "arrow.clockwise")
+                                .font(SystemTypography.captionSmall)
+                                .foregroundStyle(SystemTheme.successGreen)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
+                        }
                     }
 
                     if quest.trackingType.isAutomatic && quest.status != .completed {
@@ -859,7 +874,7 @@ struct QuestRowView: View {
                         }
 
                         if quest.isRepeatable {
-                            Text("Repeatable")
+                            Label(repeatableChipText, systemImage: "arrow.clockwise")
                                 .font(SystemTypography.mono(10, weight: .semibold))
                                 .foregroundStyle(SystemTheme.primaryBlue)
                                 .padding(.horizontal, 6)
@@ -964,6 +979,39 @@ struct QuestRowView: View {
             return "\(quest.completedSubtaskCount)/\(quest.subtasks.count) subtasks • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%"
         }
         return "\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%"
+    }
+
+    private var completionIconName: String {
+        if quest.status == .completed {
+            return "checkmark.circle.fill"
+        }
+        if quest.isRepeatable {
+            return "arrow.clockwise.circle"
+        }
+        return "circle"
+    }
+
+    private var completionIconColor: Color {
+        if quest.status == .completed {
+            return SystemTheme.successGreen
+        }
+        if quest.isRepeatable {
+            return SystemTheme.primaryBlue
+        }
+        return SystemTheme.textTertiary
+    }
+
+    private var repeatableStatusText: String {
+        if quest.completionCountInCycle <= 0 {
+            return "Repeatable - clears again after completion"
+        }
+        let clearText = quest.completionCountInCycle == 1 ? "1 clear" : "\(quest.completionCountInCycle) clears"
+        return "Repeatable - \(clearText) this cycle"
+    }
+
+    private var repeatableChipText: String {
+        guard quest.completionCountInCycle > 0 else { return "Repeatable" }
+        return "x\(quest.completionCountInCycle)"
     }
 }
 
