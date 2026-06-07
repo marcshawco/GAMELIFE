@@ -101,6 +101,7 @@ struct QuestsView: View {
                                         impactRewardsText: rewardImpactText(for: quest),
                                         impactStreakText: streakImpactText(for: quest),
                                         onComplete: { completeQuest(quest) },
+                                        onSubtaskComplete: { subtask in completeSubtask(subtask, in: quest) },
                                         onShowActions: { questActionTarget = quest }
                                     )
                                     .padding(.horizontal)
@@ -231,16 +232,24 @@ struct QuestsView: View {
 
     private func completeQuest(_ quest: DailyQuest) {
         let result = gameEngine.completeQuest(quest)
+        presentCompletionResult(result, fallbackTitle: quest.title)
+    }
 
+    private func completeSubtask(_ subtask: QuestSubtask, in quest: DailyQuest) {
+        let result = gameEngine.completeQuestSubtask(questID: quest.id, subtaskID: subtask.id)
+        presentCompletionResult(result, fallbackTitle: subtask.title)
+    }
+
+    private func presentCompletionResult(_ result: QuestCompletionResult, fallbackTitle: String) {
         if result.success {
             SystemMessageHelper.showQuestComplete(
-                title: result.isCritical ? "Critical Success!" : "Quest Complete",
+                title: result.isCritical ? "Critical Success!" : result.message,
                 xp: result.xpAwarded,
                 gold: result.goldAwarded
             )
 
             if gameEngine.canUndoLatestQuestCompletion {
-                undoBannerTitle = gameEngine.lastUndoQuestTitle ?? quest.title
+                undoBannerTitle = gameEngine.lastUndoQuestTitle ?? fallbackTitle
                 withAnimation(.easeInOut(duration: 0.2)) {
                     showUndoBanner = true
                 }
@@ -756,6 +765,7 @@ struct QuestRowView: View {
     let impactRewardsText: String
     let impactStreakText: String
     let onComplete: () -> Void
+    let onSubtaskComplete: (QuestSubtask) -> Void
     let onShowActions: () -> Void
 
     var body: some View {
@@ -819,6 +829,14 @@ struct QuestRowView: View {
                             permissionManager: permissionManager,
                             displayedProgress: displayedProgress
                         )
+                    }
+
+                    if quest.hasSubtasks {
+                        QuestSubtaskListView(
+                            quest: quest,
+                            onSubtaskComplete: onSubtaskComplete
+                        )
+                        .padding(.top, 4)
                     }
 
                     HStack(spacing: 6) {
@@ -893,7 +911,7 @@ struct QuestRowView: View {
 
                     Spacer()
 
-                    Text("\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%")
+                    Text(progressText)
                         .font(SystemTypography.mono(10, weight: .semibold))
                         .foregroundStyle(quest.status == .completed ? SystemTheme.successGreen : SystemTheme.primaryBlue)
                         .lineLimit(1)
@@ -939,6 +957,13 @@ struct QuestRowView: View {
     private var displayedMetricValue: Double {
         if quest.status == .completed { return max(1, quest.targetValue) }
         return min(max(0, uiSafeUnitProgress(displayedProgress) * max(1, quest.targetValue)), max(1, quest.targetValue))
+    }
+
+    private var progressText: String {
+        if quest.hasSubtasks {
+            return "\(quest.completedSubtaskCount)/\(quest.subtasks.count) subtasks • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%"
+        }
+        return "\(QuestProgressFormatter.metricDisplay(displayedMetricValue))/\(QuestProgressFormatter.metricDisplay(max(1, quest.targetValue))) \(quest.unit) • \(Int(uiSafeUnitProgress(displayedProgress) * 100))%"
     }
 }
 
@@ -1031,6 +1056,55 @@ private struct QuestStatIconChip: View {
             .background(stat.color.opacity(0.14))
             .clipShape(Circle())
             .accessibilityLabel(Text(stat.fullName))
+    }
+}
+
+private struct QuestSubtaskListView: View {
+    let quest: DailyQuest
+    let onSubtaskComplete: (QuestSubtask) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(quest.subtasks.enumerated()), id: \.element.id) { index, subtask in
+                Button {
+                    onSubtaskComplete(subtask)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(subtask.isCompleted ? SystemTheme.successGreen : SystemTheme.textTertiary)
+                            .frame(width: 18)
+
+                        Text(subtask.title)
+                            .font(SystemTypography.captionSmall)
+                            .foregroundStyle(subtask.isCompleted ? SystemTheme.textTertiary : SystemTheme.textPrimary)
+                            .strikethrough(subtask.isCompleted)
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(rewardText(for: index))
+                            .font(SystemTypography.mono(9, weight: .semibold))
+                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .lineLimit(1)
+                    }
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 8)
+                    .background(SystemTheme.backgroundSecondary.opacity(subtask.isCompleted ? 0.35 : 0.65))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .disabled(subtask.isCompleted || quest.status == .completed)
+            }
+        }
+    }
+
+    private func rewardText(for index: Int) -> String {
+        let xp = quest.subtaskXPReward(at: index)
+        let gold = quest.subtaskGoldReward(at: index)
+        if gold > 0 {
+            return "+\(xp) XP +\(gold)g"
+        }
+        return "+\(xp) XP"
     }
 }
 

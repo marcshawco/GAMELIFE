@@ -127,6 +127,17 @@ class GameEngine: ObservableObject {
             return QuestCompletionResult(success: false, message: "Quest not found")
         }
 
+        if dailyQuests[index].hasSubtasks {
+            let remainingSubtaskIDs = dailyQuests[index].subtasks
+                .filter { !$0.isCompleted }
+                .map(\.id)
+            return completeQuestSubtasks(
+                questID: dailyQuests[index].id,
+                subtaskIDs: remainingSubtaskIDs,
+                sendSystemNotification: sendSystemNotification
+            )
+        }
+
         guard dailyQuests[index].status != .completed || dailyQuests[index].isRepeatable else {
             return QuestCompletionResult(success: false, message: "Quest already completed")
         }
@@ -228,6 +239,180 @@ class GameEngine: ObservableObject {
         )
     }
 
+    func completeQuestSubtask(
+        questID: UUID,
+        subtaskID: UUID,
+        sendSystemNotification: Bool = false
+    ) -> QuestCompletionResult {
+        completeQuestSubtasks(
+            questID: questID,
+            subtaskIDs: [subtaskID],
+            sendSystemNotification: sendSystemNotification
+        )
+    }
+
+    private func completeQuestSubtasks(
+        questID: UUID,
+        subtaskIDs: [UUID],
+        sendSystemNotification: Bool
+    ) -> QuestCompletionResult {
+        guard let index = dailyQuests.firstIndex(where: { $0.id == questID }) else {
+            return QuestCompletionResult(success: false, message: "Quest not found")
+        }
+
+        guard dailyQuests[index].hasSubtasks else {
+            return completeQuest(dailyQuests[index], sendSystemNotification: sendSystemNotification)
+        }
+
+        guard dailyQuests[index].status != .completed || dailyQuests[index].isRepeatable else {
+            return QuestCompletionResult(success: false, message: "Quest already completed")
+        }
+
+        let selectedIDs = Set(subtaskIDs)
+        let subtaskIndices = dailyQuests[index].subtasks.indices.filter { subtaskIndex in
+            selectedIDs.contains(dailyQuests[index].subtasks[subtaskIndex].id) &&
+            !dailyQuests[index].subtasks[subtaskIndex].isCompleted
+        }
+
+        guard !subtaskIndices.isEmpty else {
+            return QuestCompletionResult(success: false, message: "Subtask already completed")
+        }
+
+        prepareUndoSnapshot(for: dailyQuests[index].title)
+
+        let questBeforeCompletion = dailyQuests[index]
+        let subtaskCount = max(1, questBeforeCompletion.subtasks.count)
+        let streakMultiplier = GameFormulas.streakMultiplier(streak: player.currentStreak)
+        let totalXP = Int(Double(questBeforeCompletion.xpReward) * streakMultiplier)
+        let totalGold = questBeforeCompletion.isOptional ? 0 : questBeforeCompletion.goldReward
+        let totalStatXP = GameFormulas.statXP(difficulty: questBeforeCompletion.difficulty)
+
+        let xpAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalXP, index: subtaskIndex, count: subtaskCount)
+        }
+        let goldAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalGold, index: subtaskIndex, count: subtaskCount)
+        }
+        let statXPAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalStatXP, index: subtaskIndex, count: subtaskCount)
+        }
+
+        for subtaskIndex in subtaskIndices {
+            dailyQuests[index].subtasks[subtaskIndex].isCompleted = true
+        }
+
+        dailyQuests[index].currentProgress = dailyQuests[index].subtaskProgress
+        if dailyQuests[index].currentProgress > 0 && dailyQuests[index].status == .available {
+            dailyQuests[index].status = .inProgress
+        }
+
+        let leveledUp = xpAwarded > 0 ? awardXP(xpAwarded) : false
+
+        if goldAwarded > 0 {
+            player.gold += goldAwarded
+        }
+
+        if statXPAwarded > 0 {
+            for statType in dailyQuests[index].targetStats {
+                awardStatXP(statType, amount: statXPAwarded)
+            }
+        }
+
+        let completedQuest = dailyQuests[index].completedSubtaskCount == dailyQuests[index].subtasks.count
+        let completedSubtaskTitle = subtaskIndices.count == 1
+            ? dailyQuests[index].subtasks[subtaskIndices[0]].title
+            : "\(subtaskIndices.count) subtasks"
+
+        applyLinkedQuestDamage(
+            for: dailyQuests[index],
+            completedUnitIndices: Array(subtaskIndices),
+            totalUnits: subtaskCount
+        )
+
+        var isCritical = false
+        var lootBox: LootBox?
+        var leveledUpData: LevelUpData?
+
+        if completedQuest {
+            dailyQuests[index].completionCountInCycle += 1
+            dailyQuests[index].status = .completed
+            dailyQuests[index].currentProgress = 1.0
+            let questAfterCompletion = dailyQuests[index]
+
+            isCritical = Double.random(in: 0...1) < GameFormulas.criticalSuccessChance
+            if isCritical {
+                let rarity = determineLootBoxRarity(for: questAfterCompletion.difficulty)
+                lootBox = LootBox(rarity: rarity)
+                if let lootBox {
+                    pendingLootBoxes.append(lootBox)
+                }
+            }
+
+            player.completedQuestCount += 1
+            QuestDataManager.shared.recordCompletedQuest(questAfterCompletion, xpAwarded: xpAwarded, goldAwarded: goldAwarded)
+            logActivity(
+                type: .questCompleted,
+                title: questAfterCompletion.title,
+                detail: goldAwarded > 0 ? "+\(xpAwarded) XP • +\(goldAwarded) Gold" : "+\(xpAwarded) XP • Quest complete"
+            )
+
+            if sendSystemNotification {
+                NotificationManager.shared.sendQuestCompletionNotification(
+                    questTitle: questAfterCompletion.title,
+                    xp: xpAwarded,
+                    gold: goldAwarded
+                )
+            }
+
+            if questAfterCompletion.isRepeatable,
+               let latestIndex = dailyQuests.firstIndex(where: { $0.id == questAfterCompletion.id }) {
+                dailyQuests[latestIndex].status = .available
+                dailyQuests[latestIndex].currentProgress = 0
+                for subtaskIndex in dailyQuests[latestIndex].subtasks.indices {
+                    dailyQuests[latestIndex].subtasks[subtaskIndex].isCompleted = false
+                }
+            }
+
+            checkDailyQuestStreak()
+            evaluateAchievementsIfNeeded()
+            leveledUpData = leveledUp ? lastLevelUpData : nil
+            armQuestCompletionUndoWindow(for: questAfterCompletion.title)
+            HapticManager.shared.questCompleted(isCritical: isCritical)
+        } else {
+            logActivity(
+                type: .questCompleted,
+                title: "\(questBeforeCompletion.title) · \(completedSubtaskTitle)",
+                detail: goldAwarded > 0 ? "+\(xpAwarded) XP • +\(goldAwarded) Gold" : "+\(xpAwarded) XP"
+            )
+            armQuestCompletionUndoWindow(for: questBeforeCompletion.title)
+            leveledUpData = leveledUp ? lastLevelUpData : nil
+            HapticManager.shared.success()
+        }
+
+        AnalyticsManager.shared.trackFeature(completedQuest ? "quest_completed" : "quest_subtask_completed")
+        AnalyticsManager.shared.trackFeature("quest_tracking_\(questBeforeCompletion.trackingType.rawValue)")
+        if questBeforeCompletion.isOptional {
+            AnalyticsManager.shared.trackFeature("optional_quest_completed")
+        }
+        if isCritical {
+            AnalyticsManager.shared.trackFeature("critical_quest_completion")
+        }
+
+        save()
+
+        return QuestCompletionResult(
+            success: true,
+            message: completedQuest ? (isCritical ? "CRITICAL SUCCESS!" : "Quest Complete!") : "Subtask Complete!",
+            xpAwarded: xpAwarded,
+            goldAwarded: goldAwarded,
+            statGains: dailyQuests[index].targetStats.map { ($0, statXPAwarded) },
+            isCritical: isCritical,
+            lootBox: lootBox,
+            leveledUp: leveledUpData,
+            isQuestComplete: completedQuest
+        )
+    }
+
     @discardableResult
     func undoLastQuestCompletion() -> Bool {
         guard let snapshot = questCompletionUndoSnapshot else { return false }
@@ -322,6 +507,10 @@ class GameEngine: ObservableObject {
         for index in dailyQuests.indices {
             dailyQuests[index].status = .available
             dailyQuests[index].currentProgress = 0
+            dailyQuests[index].completionCountInCycle = 0
+            for subtaskIndex in dailyQuests[index].subtasks.indices {
+                dailyQuests[index].subtasks[subtaskIndex].isCompleted = false
+            }
             dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: now)
         }
         AnalyticsManager.shared.trackFeature("quest_progress_reset")
@@ -588,7 +777,11 @@ class GameEngine: ObservableObject {
     }
 
     /// Deal boss damage from completion of linked daily quests.
-    private func applyLinkedQuestDamage(for quest: DailyQuest) {
+    private func applyLinkedQuestDamage(
+        for quest: DailyQuest,
+        completedUnitIndices: [Int] = [0],
+        totalUnits: Int = 1
+    ) {
         var defeatedBossIDs: [UUID] = []
 
         for index in activeBossFights.indices {
@@ -597,7 +790,15 @@ class GameEngine: ObservableObject {
                 continue
             }
 
-            let result = activeBossFights[index].dealLinkedQuestDamage(from: quest, playerLevel: player.level)
+            let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: player.level)
+            let fullQuestDamage = max(1, Int(Double(baseDamage) * 0.8))
+            let damage = completedUnitIndices.reduce(0) { total, unitIndex in
+                total + distributedAmount(total: fullQuestDamage, index: unitIndex, count: totalUnits)
+            }
+
+            guard damage > 0 else { continue }
+
+            let result = activeBossFights[index].applyExternalDamage(damage)
 
             if result.bossDefeated {
                 defeatedBossIDs.append(activeBossFights[index].id)
@@ -609,6 +810,13 @@ class GameEngine: ObservableObject {
                 handleBossDefeated(defeatedBoss)
             }
         }
+    }
+
+    private func distributedAmount(total: Int, index: Int, count: Int) -> Int {
+        guard total > 0, count > 0, index >= 0, index < count else { return 0 }
+        let base = total / count
+        let remainder = total % count
+        return base + (index < remainder ? 1 : 0)
     }
 
     /// Handle boss defeat rewards
@@ -936,6 +1144,9 @@ class GameEngine: ObservableObject {
                 dailyQuests[index].status = .available
                 dailyQuests[index].currentProgress = 0
                 dailyQuests[index].completionCountInCycle = 0
+                for subtaskIndex in dailyQuests[index].subtasks.indices {
+                    dailyQuests[index].subtasks[subtaskIndex].isCompleted = false
+                }
                 dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: dailyQuests[index].expiresAt)
                 didChange = true
             }
@@ -1840,6 +2051,7 @@ struct QuestCompletionResult {
     var isCritical: Bool = false
     var lootBox: LootBox?
     var leveledUp: LevelUpData?
+    var isQuestComplete: Bool = true
 }
 
 // MARK: - Level Up Data

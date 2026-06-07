@@ -318,6 +318,25 @@ protocol QuestProtocol: Identifiable, Codable {
 
 // MARK: - Daily Quest
 
+struct QuestSubtask: Codable, Identifiable, Equatable {
+    let id: UUID
+    var title: String
+    var isCompleted: Bool
+    let createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        isCompleted: Bool = false,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+    }
+}
+
 /// Daily Quests - "The Preparation to Become Powerful"
 /// Following the "Insultingly Low Bar" philosophy
 struct DailyQuest: QuestProtocol {
@@ -351,6 +370,7 @@ struct DailyQuest: QuestProtocol {
     var linkedDynamicBossID: UUID?
     var reminderEnabled: Bool
     var reminderTime: Date?
+    var subtasks: [QuestSubtask]
 
     var isExpired: Bool {
         Date() > expiresAt
@@ -364,11 +384,28 @@ struct DailyQuest: QuestProtocol {
         Int(clampedUnitProgress(currentProgress) * 100)
     }
 
+    var hasSubtasks: Bool {
+        !subtasks.isEmpty
+    }
+
+    var completedSubtaskCount: Int {
+        subtasks.filter(\.isCompleted).count
+    }
+
+    var subtaskProgress: Double {
+        guard hasSubtasks else { return 0 }
+        return clampedUnitProgress(Double(completedSubtaskCount) / Double(subtasks.count))
+    }
+
     var hasCompletedCurrentCycle: Bool {
         status == .completed || (isRepeatable && completionCountInCycle > 0)
     }
 
     var displayProgress: String {
+        if hasSubtasks {
+            return "\(completedSubtaskCount)/\(subtasks.count) subtasks"
+        }
+
         let safeProgress = clampedUnitProgress(currentProgress)
         let safeTarget = max(0, finiteOrZero(targetValue))
         let current = Int(safeProgress * safeTarget)
@@ -378,13 +415,33 @@ struct DailyQuest: QuestProtocol {
 
     /// Metric goals are quests where incremental progress makes sense to render.
     var isMetricGoal: Bool {
-        trackingType.isAutomatic || targetValue > 1
+        hasSubtasks || trackingType.isAutomatic || targetValue > 1
     }
 
     /// UI-safe normalized progress value for inline bars.
     var normalizedProgress: Double {
         if status == .completed { return 1.0 }
+        if hasSubtasks { return subtaskProgress }
         return clampedUnitProgress(currentProgress)
+    }
+
+    func subtaskXPReward(at index: Int) -> Int {
+        distributedReward(total: xpReward, index: index, count: subtasks.count)
+    }
+
+    func subtaskGoldReward(at index: Int) -> Int {
+        distributedReward(total: isOptional ? 0 : goldReward, index: index, count: subtasks.count)
+    }
+
+    func subtaskStatXPReward(at index: Int) -> Int {
+        distributedReward(total: GameFormulas.statXP(difficulty: difficulty), index: index, count: subtasks.count)
+    }
+
+    private func distributedReward(total: Int, index: Int, count: Int) -> Int {
+        guard total > 0, count > 0, index >= 0, index < count else { return 0 }
+        let base = total / count
+        let remainder = total % count
+        return base + (index < remainder ? 1 : 0)
     }
 
     init(
@@ -410,7 +467,8 @@ struct DailyQuest: QuestProtocol {
         linkedBossID: UUID? = nil,
         linkedDynamicBossID: UUID? = nil,
         reminderEnabled: Bool = false,
-        reminderTime: Date? = nil
+        reminderTime: Date? = nil,
+        subtasks: [QuestSubtask] = []
     ) {
         self.id = id
         self.title = title
@@ -441,6 +499,7 @@ struct DailyQuest: QuestProtocol {
         self.linkedDynamicBossID = linkedDynamicBossID
         self.reminderEnabled = reminderEnabled
         self.reminderTime = reminderTime
+        self.subtasks = subtasks
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -470,6 +529,7 @@ struct DailyQuest: QuestProtocol {
         case linkedDynamicBossID
         case reminderEnabled
         case reminderTime
+        case subtasks
     }
 
     init(from decoder: Decoder) throws {
@@ -505,6 +565,7 @@ struct DailyQuest: QuestProtocol {
         linkedDynamicBossID = try container.decodeIfPresent(UUID.self, forKey: .linkedDynamicBossID)
         reminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .reminderEnabled) ?? false
         reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
+        subtasks = try container.decodeIfPresent([QuestSubtask].self, forKey: .subtasks) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -535,6 +596,7 @@ struct DailyQuest: QuestProtocol {
         try container.encodeIfPresent(linkedDynamicBossID, forKey: .linkedDynamicBossID)
         try container.encode(reminderEnabled, forKey: .reminderEnabled)
         try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
+        try container.encode(subtasks, forKey: .subtasks)
     }
 }
 

@@ -38,6 +38,7 @@ PRAXIS implements all three so discipline feels like progression, not friction.
   - grant no Gold
   - do not apply missed-quest HP damage
 - Repeatable quests can be completed more than once per day, while new quests stay non-repeatable by default
+- Multi-step quests support subtasks, with each subtask awarding a proportional share of the quest XP, Gold, stat XP, and linked boss damage
 - Metric quests support incremental progress bars and diagnostics
 - Reminders and completion flows are integrated
 

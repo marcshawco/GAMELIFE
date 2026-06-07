@@ -23,6 +23,8 @@ struct ModelLogicTestsMain {
         testOptionalQuestBackwardCompatibleDecoding()
         testRepeatableQuestDefaults()
         testRepeatableQuestBackwardCompatibleDecoding()
+        testQuestSubtaskRewardDistribution()
+        testQuestSubtaskBackwardCompatibleDecoding()
         testLinkedQuestBossDamage()
         testDynamicBossGoalTypeMetadata()
         testDynamicBossGoalProgressMath()
@@ -241,6 +243,56 @@ struct ModelLogicTestsMain {
             expect(decoded.completionCountInCycle == 0, "Legacy quests without completionCountInCycle key should default to zero")
         } catch {
             expect(false, "Legacy repeatable quest decode should not fail: \(error)")
+        }
+    }
+
+    private static func testQuestSubtaskRewardDistribution() {
+        let quest = DailyQuest(
+            title: "Study Session",
+            description: "Four parts",
+            difficulty: .normal,
+            targetStats: [.intelligence, .strength],
+            subtasks: [
+                QuestSubtask(title: "Read"),
+                QuestSubtask(title: "Notes"),
+                QuestSubtask(title: "Practice"),
+                QuestSubtask(title: "Review")
+            ]
+        )
+
+        let xpTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskXPReward(at: $1) }
+        let goldTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskGoldReward(at: $1) }
+        let statTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskStatXPReward(at: $1) }
+
+        expect(quest.hasSubtasks, "Quest should report that it has subtasks")
+        expect(quest.displayProgress == "0/4 subtasks", "Subtask quests should display subtask progress")
+        expect(xpTotal == quest.xpReward, "Subtask XP shares should sum to full quest XP")
+        expect(goldTotal == quest.goldReward, "Subtask Gold shares should sum to full quest Gold")
+        expect(statTotal == GameFormulas.statXP(difficulty: quest.difficulty), "Subtask stat XP shares should sum to full quest stat XP")
+    }
+
+    private static func testQuestSubtaskBackwardCompatibleDecoding() {
+        let sourceQuest = DailyQuest(
+            title: "Legacy Quest",
+            description: "Legacy payload without subtasks",
+            difficulty: .normal,
+            targetStats: [.intelligence],
+            trackingType: .manual
+        )
+
+        do {
+            let encoded = try JSONEncoder().encode(sourceQuest)
+            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                expect(false, "Failed to parse encoded quest JSON")
+                return
+            }
+            jsonObject.removeValue(forKey: "subtasks")
+            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
+
+            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
+            expect(decoded.subtasks.isEmpty, "Legacy quests without subtasks key should default to an empty list")
+        } catch {
+            expect(false, "Legacy subtask quest decode should not fail: \(error)")
         }
     }
 

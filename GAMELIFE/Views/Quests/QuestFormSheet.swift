@@ -34,6 +34,41 @@ enum QuestFormMode: Identifiable {
     }
 }
 
+private struct QuestSubtaskDraft: Identifiable {
+    let id: UUID
+    var title: String
+    var isCompleted: Bool
+    let createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String = "",
+        isCompleted: Bool = false,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+    }
+
+    init(subtask: QuestSubtask) {
+        self.id = subtask.id
+        self.title = subtask.title
+        self.isCompleted = subtask.isCompleted
+        self.createdAt = subtask.createdAt
+    }
+
+    var asSubtask: QuestSubtask {
+        QuestSubtask(
+            id: id,
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            isCompleted: isCompleted,
+            createdAt: createdAt
+        )
+    }
+}
+
 // MARK: - Quest Form Sheet
 
 struct QuestFormSheet: View {
@@ -72,6 +107,8 @@ struct QuestFormSheet: View {
     @State private var reminderTime = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var isOptionalQuest = false
     @State private var isRepeatableQuest = false
+    @State private var subtaskDrafts: [QuestSubtaskDraft] = []
+    @State private var newSubtaskTitle = ""
 
     // UI state
     @State private var isSaving = false
@@ -141,6 +178,24 @@ struct QuestFormSheet: View {
         }
 
         return "Required before \(mode.isEditing ? "saving" : "creating"): \(missing.joined(separator: ", "))."
+    }
+
+    private var cleanedSubtaskDrafts: [QuestSubtaskDraft] {
+        subtaskDrafts.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private var subtaskRewardPreview: String {
+        let count = cleanedSubtaskDrafts.count
+        guard count > 0 else {
+            return "Add steps when a quest has multiple parts. Each completed step awards partial XP."
+        }
+
+        let xpParts = (0..<count).map { distributedReward(GameFormulas.questXP(difficulty: difficulty), index: $0, count: count) }
+        let goldTotal = isOptionalQuest ? 0 : GameFormulas.questGold(difficulty: difficulty)
+        let goldParts = (0..<count).map { distributedReward(goldTotal, index: $0, count: count) }
+        let xpSummary = summarizedReward(parts: xpParts, suffix: "XP")
+        let goldSummary = goldTotal > 0 ? " and \(summarizedReward(parts: goldParts, suffix: "Gold"))" : ""
+        return "Each step awards \(xpSummary)\(goldSummary), plus the same share of stat XP."
     }
 
     var body: some View {
@@ -281,6 +336,52 @@ struct QuestFormSheet: View {
                     } else {
                         Text("Selected stats receive XP when this quest is completed.")
                     }
+                }
+
+                Section {
+                    if subtaskDrafts.isEmpty {
+                        Text("No subtasks yet.")
+                            .foregroundStyle(SystemTheme.textTertiary)
+                    } else {
+                        ForEach($subtaskDrafts) { $draft in
+                            HStack(spacing: 10) {
+                                Image(systemName: draft.isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(draft.isCompleted ? SystemTheme.successGreen : SystemTheme.textTertiary)
+                                    .frame(width: 22)
+
+                                TextField("Subtask", text: $draft.title)
+                                    .textInputAutocapitalization(.sentences)
+
+                                Button {
+                                    removeSubtask(draft.id)
+                                } label: {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundStyle(SystemTheme.criticalRed)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Remove subtask")
+                            }
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        TextField("Add a subtask", text: $newSubtaskTitle)
+                            .textInputAutocapitalization(.sentences)
+                            .onSubmit(addSubtask)
+
+                        Button(action: addSubtask) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityLabel("Add subtask")
+                    }
+                } header: {
+                    Text("Subtasks")
+                } footer: {
+                    Text(subtaskRewardPreview)
                 }
 
                 Section {
@@ -839,6 +940,34 @@ struct QuestFormSheet: View {
         }
     }
 
+    private func addSubtask() {
+        let trimmed = newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        subtaskDrafts.append(QuestSubtaskDraft(title: trimmed))
+        newSubtaskTitle = ""
+        HapticManager.shared.selection()
+    }
+
+    private func removeSubtask(_ id: UUID) {
+        subtaskDrafts.removeAll { $0.id == id }
+        HapticManager.shared.selection()
+    }
+
+    private func distributedReward(_ total: Int, index: Int, count: Int) -> Int {
+        guard total > 0, count > 0, index >= 0, index < count else { return 0 }
+        let base = total / count
+        let remainder = total % count
+        return base + (index < remainder ? 1 : 0)
+    }
+
+    private func summarizedReward(parts: [Int], suffix: String) -> String {
+        guard let minimum = parts.min(), let maximum = parts.max() else { return "0 \(suffix)" }
+        if minimum == maximum {
+            return "+\(minimum) \(suffix)"
+        }
+        return "+\(minimum)-\(maximum) \(suffix)"
+    }
+
     private func loadExistingQuest() {
         guard let quest = mode.existingQuest else { return }
 
@@ -854,6 +983,7 @@ struct QuestFormSheet: View {
         reminderTime = quest.reminderTime ?? reminderTime
         isOptionalQuest = quest.isOptional
         isRepeatableQuest = quest.isRepeatable
+        subtaskDrafts = quest.subtasks.map(QuestSubtaskDraft.init(subtask:))
         locationAddress = quest.locationAddress ?? ""
         locationCoordinate = quest.locationCoordinate
             ?? QuestDataManager.shared.cachedValidatedLocation(forQuestID: quest.id)
@@ -895,6 +1025,20 @@ struct QuestFormSheet: View {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedAddress = locationAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        let subtasks = cleanedSubtaskDrafts.map(\.asSubtask)
+        let subtaskProgress = subtasks.isEmpty
+            ? existingQuest?.currentProgress ?? 0
+            : Double(subtasks.filter(\.isCompleted).count) / Double(subtasks.count)
+        let resolvedStatus: QuestStatus
+        if subtasks.isEmpty {
+            resolvedStatus = existingQuest?.status ?? .available
+        } else if subtasks.allSatisfy(\.isCompleted) {
+            resolvedStatus = existingQuest?.status == .completed ? .completed : .inProgress
+        } else if subtasks.contains(where: \.isCompleted) {
+            resolvedStatus = .inProgress
+        } else {
+            resolvedStatus = .available
+        }
 
         let resolvedCoordinate: LocationCoordinate?
         if trackingType == .location {
@@ -954,14 +1098,14 @@ struct QuestFormSheet: View {
             title: trimmedTitle,
             description: trimmedDescription.isEmpty ? defaultDescription(for: resolvedTrackingType, address: trimmedAddress) : trimmedDescription,
             difficulty: difficulty,
-            status: existingQuest?.status ?? .available,
+            status: resolvedStatus,
             targetStats: Array(selectedStats),
             frequency: frequency,
             isOptional: isOptionalQuest,
             isRepeatable: isRepeatableQuest,
             completionCountInCycle: isRepeatableQuest ? existingQuest?.completionCountInCycle ?? 0 : 0,
             trackingType: resolvedTrackingType,
-            currentProgress: existingQuest?.currentProgress ?? 0,
+            currentProgress: subtaskProgress,
             targetValue: max(1, targetValue),
             unit: effectiveUnit,
             createdAt: existingQuest?.createdAt ?? now,
@@ -971,7 +1115,8 @@ struct QuestFormSheet: View {
             locationAddress: resolvedTrackingType == .location ? trimmedAddress : nil,
             linkedBossID: selectedBossID,
             reminderEnabled: reminderEnabled,
-            reminderTime: reminderEnabled ? reminderTime : nil
+            reminderTime: reminderEnabled ? reminderTime : nil,
+            subtasks: subtasks
         )
 
         gameEngine.saveQuest(newQuest, replacing: existingQuest?.id)
