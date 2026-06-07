@@ -957,6 +957,28 @@ struct QuestFormSheet: View {
         HapticManager.shared.selection()
     }
 
+    private func draftSubtasks(from subtasks: [QuestSubtask]) -> [QuestSubtaskDraft] {
+        var drafts: [QuestSubtaskDraft] = []
+        drafts.reserveCapacity(subtasks.count)
+
+        for subtask in subtasks {
+            drafts.append(QuestSubtaskDraft(subtask: subtask))
+        }
+
+        return drafts
+    }
+
+    private func storedSubtasks(from drafts: [QuestSubtaskDraft]) -> [QuestSubtask] {
+        var subtasks: [QuestSubtask] = []
+        subtasks.reserveCapacity(drafts.count)
+
+        for draft in drafts {
+            subtasks.append(draft.asSubtask)
+        }
+
+        return subtasks
+    }
+
     private func distributedReward(_ total: Int, index: Int, count: Int) -> Int {
         guard total > 0, count > 0, index >= 0, index < count else { return 0 }
         let base = total / count
@@ -987,7 +1009,7 @@ struct QuestFormSheet: View {
         reminderTime = quest.reminderTime ?? reminderTime
         isOptionalQuest = quest.isOptional
         isRepeatableQuest = quest.isRepeatable
-        subtaskDrafts = quest.subtasks.map(QuestSubtaskDraft.init(subtask:))
+        subtaskDrafts = draftSubtasks(from: quest.subtasks)
         locationAddress = quest.locationAddress ?? ""
         locationCoordinate = quest.locationCoordinate
             ?? QuestDataManager.shared.cachedValidatedLocation(forQuestID: quest.id)
@@ -1029,7 +1051,7 @@ struct QuestFormSheet: View {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedAddress = locationAddress.trimmingCharacters(in: .whitespacesAndNewlines)
-        let subtasks = cleanedSubtaskDrafts.map(\.asSubtask)
+        let subtasks = storedSubtasks(from: cleanedSubtaskDrafts)
         let subtaskProgress = subtasks.isEmpty
             ? existingQuest?.currentProgress ?? 0
             : Double(subtasks.filter(\.isCompleted).count) / Double(subtasks.count)
