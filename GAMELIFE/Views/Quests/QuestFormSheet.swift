@@ -441,9 +441,8 @@ struct QuestFormSheet: View {
                     }
                     .pickerStyle(.menu)
 
-                    HStack(spacing: 10) {
-                        Toggle("Repeatable", isOn: $isRepeatableQuest)
-
+                    HStack(spacing: 8) {
+                        Text("Repeatable")
                         Button {
                             showRepeatableInfo = true
                         } label: {
@@ -453,6 +452,11 @@ struct QuestFormSheet: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Repeatable quest info")
+
+                        Spacer()
+
+                        Toggle("Repeatable", isOn: $isRepeatableQuest)
+                            .labelsHidden()
                     }
 
                     Toggle("Enable Reminder", isOn: $reminderEnabled)
