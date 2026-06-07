@@ -14,6 +14,7 @@ struct GlassworkQuestsView: View {
     @EnvironmentObject var gameEngine: GameEngine
     @State private var showAddSheet = false
     @State private var clearedPayload: ClearedQuestPayload?
+    @State private var expandedSubtaskQuestIDs: Set<UUID> = []
 
     struct ClearedQuestPayload: Identifiable {
         let id = UUID()
@@ -194,14 +195,106 @@ struct GlassworkQuestsView: View {
                 if active {
                     GWBar(pct: progress, height: 3, glow: false)
                 }
-                Text("\(primaryStat) primary")
-                    .font(GW.mono(8))
-                    .tracking(1)
-                    .foregroundStyle(GW.mute)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) {
+                    Text("\(primaryStat) primary")
+                        .font(GW.mono(8))
+                        .tracking(1)
+                        .foregroundStyle(GW.mute)
+
+                    Spacer()
+
+                    if q.hasSubtasks {
+                        subtaskDropDownButton(for: q)
+                    }
+                }
+
+                if q.hasSubtasks && expandedSubtaskQuestIDs.contains(q.id) {
+                    subtaskDropDownList(for: q)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
         }
         .opacity(done ? 0.55 : 1)
+    }
+
+    private func subtaskDropDownButton(for quest: DailyQuest) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                if expandedSubtaskQuestIDs.contains(quest.id) {
+                    expandedSubtaskQuestIDs.remove(quest.id)
+                } else {
+                    expandedSubtaskQuestIDs.insert(quest.id)
+                }
+            }
+            HapticManager.shared.selection()
+        } label: {
+            HStack(spacing: 5) {
+                Text("\(quest.completedSubtaskCount)/\(quest.subtasks.count) STEPS")
+                    .font(GW.mono(8, weight: .medium))
+                    .tracking(1)
+                Image(systemName: expandedSubtaskQuestIDs.contains(quest.id) ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+            }
+            .foregroundStyle(GW.cyan)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(GW.cyan.opacity(0.07)))
+            .overlay(Capsule().stroke(GW.cyan.opacity(0.26), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Toggle subtasks")
+    }
+
+    private func subtaskDropDownList(for quest: DailyQuest) -> some View {
+        VStack(spacing: 6) {
+            ForEach(Array(quest.subtasks.enumerated()), id: \.element.id) { index, subtask in
+                Button {
+                    tapSubtask(subtask, in: quest)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(subtask.isCompleted ? GW.cyan : GW.mute)
+                            .frame(width: 16)
+
+                        Text(subtask.title.uppercased())
+                            .font(GW.mono(8))
+                            .tracking(0.7)
+                            .foregroundStyle(subtask.isCompleted ? GW.mute : GW.ink)
+                            .strikethrough(subtask.isCompleted)
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(subtaskRewardText(for: quest, index: index))
+                            .font(GW.mono(8))
+                            .foregroundStyle(GW.cyan)
+                            .lineLimit(1)
+                    }
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 9)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.white.opacity(subtask.isCompleted ? 0.035 : 0.055))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(subtask.isCompleted || quest.status == .completed)
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private func subtaskRewardText(for quest: DailyQuest, index: Int) -> String {
+        let xp = quest.subtaskXPReward(at: index)
+        let gold = quest.subtaskGoldReward(at: index)
+        if gold > 0 {
+            return "+\(xp) +\(gold)g"
+        }
+        return "+\(xp)"
     }
 
     private func completionBadge(done: Bool, active: Bool, progress: Double) -> some View {
@@ -240,6 +333,21 @@ struct GlassworkQuestsView: View {
         clearedPayload = ClearedQuestPayload(
             title: q.title,
             primaryStat: q.targetStats.first?.rawValue ?? "—",
+            xpAwarded: result.xpAwarded,
+            goldAwarded: result.goldAwarded,
+            statGains: result.statGains
+        )
+    }
+
+    private func tapSubtask(_ subtask: QuestSubtask, in quest: DailyQuest) {
+        guard !subtask.isCompleted, quest.status != .completed else { return }
+        let result = gameEngine.completeQuestSubtask(questID: quest.id, subtaskID: subtask.id)
+        guard result.success else { return }
+
+        HapticManager.shared.success()
+        clearedPayload = ClearedQuestPayload(
+            title: result.isQuestComplete ? quest.title : subtask.title,
+            primaryStat: quest.targetStats.first?.rawValue ?? "—",
             xpAwarded: result.xpAwarded,
             goldAwarded: result.goldAwarded,
             statGains: result.statGains
