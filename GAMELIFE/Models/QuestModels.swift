@@ -335,6 +335,8 @@ struct DailyQuest: QuestProtocol {
     // Daily Quest Specific
     var frequency: QuestFrequency?
     var isOptional: Bool
+    var isRepeatable: Bool
+    var completionCountInCycle: Int
     let trackingType: QuestTrackingType
     var currentProgress: Double  // 0.0 to 1.0
     var targetValue: Double      // Target for completion
@@ -360,6 +362,10 @@ struct DailyQuest: QuestProtocol {
 
     var progressPercentage: Int {
         Int(clampedUnitProgress(currentProgress) * 100)
+    }
+
+    var hasCompletedCurrentCycle: Bool {
+        status == .completed || (isRepeatable && completionCountInCycle > 0)
     }
 
     var displayProgress: String {
@@ -390,6 +396,8 @@ struct DailyQuest: QuestProtocol {
         targetStats: [StatType],
         frequency: QuestFrequency? = nil,
         isOptional: Bool = false,
+        isRepeatable: Bool = false,
+        completionCountInCycle: Int = 0,
         trackingType: QuestTrackingType = .manual,
         currentProgress: Double = 0.0,
         targetValue: Double = 1.0,
@@ -416,6 +424,8 @@ struct DailyQuest: QuestProtocol {
 
         self.frequency = frequency
         self.isOptional = isOptional
+        self.isRepeatable = isRepeatable
+        self.completionCountInCycle = max(0, completionCountInCycle)
         self.trackingType = trackingType
         self.currentProgress = clampedUnitProgress(currentProgress)
         self.targetValue = finiteOrZero(targetValue)
@@ -446,6 +456,8 @@ struct DailyQuest: QuestProtocol {
         case createdAt
         case frequency
         case isOptional
+        case isRepeatable
+        case completionCountInCycle
         case trackingType
         case currentProgress
         case targetValue
@@ -476,6 +488,8 @@ struct DailyQuest: QuestProtocol {
 
         frequency = try container.decodeIfPresent(QuestFrequency.self, forKey: .frequency)
         isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
+        isRepeatable = try container.decodeIfPresent(Bool.self, forKey: .isRepeatable) ?? false
+        completionCountInCycle = max(0, try container.decodeIfPresent(Int.self, forKey: .completionCountInCycle) ?? 0)
         trackingType = try container.decodeIfPresent(QuestTrackingType.self, forKey: .trackingType) ?? .manual
         currentProgress = clampedUnitProgress(try container.decodeIfPresent(Double.self, forKey: .currentProgress) ?? 0)
         targetValue = finiteOrZero(try container.decodeIfPresent(Double.self, forKey: .targetValue) ?? 1)
@@ -507,6 +521,8 @@ struct DailyQuest: QuestProtocol {
         try container.encode(createdAt, forKey: .createdAt)
         try container.encodeIfPresent(frequency, forKey: .frequency)
         try container.encode(isOptional, forKey: .isOptional)
+        try container.encode(isRepeatable, forKey: .isRepeatable)
+        try container.encode(completionCountInCycle, forKey: .completionCountInCycle)
         try container.encode(trackingType, forKey: .trackingType)
         try container.encode(currentProgress, forKey: .currentProgress)
         try container.encode(targetValue, forKey: .targetValue)

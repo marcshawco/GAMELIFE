@@ -127,13 +127,14 @@ class GameEngine: ObservableObject {
             return QuestCompletionResult(success: false, message: "Quest not found")
         }
 
-        guard dailyQuests[index].status != .completed else {
+        guard dailyQuests[index].status != .completed || dailyQuests[index].isRepeatable else {
             return QuestCompletionResult(success: false, message: "Quest already completed")
         }
 
         prepareUndoSnapshot(for: quest.title)
 
         // Mark as completed
+        dailyQuests[index].completionCountInCycle += 1
         dailyQuests[index].status = .completed
         dailyQuests[index].currentProgress = 1.0
         let completedQuest = dailyQuests[index]
@@ -190,6 +191,12 @@ class GameEngine: ObservableObject {
         }
 
         applyLinkedQuestDamage(for: completedQuest)
+
+        if completedQuest.isRepeatable,
+           let latestIndex = dailyQuests.firstIndex(where: { $0.id == completedQuest.id }) {
+            dailyQuests[latestIndex].status = .available
+            dailyQuests[latestIndex].currentProgress = 0
+        }
 
         // Check all quests completed for streak
         checkDailyQuestStreak()
@@ -860,7 +867,7 @@ class GameEngine: ObservableObject {
         let dailyCycleQuests = dailyQuests.filter { $0.resolvedFrequency == .daily && !$0.isOptional }
         guard !dailyCycleQuests.isEmpty else { return }
 
-        let completedCount = dailyCycleQuests.filter { $0.status == .completed }.count
+        let completedCount = dailyCycleQuests.filter(\.hasCompletedCurrentCycle).count
         let totalRequired = dailyCycleQuests.count
 
         // All daily quests completed?
@@ -908,7 +915,7 @@ class GameEngine: ObservableObject {
         var partialCreditXP: Int = 0
         for index in dailyQuests.indices {
             while referenceDate >= dailyQuests[index].expiresAt {
-                if dailyQuests[index].status != .completed && !dailyQuests[index].isOptional {
+                if !dailyQuests[index].hasCompletedCurrentCycle && !dailyQuests[index].isOptional {
                     missedQuestCount += 1
                     let progress = sanitizeProgress(dailyQuests[index].currentProgress)
                     if progress >= 0.70 {
@@ -928,6 +935,7 @@ class GameEngine: ObservableObject {
                 }
                 dailyQuests[index].status = .available
                 dailyQuests[index].currentProgress = 0
+                dailyQuests[index].completionCountInCycle = 0
                 dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: dailyQuests[index].expiresAt)
                 didChange = true
             }
@@ -1587,13 +1595,18 @@ class GameEngine: ObservableObject {
 
             let progress = await healthManager.checkQuestProgress(for: questSnapshot)
             guard isExternalRefreshTokenCurrent(refreshToken) else { return }
-            let sanitizedProgress = sanitizeProgress(progress)
+            let rawProgress = progress.isFinite ? max(0, progress) : 0
 
             guard let latestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
+            let effectiveProgress = dailyQuests[latestIndex].isRepeatable
+                ? max(0, rawProgress - Double(dailyQuests[latestIndex].completionCountInCycle))
+                : rawProgress
+            let sanitizedProgress = sanitizeProgress(effectiveProgress)
             dailyQuests[latestIndex].currentProgress = sanitizedProgress
 
             // Auto-complete if 100%
-            if sanitizedProgress >= 1.0 && dailyQuests[latestIndex].status != .completed {
+            if sanitizedProgress >= 1.0 &&
+                (dailyQuests[latestIndex].status != .completed || dailyQuests[latestIndex].isRepeatable) {
                 let completedTitle = dailyQuests[latestIndex].title
                 let completionResult = completeQuest(dailyQuests[latestIndex])
                 if completionResult.success {

@@ -840,6 +840,16 @@ struct QuestRowView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
 
+                        if quest.isRepeatable {
+                            Text("Repeatable")
+                                .font(SystemTypography.mono(10, weight: .semibold))
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(SystemTheme.primaryBlue.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
+
                         ForEach(quest.targetStats.prefix(3), id: \.self) { stat in
                             QuestStatIconChip(stat: stat)
                         }
