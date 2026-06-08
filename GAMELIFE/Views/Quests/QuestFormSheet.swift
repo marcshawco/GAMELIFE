@@ -108,12 +108,24 @@ struct QuestFormSheet: View {
     @State private var isOptionalQuest = false
     @State private var subtaskDrafts: [QuestSubtaskDraft] = []
     @State private var newSubtaskTitle = ""
+    @State private var makeTinySteps = false
 
     // UI state
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var activeWheelInput: QuestWheelInput?
     @State private var showValidationFeedback = false
+    @State private var creationPage = 0
+    @FocusState private var quickTitleFocused: Bool
+
+    private let quickQuestTemplates = [
+        "5 min clean",
+        "Drink water",
+        "Take meds",
+        "Reply to one message",
+        "Walk outside",
+        "Start homework"
+    ]
 
     private var linkableBosses: [BossFight] {
         gameEngine.activeBossFights.sorted {
@@ -196,9 +208,142 @@ struct QuestFormSheet: View {
         return "Each step awards \(xpSummary)\(goldSummary), plus the same share of stat XP."
     }
 
+    private var quickTitle: String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var quickQuestCanSave: Bool {
+        !quickTitle.isEmpty
+    }
+
+    private var quickQuestXP: Int {
+        GameFormulas.questXP(difficulty: difficulty)
+    }
+
+    private var quickQuestGold: Int {
+        GameFormulas.questGold(difficulty: difficulty)
+    }
+
+    private var navigationTitle: String {
+        if mode.isEditing { return "Edit Quest" }
+        return creationPage == 0 ? "Quick Quest" : "Create Quest"
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
+            creationContent
+                .navigationTitle(navigationTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(GW.bg, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                            .foregroundStyle(GW.mute)
+                    }
+
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(mode.isEditing ? "Save" : (creationPage == 0 ? "Add" : "Create")) {
+                            if mode.isEditing || creationPage == 1 {
+                                Task { await saveQuest() }
+                            } else {
+                                saveQuickQuest()
+                            }
+                        }
+                        .fontWeight((mode.isEditing || creationPage == 1 ? isValid : quickQuestCanSave) ? .semibold : .regular)
+                        .foregroundStyle(GW.cyan)
+                        .disabled(isSaving)
+                    }
+                }
+                .sheet(isPresented: $showCreateBossSheet) {
+                    BossFormSheet()
+                }
+                .alert(mode.isEditing ? "Unable to Save Quest" : "Unable to Create Quest", isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(errorMessage ?? "Unknown error")
+                }
+                .sheet(item: $activeWheelInput) { input in
+                    BottomWheelValuePickerSheet(
+                        title: input.title,
+                        subtitle: input.subtitle,
+                        accentColor: SystemTheme.primaryBlue,
+                        options: wheelOptions(for: input),
+                        selection: wheelBinding(for: input),
+                        confirmTitle: "Apply"
+                    )
+                }
+                .sheet(isPresented: $showHealthTypePicker) {
+                    BottomHealthTypePickerSheet(
+                        selection: $healthKitType,
+                        accentColor: SystemTheme.primaryBlue
+                    )
+                }
+                .keyboardDismissToolbar()
+                .onAppear {
+                    loadExistingQuest()
+                    if !mode.isEditing {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            quickTitleFocused = true
+                        }
+                    }
+                }
+                .onChange(of: trackingType) { _, newType in
+                    if newType == .location && targetValue < 5 {
+                        targetValue = 45
+                    }
+                    if newType != .location {
+                        locationValidationMessage = nil
+                        locationValidationIsError = false
+                        addressAutocomplete.clear()
+                    }
+                }
+                .onChange(of: locationRadiusMeters) { _, newValue in
+                    guard let existing = locationCoordinate else { return }
+                    locationCoordinate = LocationCoordinate(
+                        latitude: existing.latitude,
+                        longitude: existing.longitude,
+                        radius: newValue,
+                        locationName: existing.locationName
+                    )
+                }
+                .onChange(of: locationAddress) { _, _ in
+                    guard trackingType == .location else { return }
+                    locationCoordinate = nil
+                    locationValidationMessage = nil
+                    locationValidationIsError = false
+                    addressAutocomplete.updateQuery(locationAddress)
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var creationContent: some View {
+        if mode.isEditing {
+            advancedQuestForm
+        } else {
+            ZStack {
+                GW.bg.ignoresSafeArea()
+                GWAurora().ignoresSafeArea()
+
+                TabView(selection: $creationPage) {
+                    quickQuestSlide
+                        .tag(0)
+
+                    advancedQuestForm
+                        .tag(1)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .indexViewStyle(.page(backgroundDisplayMode: .interactive))
+            }
+        }
+    }
+
+    private var advancedQuestForm: some View {
+        Form {
                 Section {
                     questReadinessCard
                 }
@@ -454,90 +599,228 @@ struct QuestFormSheet: View {
                     Text("Set how often the quest resets and optionally schedule a reminder.")
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(
-                ZStack {
-                    GW.bg
-                    GWAurora()
-                }
-                .ignoresSafeArea()
-            )
-            .navigationTitle(mode.isEditing ? "Edit Quest" : "Create Quest")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(GW.bg, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(GW.mute)
-                }
+        .scrollContentBackground(.hidden)
+        .background(
+            ZStack {
+                GW.bg
+                GWAurora()
+            }
+            .ignoresSafeArea()
+        )
+    }
 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(mode.isEditing ? "Save" : "Create") {
-                        Task { await saveQuest() }
-                    }
-                    .fontWeight(isValid ? .semibold : .regular)
-                    .foregroundStyle(GW.cyan)
-                    .disabled(isSaving)
+    private var quickQuestSlide: some View {
+        GeometryReader { geometry in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    quickHeader
+                    quickTitleCard
+                    quickDifficultyCard
+                    quickTemplateCard
+                    quickOptionsCard
+                    quickSaveButton
+
+                    Text("Swipe left for the full quest builder.")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(GW.mute)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 2)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+                .padding(.bottom, 54)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height, alignment: .top)
             }
-            
-            .sheet(isPresented: $showCreateBossSheet) {
-                BossFormSheet()
-            }
-            .alert(mode.isEditing ? "Unable to Save Quest" : "Unable to Create Quest", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage ?? "Unknown error")
-            }
-            .sheet(item: $activeWheelInput) { input in
-                BottomWheelValuePickerSheet(
-                    title: input.title,
-                    subtitle: input.subtitle,
-                    accentColor: SystemTheme.primaryBlue,
-                    options: wheelOptions(for: input),
-                    selection: wheelBinding(for: input),
-                    confirmTitle: "Apply"
-                )
-            }
-            .sheet(isPresented: $showHealthTypePicker) {
-                BottomHealthTypePickerSheet(
-                    selection: $healthKitType,
-                    accentColor: SystemTheme.primaryBlue
-                )
-            }
-            .keyboardDismissToolbar()
-            .onAppear(perform: loadExistingQuest)
-            .onChange(of: trackingType) { _, newType in
-                if newType == .location && targetValue < 5 {
-                    targetValue = 45
+            .scrollDismissesKeyboard(.interactively)
+        }
+    }
+
+    private var quickHeader: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("[ QUICK CAPTURE ]")
+                .font(GW.mono(10, weight: .medium))
+                .tracking(2.4)
+                .foregroundStyle(GW.cyan)
+            Text("Add it before it slips.")
+                .font(GW.display(24, weight: .semibold))
+                .foregroundStyle(GW.ink)
+            Text("Name the quest, choose the effort, and PRAXIS fills in safe defaults.")
+                .font(GW.sans(12))
+                .foregroundStyle(GW.mute)
+                .lineSpacing(2)
+        }
+    }
+
+    private var quickTitleCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("QUEST NAME")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                TextField("What needs doing?", text: $title)
+                    .font(GW.sans(16, weight: .medium))
+                    .foregroundStyle(GW.ink)
+                    .textFieldStyle(.plain)
+                    .submitLabel(.done)
+                    .focused($quickTitleFocused)
+                    .onSubmit { saveQuickQuest() }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(GW.cyan.opacity(0.05))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(GW.cyan.opacity(0.22), lineWidth: 1)
+                            )
+                    )
+
+                if showValidationFeedback && !quickQuestCanSave && creationPage == 0 {
+                    Label("Name the quest first.", systemImage: "exclamationmark.triangle.fill")
+                        .font(GW.sans(12, weight: .medium))
+                        .foregroundStyle(GW.amber)
                 }
-                if newType != .location {
-                    locationValidationMessage = nil
-                    locationValidationIsError = false
-                    addressAutocomplete.clear()
-                }
-            }
-            .onChange(of: locationRadiusMeters) { _, newValue in
-                guard let existing = locationCoordinate else { return }
-                locationCoordinate = LocationCoordinate(
-                    latitude: existing.latitude,
-                    longitude: existing.longitude,
-                    radius: newValue,
-                    locationName: existing.locationName
-                )
-            }
-            .onChange(of: locationAddress) { _, _ in
-                guard trackingType == .location else { return }
-                locationCoordinate = nil
-                locationValidationMessage = nil
-                locationValidationIsError = false
-                addressAutocomplete.updateQuery(locationAddress)
             }
         }
+    }
+
+    private var quickDifficultyCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("DIFFICULTY")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Text("+\(quickQuestXP) XP")
+                        .font(GW.display(18, weight: .bold))
+                        .foregroundStyle(GW.cyan)
+                    Text("+\(quickQuestGold)g")
+                        .font(GW.mono(11, weight: .semibold))
+                        .foregroundStyle(GW.amber)
+                }
+
+                QuickQuestChipsRow {
+                    ForEach(QuestDifficulty.allCases, id: \.self) { option in
+                        Button {
+                            difficulty = option
+                            HapticManager.shared.selection()
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: option.icon)
+                                    .font(.system(size: 10, weight: .semibold))
+                                Text(option.rawValue.uppercased())
+                                    .font(GW.mono(9, weight: .medium))
+                                    .tracking(0.8)
+                            }
+                            .foregroundStyle(difficulty == option ? GW.bg : GW.cyan)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 7)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                Capsule()
+                                    .fill(difficulty == option ? GW.cyan : GW.cyan.opacity(0.07))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(GW.cyan.opacity(0.32), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private var quickTemplateCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("TAP A STARTER")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                QuickQuestChipsRow {
+                    ForEach(quickQuestTemplates, id: \.self) { template in
+                        Button {
+                            title = template
+                            showValidationFeedback = false
+                            HapticManager.shared.selection()
+                        } label: {
+                            Text(template.uppercased())
+                                .font(GW.mono(9, weight: .medium))
+                                .tracking(1)
+                                .foregroundStyle(title == template ? GW.bg : GW.cyan)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 7)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    Capsule()
+                                        .fill(title == template ? GW.cyan : GW.cyan.opacity(0.07))
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(GW.cyan.opacity(0.32), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private var quickOptionsCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(spacing: 12) {
+                Toggle(isOn: $makeTinySteps) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Make it tiny")
+                            .font(GW.sans(13, weight: .semibold))
+                            .foregroundStyle(GW.ink)
+                        Text("Adds 3 quick steps with partial rewards.")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+                .tint(GW.cyan)
+
+                Divider().overlay(GW.hairline)
+
+                Toggle(isOn: $reminderEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reminder")
+                            .font(GW.sans(13, weight: .semibold))
+                            .foregroundStyle(GW.ink)
+                        Text("Optional daily nudge for this quest.")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+                .tint(GW.cyan)
+
+                if reminderEnabled {
+                    DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                        .font(GW.sans(13))
+                        .foregroundStyle(GW.ink)
+                        .datePickerStyle(.compact)
+                }
+            }
+        }
+    }
+
+    private var quickSaveButton: some View {
+        GWButton(label: "ADD QUEST", variant: .primary) {
+            saveQuickQuest()
+        }
+        .disabled(!quickQuestCanSave)
+        .opacity(quickQuestCanSave ? 1 : 0.55)
+        .padding(.top, 2)
     }
 
     private var questReadinessCard: some View {
@@ -1121,6 +1404,49 @@ struct QuestFormSheet: View {
         dismiss()
     }
 
+    private func saveQuickQuest() {
+        guard quickQuestCanSave else {
+            showValidationFeedback = true
+            HapticManager.shared.warning()
+            errorMessage = "Name the quest before adding it."
+            return
+        }
+
+        let now = Date()
+        let subtasks = makeTinySteps ? defaultTinySteps(for: quickTitle) : []
+        let quest = DailyQuest(
+            title: quickTitle,
+            description: "Quick quest",
+            difficulty: difficulty,
+            status: .available,
+            targetStats: [.willpower],
+            frequency: .daily,
+            isOptional: false,
+            trackingType: .manual,
+            currentProgress: 0,
+            targetValue: 1,
+            unit: "times",
+            createdAt: now,
+            expiresAt: QuestFrequency.daily.nextResetDate(from: now),
+            reminderEnabled: reminderEnabled,
+            reminderTime: reminderEnabled ? reminderTime : nil,
+            subtasks: subtasks
+        )
+
+        gameEngine.saveQuest(quest)
+        HapticManager.shared.success()
+        SystemMessageHelper.showInfo("Quest Added", "\"\(quickTitle)\" is ready.")
+        dismiss()
+    }
+
+    private func defaultTinySteps(for questTitle: String) -> [QuestSubtask] {
+        [
+            QuestSubtask(title: "Start \(questTitle)"),
+            QuestSubtask(title: "Do the next tiny piece"),
+            QuestSubtask(title: "Finish or park it cleanly")
+        ]
+    }
+
     private func presentValidationFeedback() {
         showValidationFeedback = true
         HapticManager.shared.warning()
@@ -1391,6 +1717,29 @@ struct QuestFormSheet: View {
         }
 
         return fallback
+    }
+}
+
+private struct QuickQuestChipsRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                content
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 8),
+                    GridItem(.flexible(), spacing: 8)
+                ],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                content
+            }
+        }
     }
 }
 
