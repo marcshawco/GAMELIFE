@@ -526,7 +526,7 @@
 				CODE_SIGN_ENTITLEMENTS = GAMELIFE/GAMELIFE.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PRAXIS;
@@ -551,7 +551,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -579,7 +579,7 @@
 				CODE_SIGN_ENTITLEMENTS = GAMELIFE/GAMELIFE.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PRAXIS;
@@ -604,7 +604,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -629,7 +629,7 @@
 				CODE_SIGN_ENTITLEMENTS = PRAXISWidgets/PRAXISWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "PRAXISWidgets-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
@@ -638,7 +638,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.PRAXISWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -656,7 +656,7 @@
 				CODE_SIGN_ENTITLEMENTS = PRAXISWidgets/PRAXISWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "PRAXISWidgets-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
@@ -665,7 +665,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.PRAXISWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -682,7 +682,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GAMELIFEWatchExtension/Info.plist;
@@ -691,7 +691,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -710,7 +710,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GAMELIFEWatchExtension/Info.plist;
@@ -719,7 +719,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -739,11 +739,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GAMELIFEWatch/Info.plist;
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -761,11 +761,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5.24;
+				CURRENT_PROJECT_VERSION = 5.25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GAMELIFEWatch/Info.plist;
-				MARKETING_VERSION = 5.24;
+				MARKETING_VERSION = 5.25;
 				PRODUCT_BUNDLE_IDENTIFIER = marcshaw.GAMELIFE.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

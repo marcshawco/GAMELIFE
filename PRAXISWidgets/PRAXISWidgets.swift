@@ -6,21 +6,73 @@
 import SwiftUI
 import WidgetKit
 import AppIntents
+import UIKit
 
 private enum WidgetTheme {
-    static let backgroundPrimary = Color(red: 10 / 255, green: 10 / 255, blue: 15 / 255)
-    static let backgroundSecondary = Color(red: 18 / 255, green: 18 / 255, blue: 26 / 255)
-    static let backgroundTertiary = Color(red: 26 / 255, green: 26 / 255, blue: 46 / 255)
-    static let textPrimary = Color.white
-    static let textSecondary = Color(red: 160 / 255, green: 160 / 255, blue: 176 / 255)
-    static let textTertiary = Color(red: 112 / 255, green: 112 / 255, blue: 132 / 255)
-    static let primaryBlue = Color(red: 76 / 255, green: 201 / 255, blue: 240 / 255)
-    static let primaryPurple = Color(red: 123 / 255, green: 44 / 255, blue: 191 / 255)
-    static let accentCyan = Color(red: 0 / 255, green: 245 / 255, blue: 212 / 255)
-    static let warningOrange = Color(red: 255 / 255, green: 107 / 255, blue: 53 / 255)
-    static let criticalRed = Color(red: 239 / 255, green: 35 / 255, blue: 60 / 255)
-    static let successGreen = Color(red: 6 / 255, green: 214 / 255, blue: 160 / 255)
-    static let gold = Color(red: 255 / 255, green: 215 / 255, blue: 0 / 255)
+    private static func uiColor(red: CGFloat, green: CGFloat, blue: CGFloat) -> UIColor {
+        UIColor(red: red / 255, green: green / 255, blue: blue / 255, alpha: 1)
+    }
+
+    private static func adaptiveColor(light: UIColor, dark: UIColor) -> Color {
+        Color(
+            UIColor { traits in
+                traits.userInterfaceStyle == .dark ? dark : light
+            }
+        )
+    }
+
+    static let backgroundPrimary = adaptiveColor(
+        light: uiColor(red: 244, green: 246, blue: 250),
+        dark: uiColor(red: 10, green: 10, blue: 15)
+    )
+    static let backgroundSecondary = adaptiveColor(
+        light: uiColor(red: 255, green: 255, blue: 255),
+        dark: uiColor(red: 18, green: 18, blue: 26)
+    )
+    static let backgroundTertiary = adaptiveColor(
+        light: uiColor(red: 233, green: 238, blue: 247),
+        dark: uiColor(red: 26, green: 26, blue: 46)
+    )
+    static let textPrimary = adaptiveColor(
+        light: uiColor(red: 17, green: 20, blue: 32),
+        dark: uiColor(red: 255, green: 255, blue: 255)
+    )
+    static let textSecondary = adaptiveColor(
+        light: uiColor(red: 73, green: 80, blue: 102),
+        dark: uiColor(red: 160, green: 160, blue: 176)
+    )
+    static let textTertiary = adaptiveColor(
+        light: uiColor(red: 122, green: 129, blue: 152),
+        dark: uiColor(red: 112, green: 112, blue: 132)
+    )
+    static let primaryBlue = adaptiveColor(
+        light: uiColor(red: 0, green: 119, blue: 182),
+        dark: uiColor(red: 76, green: 201, blue: 240)
+    )
+    static let primaryPurple = adaptiveColor(
+        light: uiColor(red: 90, green: 24, blue: 154),
+        dark: uiColor(red: 123, green: 44, blue: 191)
+    )
+    static let accentCyan = adaptiveColor(
+        light: uiColor(red: 0, green: 150, blue: 136),
+        dark: uiColor(red: 0, green: 245, blue: 212)
+    )
+    static let warningOrange = adaptiveColor(
+        light: uiColor(red: 214, green: 90, blue: 35),
+        dark: uiColor(red: 255, green: 107, blue: 53)
+    )
+    static let criticalRed = adaptiveColor(
+        light: uiColor(red: 203, green: 24, blue: 48),
+        dark: uiColor(red: 239, green: 35, blue: 60)
+    )
+    static let successGreen = adaptiveColor(
+        light: uiColor(red: 0, green: 135, blue: 102),
+        dark: uiColor(red: 6, green: 214, blue: 160)
+    )
+    static let gold = adaptiveColor(
+        light: uiColor(red: 172, green: 119, blue: 0),
+        dark: uiColor(red: 255, green: 215, blue: 0)
+    )
 
     static let xpGradient = LinearGradient(
         colors: [primaryBlue, accentCyan],
