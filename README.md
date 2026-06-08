@@ -38,7 +38,8 @@ PRAXIS implements all three so discipline feels like progression, not friction.
   - grant no Gold
   - do not apply missed-quest HP damage
 - Quest creation opens as slides: Quick Quest first for ADHD-friendly task
-  capture, then the full quest builder for deeper setup.
+  capture, with a top button or swipe into the full quest builder for deeper
+  setup.
 - Multi-step quests support dropdown subtasks, with each subtask awarding a proportional share of the quest XP, Gold, stat XP, and linked boss damage
 - Metric quests support incremental progress bars and diagnostics
 - Reminders and completion flows are integrated
@@ -116,8 +117,8 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 
 - Status dashboard with radar/grid stat toggle and persisted preference
 - Slide-based quest creation: quick capture includes starter templates,
-  difficulty, XP preview, optional reminder time, and optional three-step
-  breakdown before users swipe into the full builder
+  difficulty, XP preview, attribute selection, optional reminder time, and
+  optional three-step breakdown before users swipe into the full builder
 - Tabbed Activity/Achievements module with persisted preference
 - Next Up prioritization for high-impact quests
 - GitHub-style quest completion heatmap with toggleable visibility

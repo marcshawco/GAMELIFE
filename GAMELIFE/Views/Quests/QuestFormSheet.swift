@@ -224,6 +224,10 @@ struct QuestFormSheet: View {
         GameFormulas.questGold(difficulty: difficulty)
     }
 
+    private var quickTargetStats: [StatType] {
+        selectedStats.isEmpty ? [.willpower] : Array(selectedStats)
+    }
+
     private var navigationTitle: String {
         if mode.isEditing { return "Edit Quest" }
         return creationPage == 0 ? "Quick Quest" : "Create Quest"
@@ -286,6 +290,9 @@ struct QuestFormSheet: View {
                 .onAppear {
                     loadExistingQuest()
                     if !mode.isEditing {
+                        if selectedStats.isEmpty {
+                            selectedStats = [.willpower]
+                        }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                             quickTitleFocused = true
                         }
@@ -336,14 +343,21 @@ struct QuestFormSheet: View {
                     advancedQuestForm
                         .tag(1)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .interactive))
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
         }
     }
 
     private var advancedQuestForm: some View {
         Form {
+                if !mode.isEditing {
+                    Section {
+                        creationModeSwitch
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 0, trailing: 16))
+                }
+
                 Section {
                     questReadinessCard
                 }
@@ -613,19 +627,14 @@ struct QuestFormSheet: View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
+                    creationModeSwitch
                     quickHeader
                     quickTitleCard
-                    quickDifficultyCard
                     quickTemplateCard
+                    quickDifficultyCard
+                    quickAttributesCard
                     quickOptionsCard
                     quickSaveButton
-
-                    Text("Swipe left for the full quest builder.")
-                        .font(GW.mono(9, weight: .medium))
-                        .tracking(1.4)
-                        .foregroundStyle(GW.mute)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 2)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 18)
@@ -634,6 +643,46 @@ struct QuestFormSheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+    }
+
+    private var creationModeSwitch: some View {
+        HStack(spacing: 8) {
+            creationModeButton(title: "Quick Quest", isActive: creationPage == 0) {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    creationPage = 0
+                }
+                HapticManager.shared.selection()
+            }
+
+            creationModeButton(title: "Full Builder", isActive: creationPage == 1) {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    creationPage = 1
+                }
+                HapticManager.shared.selection()
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func creationModeButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title.uppercased())
+                .font(GW.mono(10, weight: .bold))
+                .tracking(1.1)
+                .foregroundStyle(isActive ? GW.bg : GW.cyan)
+                .frame(maxWidth: .infinity)
+                .frame(height: 38)
+                .background(
+                    Capsule()
+                        .fill(isActive ? GW.cyan : GW.cyan.opacity(0.08))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(GW.cyan.opacity(isActive ? 0.18 : 0.34), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     private var quickHeader: some View {
@@ -771,6 +820,60 @@ struct QuestFormSheet: View {
                         .buttonStyle(.plain)
                     }
                 }
+            }
+        }
+    }
+
+    private var quickAttributesCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("ATTRIBUTES")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Text("\(quickTargetStats.count)/3")
+                        .font(GW.mono(10, weight: .medium))
+                        .foregroundStyle(GW.mute)
+                }
+
+                QuickQuestChipsRow {
+                    ForEach(StatType.allCases) { stat in
+                        let isSelected = selectedStats.contains(stat)
+                        Button {
+                            toggleQuickStat(stat)
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: stat.icon)
+                                    .font(.system(size: 10, weight: .semibold))
+                                Text(stat.rawValue)
+                                    .font(GW.mono(10, weight: .bold))
+                                Text(stat.fullName.uppercased())
+                                    .font(GW.mono(8, weight: .medium))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(isSelected ? GW.bg : GW.cyan)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 7)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? GW.cyan : GW.cyan.opacity(0.07))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(GW.cyan.opacity(0.32), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(stat.fullName) attribute")
+                    }
+                }
+
+                Text("Attributes receive stat XP when this quest is cleared.")
+                    .font(GW.sans(11))
+                    .foregroundStyle(GW.mute)
             }
         }
     }
@@ -1202,6 +1305,24 @@ struct QuestFormSheet: View {
         }
     }
 
+    private func toggleQuickStat(_ stat: StatType) {
+        if selectedStats.contains(stat) {
+            if selectedStats.count > 1 {
+                selectedStats.remove(stat)
+            } else {
+                HapticManager.shared.warning()
+                return
+            }
+        } else if selectedStats.count < 3 {
+            selectedStats.insert(stat)
+        } else {
+            HapticManager.shared.warning()
+            return
+        }
+
+        HapticManager.shared.selection()
+    }
+
     private func addSubtask() {
         let trimmed = newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1419,7 +1540,7 @@ struct QuestFormSheet: View {
             description: "Quick quest",
             difficulty: difficulty,
             status: .available,
-            targetStats: [.willpower],
+            targetStats: quickTargetStats,
             frequency: .daily,
             isOptional: false,
             trackingType: .manual,
