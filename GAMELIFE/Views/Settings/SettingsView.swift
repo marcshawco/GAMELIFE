@@ -454,6 +454,8 @@ struct StatRow: View {
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
     private static let storedOptionKey = "selectedAppIconOption"
+    private static let maxIconChangeAttempts = 3
+    private static let iconChangeRetryDelay: TimeInterval = 0.8
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
@@ -568,23 +570,59 @@ final class AppIconManager: ObservableObject {
 
     private func performIconChange(
         requestID: UUID,
-        targetIconName: String?
+        targetIconName: String?,
+        attempt: Int = 1
     ) {
         guard requestID == pendingRequestID else { return }
 
-        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                self?.finishIconChange(
-                    requestID: requestID,
-                    targetIconName: targetIconName
-                )
+        UIApplication.shared.setAlternateIconName(targetIconName) { [weak self] error in
+            DispatchQueue.main.async {
+                if let error {
+                    self?.handleIconChangeError(
+                        error,
+                        requestID: requestID,
+                        targetIconName: targetIconName,
+                        attempt: attempt
+                    )
+                } else {
+                    self?.finishIconChange(
+                        requestID: requestID,
+                        targetIconName: targetIconName,
+                        attempt: attempt
+                    )
+                }
             }
         }
     }
 
+    private func handleIconChangeError(
+        _ error: Error,
+        requestID: UUID,
+        targetIconName: String?,
+        attempt: Int
+    ) {
+        guard requestID == pendingRequestID else { return }
+
+        NSLog("PRAXIS app icon change failed on attempt \(attempt): \(error.localizedDescription)")
+
+        if attempt < Self.maxIconChangeAttempts {
+            retryIconChange(
+                requestID: requestID,
+                targetIconName: targetIconName,
+                attempt: attempt + 1
+            )
+            return
+        }
+
+        applyResolvedSystemState(resolvedSystemState())
+        clearPendingIconChange()
+        SystemMessageHelper.showWarning("App icon could not be changed. Please try again.")
+    }
+
     private func finishIconChange(
         requestID: UUID,
-        targetIconName: String?
+        targetIconName: String?,
+        attempt: Int
     ) {
         guard requestID == pendingRequestID else { return }
 
@@ -595,9 +633,34 @@ final class AppIconManager: ObservableObject {
             return
         }
 
+        if attempt < Self.maxIconChangeAttempts {
+            retryIconChange(
+                requestID: requestID,
+                targetIconName: targetIconName,
+                attempt: attempt + 1
+            )
+            return
+        }
+
         applyResolvedSystemState(resolvedState)
         clearPendingIconChange()
         SystemMessageHelper.showWarning("App icon could not be changed. Please try again.")
+    }
+
+    private func retryIconChange(
+        requestID: UUID,
+        targetIconName: String?,
+        attempt: Int
+    ) {
+        guard requestID == pendingRequestID else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.iconChangeRetryDelay) { [weak self] in
+            self?.performIconChange(
+                requestID: requestID,
+                targetIconName: targetIconName,
+                attempt: attempt
+            )
+        }
     }
 
     private func resolvedSystemState() -> AppIconResolvedState {
