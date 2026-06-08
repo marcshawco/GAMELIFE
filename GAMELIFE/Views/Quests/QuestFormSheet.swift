@@ -106,7 +106,6 @@ struct QuestFormSheet: View {
     @State private var reminderEnabled = false
     @State private var reminderTime = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var isOptionalQuest = false
-    @State private var isRepeatableQuest = false
     @State private var subtaskDrafts: [QuestSubtaskDraft] = []
     @State private var newSubtaskTitle = ""
 
@@ -115,7 +114,6 @@ struct QuestFormSheet: View {
     @State private var errorMessage: String?
     @State private var activeWheelInput: QuestWheelInput?
     @State private var showValidationFeedback = false
-    @State private var showRepeatableInfo = false
 
     private var linkableBosses: [BossFight] {
         gameEngine.activeBossFights.sorted {
@@ -441,24 +439,6 @@ struct QuestFormSheet: View {
                     }
                     .pickerStyle(.menu)
 
-                    HStack(spacing: 8) {
-                        Text("Repeatable")
-                        Button {
-                            showRepeatableInfo = true
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(SystemTheme.textSecondary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Repeatable quest info")
-
-                        Spacer()
-
-                        Toggle("Repeatable", isOn: $isRepeatableQuest)
-                            .labelsHidden()
-                    }
-
                     Toggle("Enable Reminder", isOn: $reminderEnabled)
 
                     if reminderEnabled {
@@ -528,11 +508,6 @@ struct QuestFormSheet: View {
                     selection: $healthKitType,
                     accentColor: SystemTheme.primaryBlue
                 )
-            }
-            .alert("Repeatable Quests", isPresented: $showRepeatableInfo) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Repeatable quests can be completed more than once in the same day. Leave this off for normal quests that can only be completed once per cycle.")
             }
             .keyboardDismissToolbar()
             .onAppear(perform: loadExistingQuest)
@@ -1008,7 +983,6 @@ struct QuestFormSheet: View {
         reminderEnabled = quest.reminderEnabled
         reminderTime = quest.reminderTime ?? reminderTime
         isOptionalQuest = quest.isOptional
-        isRepeatableQuest = quest.isRepeatable
         subtaskDrafts = draftSubtasks(from: quest.subtasks)
         locationAddress = quest.locationAddress ?? ""
         locationCoordinate = quest.locationCoordinate
@@ -1128,8 +1102,6 @@ struct QuestFormSheet: View {
             targetStats: Array(selectedStats),
             frequency: frequency,
             isOptional: isOptionalQuest,
-            isRepeatable: isRepeatableQuest,
-            completionCountInCycle: isRepeatableQuest ? existingQuest?.completionCountInCycle ?? 0 : 0,
             trackingType: resolvedTrackingType,
             currentProgress: subtaskProgress,
             targetValue: max(1, targetValue),

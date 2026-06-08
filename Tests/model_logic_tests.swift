@@ -21,8 +21,6 @@ struct ModelLogicTestsMain {
         testLocationQuestMetadata()
         testOptionalQuestFlags()
         testOptionalQuestBackwardCompatibleDecoding()
-        testRepeatableQuestDefaults()
-        testRepeatableQuestBackwardCompatibleDecoding()
         testQuestSubtaskRewardDistribution()
         testQuestSubtaskBackwardCompatibleDecoding()
         testLinkedQuestBossDamage()
@@ -191,58 +189,6 @@ struct ModelLogicTestsMain {
             expect(decoded.isOptional == false, "Legacy quests without isOptional key should default to false")
         } catch {
             expect(false, "Legacy quest decode should not fail: \(error)")
-        }
-    }
-
-    private static func testRepeatableQuestDefaults() {
-        let defaultQuest = DailyQuest(
-            title: "Default Quest",
-            description: "Should only complete once",
-            difficulty: .easy,
-            targetStats: [.willpower]
-        )
-
-        let repeatableQuest = DailyQuest(
-            title: "Repeatable Quest",
-            description: "Can complete more than once",
-            difficulty: .easy,
-            targetStats: [.willpower],
-            isRepeatable: true,
-            completionCountInCycle: 2
-        )
-
-        expect(defaultQuest.isRepeatable == false, "DailyQuest should default to non-repeatable")
-        expect(defaultQuest.completionCountInCycle == 0, "DailyQuest should default to zero completions in the cycle")
-        expect(defaultQuest.hasCompletedCurrentCycle == false, "New non-repeatable quest should not count as completed")
-        expect(repeatableQuest.isRepeatable, "Repeatable flag should persist on DailyQuest")
-        expect(repeatableQuest.completionCountInCycle == 2, "Repeatable completion count should persist on DailyQuest")
-        expect(repeatableQuest.hasCompletedCurrentCycle, "Repeatable quest with completions should count as completed for its cycle")
-    }
-
-    private static func testRepeatableQuestBackwardCompatibleDecoding() {
-        let sourceQuest = DailyQuest(
-            title: "Legacy Quest",
-            description: "Legacy payload without repeatable fields",
-            difficulty: .normal,
-            targetStats: [.intelligence],
-            trackingType: .manual
-        )
-
-        do {
-            let encoded = try JSONEncoder().encode(sourceQuest)
-            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
-                expect(false, "Failed to parse encoded quest JSON")
-                return
-            }
-            jsonObject.removeValue(forKey: "isRepeatable")
-            jsonObject.removeValue(forKey: "completionCountInCycle")
-            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
-
-            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
-            expect(decoded.isRepeatable == false, "Legacy quests without isRepeatable key should default to false")
-            expect(decoded.completionCountInCycle == 0, "Legacy quests without completionCountInCycle key should default to zero")
-        } catch {
-            expect(false, "Legacy repeatable quest decode should not fail: \(error)")
         }
     }
 
