@@ -7,6 +7,49 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
+private enum WidgetTheme {
+    static let backgroundPrimary = Color(red: 10 / 255, green: 10 / 255, blue: 15 / 255)
+    static let backgroundSecondary = Color(red: 18 / 255, green: 18 / 255, blue: 26 / 255)
+    static let backgroundTertiary = Color(red: 26 / 255, green: 26 / 255, blue: 46 / 255)
+    static let textPrimary = Color.white
+    static let textSecondary = Color(red: 160 / 255, green: 160 / 255, blue: 176 / 255)
+    static let textTertiary = Color(red: 112 / 255, green: 112 / 255, blue: 132 / 255)
+    static let primaryBlue = Color(red: 76 / 255, green: 201 / 255, blue: 240 / 255)
+    static let primaryPurple = Color(red: 123 / 255, green: 44 / 255, blue: 191 / 255)
+    static let accentCyan = Color(red: 0 / 255, green: 245 / 255, blue: 212 / 255)
+    static let warningOrange = Color(red: 255 / 255, green: 107 / 255, blue: 53 / 255)
+    static let criticalRed = Color(red: 239 / 255, green: 35 / 255, blue: 60 / 255)
+    static let successGreen = Color(red: 6 / 255, green: 214 / 255, blue: 160 / 255)
+    static let gold = Color(red: 255 / 255, green: 215 / 255, blue: 0 / 255)
+
+    static let xpGradient = LinearGradient(
+        colors: [primaryBlue, accentCyan],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let hpGradient = LinearGradient(
+        colors: [criticalRed, warningOrange],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static func cardBackground(accent: Color = primaryBlue) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [backgroundSecondary, backgroundPrimary],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            LinearGradient(
+                colors: [accent.opacity(0.28), primaryPurple.opacity(0.16), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+}
+
 private enum WidgetLanguageSupport {
     static let appGroupID = "group.com.gamelife.shared"
     static let preferredLanguageFileName = "preferredLanguageCode.txt"
@@ -171,39 +214,40 @@ struct StatusWidgetView: View {
                         .lineLimit(1)
                     Text("\(entry.payload.rank) Rank | Lv. \(entry.payload.level)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(WidgetTheme.textSecondary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Label("\(entry.payload.streak)", systemImage: "flame.fill")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(WidgetTheme.warningOrange)
                     Label("\(entry.payload.gold)", systemImage: "dollarsign.circle.fill")
                         .font(.caption)
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(WidgetTheme.gold)
                 }
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 metricRow(title: "HP", value: "\(entry.payload.currentHP)/\(entry.payload.maxHP)")
                 ProgressView(value: Double(entry.payload.currentHP), total: Double(max(1, entry.payload.maxHP)))
-                    .tint(.red)
+                    .tint(WidgetTheme.criticalRed)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 metricRow(title: "XP", value: "\(Int((entry.payload.xpProgress * 100).rounded()))%")
                 ProgressView(value: entry.payload.xpProgress)
-                    .tint(.blue)
+                    .tint(WidgetTheme.primaryBlue)
             }
 
             Spacer(minLength: 0)
 
             Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) quests complete")
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WidgetTheme.textSecondary)
         }
+        .foregroundStyle(WidgetTheme.textPrimary)
         .containerBackground(for: .widget) {
-            LinearGradient(colors: [Color(red: 0.06, green: 0.09, blue: 0.16), Color(red: 0.10, green: 0.14, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            WidgetTheme.cardBackground(accent: WidgetTheme.primaryBlue)
         }
     }
 
@@ -216,15 +260,16 @@ struct StatusWidgetView: View {
                 .font(.caption2)
             Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) done")
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WidgetTheme.textSecondary)
         }
+        .foregroundStyle(WidgetTheme.textPrimary)
     }
 
     private func metricRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WidgetTheme.textSecondary)
             Spacer()
             Text(value)
                 .font(.caption2)
@@ -245,7 +290,7 @@ struct NextUpWidgetView: View {
                         .font(.headline)
                     Text("\(entry.payload.remainingRequired) required left")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(WidgetTheme.textSecondary)
                 }
                 Spacer()
                 Text("\(entry.payload.completedToday)/\(max(1, entry.payload.totalToday))")
@@ -263,23 +308,24 @@ struct NextUpWidgetView: View {
                                 .font(.caption2.bold())
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
-                                .background(.white.opacity(0.12))
+                                .foregroundStyle(WidgetTheme.accentCyan)
+                                .background(WidgetTheme.accentCyan.opacity(0.14))
                                 .clipShape(Capsule())
                         }
                     }
                     Text(quest.subtitle)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(WidgetTheme.textSecondary)
                         .lineLimit(1)
                     ProgressView(value: quest.progressValue)
-                        .tint(quest.isOptional ? .mint : .blue)
+                        .tint(quest.isOptional ? WidgetTheme.successGreen : WidgetTheme.primaryBlue)
                     HStack {
                         Text(quest.progressText)
                         Spacer()
                         Text(relativeExpiry(for: quest.expiresAt))
                     }
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(WidgetTheme.textSecondary)
                 }
             }
 
@@ -287,11 +333,12 @@ struct NextUpWidgetView: View {
                 Spacer()
                 Text("All clear. No unfinished quests right now.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(WidgetTheme.textSecondary)
             }
         }
+        .foregroundStyle(WidgetTheme.textPrimary)
         .containerBackground(for: .widget) {
-            LinearGradient(colors: [Color(red: 0.09, green: 0.08, blue: 0.05), Color(red: 0.16, green: 0.12, blue: 0.07)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            WidgetTheme.cardBackground(accent: WidgetTheme.accentCyan)
         }
         .environment(\.locale, WidgetLanguageSupport.locale)
         .widgetURL(nextUpURL)
@@ -352,17 +399,15 @@ struct BossWidgetView: View {
             if let boss = displayedBoss {
                 Text(boss.subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(WidgetTheme.textSecondary)
                     .lineLimit(1)
 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(.white.opacity(0.12))
+                            .fill(WidgetTheme.backgroundTertiary)
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(
-                                LinearGradient(colors: [.pink, .red], startPoint: .leading, endPoint: .trailing)
-                            )
+                            .fill(WidgetTheme.hpGradient)
                             .frame(width: max(14, geometry.size.width * boss.progressValue))
                     }
                 }
@@ -377,13 +422,13 @@ struct BossWidgetView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Best next move")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(WidgetTheme.textSecondary)
                         Text(quest.title)
                             .font(.caption.bold())
                             .lineLimit(1)
                         Text(quest.subtitle)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(WidgetTheme.textSecondary)
                             .lineLimit(1)
                     }
                 }
@@ -391,11 +436,12 @@ struct BossWidgetView: View {
                 Spacer()
                 Text("Create a boss to track long-term progress here.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(WidgetTheme.textSecondary)
             }
         }
+        .foregroundStyle(WidgetTheme.textPrimary)
         .containerBackground(for: .widget) {
-            LinearGradient(colors: [Color(red: 0.16, green: 0.05, blue: 0.08), Color(red: 0.24, green: 0.08, blue: 0.10)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            WidgetTheme.cardBackground(accent: WidgetTheme.criticalRed)
         }
         .environment(\.locale, WidgetLanguageSupport.locale)
         .widgetURL(bossURL)
@@ -405,13 +451,13 @@ struct BossWidgetView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WidgetTheme.textSecondary)
             Text(value)
                 .font(.caption.bold())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(8)
-        .background(.white.opacity(0.08))
+        .background(WidgetTheme.backgroundTertiary.opacity(0.72))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
