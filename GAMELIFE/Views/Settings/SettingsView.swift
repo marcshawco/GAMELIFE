@@ -465,6 +465,7 @@ final class AppIconManager: ObservableObject {
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
     @Published private(set) var pendingIconDisplayName: String?
+    @Published private(set) var cooldownRemainingSeconds = 0
     private var pendingOption: AppIconOption?
     private var pendingRequestID = UUID()
     private var cancellables = Set<AnyCancellable>()
@@ -487,6 +488,7 @@ final class AppIconManager: ObservableObject {
     private init() {
         normalizeLegacyIconIfNeeded()
         refreshCurrentIcon()
+        refreshCooldown()
         NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
                 self?.refreshCurrentIcon()
@@ -503,9 +505,11 @@ final class AppIconManager: ObservableObject {
             pendingIconDisplayName = nil
             pendingOption = nil
             storedOption = nil
+            cooldownRemainingSeconds = 0
             return
         }
 
+        refreshCooldown()
         let resolvedState = resolvedSystemState()
 
         if hasPendingIconChange, let pendingOption {
@@ -537,7 +541,7 @@ final class AppIconManager: ObservableObject {
             return
         }
         guard !isIconChangeCoolingDown else {
-            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Please wait before changing it again.")
+            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Try again in \(cooldownRemainingSeconds)s.")
             return
         }
 
@@ -615,7 +619,7 @@ final class AppIconManager: ObservableObject {
             recordIconChangeCooldown()
             applyResolvedSystemState(resolvedSystemState())
             clearPendingIconChange()
-            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Please wait before trying again.")
+            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Try again in \(cooldownRemainingSeconds)s.")
             return
         }
 
@@ -707,13 +711,22 @@ final class AppIconManager: ObservableObject {
 
     private func recordIconChangeCooldown() {
         UserDefaults.standard.set(Date(), forKey: Self.lastIconChangeDateKey)
+        refreshCooldown()
     }
 
     private var isIconChangeCoolingDown: Bool {
+        refreshCooldown()
+        return cooldownRemainingSeconds > 0
+    }
+
+    func refreshCooldown() {
         guard let date = UserDefaults.standard.object(forKey: Self.lastIconChangeDateKey) as? Date else {
-            return false
+            cooldownRemainingSeconds = 0
+            return
         }
-        return Date().timeIntervalSince(date) < Self.iconChangeCooldown
+
+        let remaining = Self.iconChangeCooldown - Date().timeIntervalSince(date)
+        cooldownRemainingSeconds = max(0, Int(ceil(remaining)))
     }
 
     private func isResourceTemporarilyUnavailable(_ error: Error) -> Bool {
@@ -726,12 +739,16 @@ final class AppIconManager: ObservableObject {
 
 struct AppIconPickerView: View {
     @ObservedObject private var appIconManager = AppIconManager.shared
+    private let cooldownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 ForEach(AppIconOption.allCases) { option in
                     let isSelected = appIconManager.currentOption == option
+                    let isDisabled = !appIconManager.isSupported
+                        || appIconManager.hasPendingIconChange
+                        || appIconManager.cooldownRemainingSeconds > 0
 
                     Button {
                         appIconManager.setIcon(option)
@@ -759,6 +776,7 @@ struct AppIconPickerView: View {
                                     .foregroundStyle(SystemTheme.primaryBlue)
                             }
                         }
+                        .opacity(isDisabled && !isSelected ? 0.58 : 1)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
@@ -778,7 +796,7 @@ struct AppIconPickerView: View {
                     }
                     .buttonStyle(.plain)
                     .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .disabled(!appIconManager.isSupported || appIconManager.hasPendingIconChange)
+                    .disabled(isDisabled)
                 }
 
                 Text(
@@ -793,6 +811,12 @@ struct AppIconPickerView: View {
 
                 if appIconManager.hasPendingIconChange {
                     Text("Icon change in progress: \(appIconManager.pendingIconDisplayName ?? "Selected icon").")
+                        .font(SystemTypography.captionSmall)
+                        .foregroundStyle(SystemTheme.warningOrange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                } else if appIconManager.cooldownRemainingSeconds > 0 {
+                    Text("iOS is finishing the last icon change. Try again in \(appIconManager.cooldownRemainingSeconds)s.")
                         .font(SystemTypography.captionSmall)
                         .foregroundStyle(SystemTheme.warningOrange)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -813,6 +837,9 @@ struct AppIconPickerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             appIconManager.refreshCurrentIcon()
+        }
+        .onReceive(cooldownTimer) { _ in
+            appIconManager.refreshCooldown()
         }
     }
 }
