@@ -221,13 +221,82 @@ struct SplashView: View {
                 .frame(width: 104, height: 104)
                 .opacity(pulse ? 1 : 0.72)
 
-            Image("PraxisMonogramGradient")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 54, height: 54)
+            PrismGlyph()
+                .frame(width: 58, height: 58)
                 .shadow(color: GW.cyan.opacity(0.4), radius: pulse ? 18 : 10)
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct PrismGlyph: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let top = CGPoint(x: size.width * 0.5, y: 0)
+            let right = CGPoint(x: size.width, y: size.height * 0.5)
+            let bottom = CGPoint(x: size.width * 0.5, y: size.height)
+            let left = CGPoint(x: 0, y: size.height * 0.5)
+            let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
+
+            func triangle(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint) -> Path {
+                var path = Path()
+                path.move(to: a)
+                path.addLine(to: b)
+                path.addLine(to: c)
+                path.closeSubpath()
+                return path
+            }
+
+            ctx.fill(
+                triangle(top, center, left),
+                with: .linearGradient(
+                    Gradient(colors: [GW.cyan.opacity(0.95), GW.pink.opacity(0.48)]),
+                    startPoint: left,
+                    endPoint: top
+                )
+            )
+            ctx.fill(
+                triangle(top, right, center),
+                with: .linearGradient(
+                    Gradient(colors: [GW.ink.opacity(0.82), GW.cyan.opacity(0.92)]),
+                    startPoint: top,
+                    endPoint: right
+                )
+            )
+            ctx.fill(
+                triangle(center, right, bottom),
+                with: .linearGradient(
+                    Gradient(colors: [GW.cyan.opacity(0.70), GW.pink.opacity(0.95)]),
+                    startPoint: center,
+                    endPoint: right
+                )
+            )
+            ctx.fill(
+                triangle(left, center, bottom),
+                with: .linearGradient(
+                    Gradient(colors: [GW.pink.opacity(0.56), GW.cyan.opacity(0.78)]),
+                    startPoint: center,
+                    endPoint: bottom
+                )
+            )
+
+            var outline = Path()
+            outline.move(to: top)
+            outline.addLine(to: right)
+            outline.addLine(to: bottom)
+            outline.addLine(to: left)
+            outline.closeSubpath()
+            ctx.stroke(outline, with: .color(GW.ink.opacity(0.26)), lineWidth: 1)
+            ctx.stroke(Path { path in
+                path.move(to: top)
+                path.addLine(to: center)
+                path.addLine(to: bottom)
+                path.move(to: left)
+                path.addLine(to: center)
+                path.addLine(to: right)
+            }, with: .color(GW.ink.opacity(0.16)), lineWidth: 0.75)
+        }
+        .aspectRatio(1, contentMode: .fit)
     }
 }
 

@@ -182,7 +182,7 @@ Two design directions ship side-by-side:
 
       Outer chrome:
         - `SplashView` now uses the Glasswork velvet/ivory background,
-          aurora wash, Prism monogram, gradient PRAXIS wordmark, and bracketed
+          aurora wash, default Prism mark, gradient PRAXIS wordmark, and bracketed
           System status label so launch matches the live tabs.
         - `MainTabView` tab-bar tint = `GW.cyan` so selected tab icons
           read in System cyan.
