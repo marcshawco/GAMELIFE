@@ -456,6 +456,7 @@ final class AppIconManager: ObservableObject {
     private static let storedOptionKey = "selectedAppIconOption"
     private static let maxIconChangeAttempts = 3
     private static let iconChangeRetryDelay: TimeInterval = 0.8
+    private static let iconChangeSettleDelay: TimeInterval = 1.6
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
@@ -528,11 +529,11 @@ final class AppIconManager: ObservableObject {
 
         let targetIconName = option.iconName
         let resolvedState = resolvedSystemState()
-        guard hasPendingIconChange || resolvedState.currentOption != option else {
+        guard !hasPendingIconChange else { return }
+        guard resolvedState.currentOption != option else {
             applyResolvedSystemState(resolvedState)
             return
         }
-        guard pendingOption != option else { return }
 
         let requestID = UUID()
         pendingRequestID = requestID
@@ -603,8 +604,6 @@ final class AppIconManager: ObservableObject {
     ) {
         guard requestID == pendingRequestID else { return }
 
-        NSLog("PRAXIS app icon change failed on attempt \(attempt): \(error.localizedDescription)")
-
         if attempt < Self.maxIconChangeAttempts {
             retryIconChange(
                 requestID: requestID,
@@ -614,6 +613,7 @@ final class AppIconManager: ObservableObject {
             return
         }
 
+        NSLog("PRAXIS app icon change failed after \(attempt) attempts: \(error.localizedDescription)")
         applyResolvedSystemState(resolvedSystemState())
         clearPendingIconChange()
         SystemMessageHelper.showWarning("App icon could not be changed. Please try again.")
@@ -629,7 +629,7 @@ final class AppIconManager: ObservableObject {
         let resolvedState = resolvedSystemState()
         if UIApplication.shared.alternateIconName == targetIconName {
             applyResolvedSystemState(resolvedState)
-            clearPendingIconChange()
+            clearPendingIconChangeAfterSettle(requestID: requestID)
             return
         }
 
@@ -680,6 +680,13 @@ final class AppIconManager: ObservableObject {
         hasPendingIconChange = false
         pendingIconDisplayName = nil
         pendingOption = nil
+    }
+
+    private func clearPendingIconChangeAfterSettle(requestID: UUID) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.iconChangeSettleDelay) { [weak self] in
+            guard let self, requestID == self.pendingRequestID else { return }
+            self.clearPendingIconChange()
+        }
     }
 
 }
@@ -738,7 +745,7 @@ struct AppIconPickerView: View {
                     }
                     .buttonStyle(.plain)
                     .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .disabled(!appIconManager.isSupported)
+                    .disabled(!appIconManager.isSupported || appIconManager.hasPendingIconChange)
                 }
 
                 Text(
@@ -752,7 +759,7 @@ struct AppIconPickerView: View {
                 .padding(.horizontal, 4)
 
                 if appIconManager.hasPendingIconChange {
-                    Text("Pending icon sync: \(appIconManager.pendingIconDisplayName ?? "Selected icon"). iOS may apply this after returning to the home screen.")
+                    Text("Icon change in progress: \(appIconManager.pendingIconDisplayName ?? "Selected icon").")
                         .font(SystemTypography.captionSmall)
                         .foregroundStyle(SystemTheme.warningOrange)
                         .frame(maxWidth: .infinity, alignment: .leading)
