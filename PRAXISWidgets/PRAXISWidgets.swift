@@ -427,32 +427,27 @@ struct BossWidgetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Boss Battle")
-                        .font(.headline)
-                    if let boss = displayedBoss {
+        VStack(alignment: .leading, spacing: 8) {
+            if let boss = displayedBoss {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(boss.title)
-                            .font(.subheadline.bold())
+                            .font(.headline.weight(.semibold))
                             .lineLimit(1)
-                    } else {
-                        Text("No active bosses")
-                            .font(.subheadline.bold())
+                            .minimumScaleFactor(0.82)
+                        Text(boss.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(WidgetTheme.textSecondary)
+                            .lineLimit(1)
                     }
-                }
-                Spacer()
-                if let boss = displayedBoss {
+
+                    Spacer(minLength: 8)
+
                     Text("\(Int(boss.progressValue * 100))%")
                         .font(.title3.monospacedDigit().bold())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
-            }
-
-            if let boss = displayedBoss {
-                Text(boss.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(WidgetTheme.textSecondary)
-                    .lineLimit(1)
 
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
@@ -463,7 +458,7 @@ struct BossWidgetView: View {
                             .frame(width: max(14, geometry.size.width * boss.progressValue))
                     }
                 }
-                .frame(height: 14)
+                .frame(height: 10)
 
                 HStack {
                     statPill(title: "HP Left", value: "\(boss.remainingHP)")
@@ -471,24 +466,30 @@ struct BossWidgetView: View {
                 }
 
                 if let quest = entry.payload.nextUp.first {
-                    VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("Best next move")
                             .font(.caption2)
                             .foregroundStyle(WidgetTheme.textSecondary)
+                            .lineLimit(1)
                         Text(quest.title)
                             .font(.caption.bold())
                             .lineLimit(1)
-                        Text(quest.subtitle)
-                            .font(.caption2)
-                            .foregroundStyle(WidgetTheme.textSecondary)
-                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
             } else {
-                Spacer()
-                Text("Create a boss to track long-term progress here.")
-                    .font(.caption)
-                    .foregroundStyle(WidgetTheme.textSecondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Boss Battle")
+                        .font(.headline.weight(.semibold))
+                    Text("No active bosses")
+                        .font(.subheadline.bold())
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text("Create a boss to track long-term progress here.")
+                        .font(.caption)
+                        .foregroundStyle(WidgetTheme.textSecondary)
+                        .lineLimit(2)
+                }
             }
         }
         .foregroundStyle(WidgetTheme.textPrimary)
@@ -508,9 +509,10 @@ struct BossWidgetView: View {
                 .font(.caption.bold())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(WidgetTheme.backgroundTertiary.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var bossURL: URL? {
