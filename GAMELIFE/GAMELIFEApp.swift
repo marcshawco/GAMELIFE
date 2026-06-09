@@ -156,68 +156,78 @@ struct RootView: View {
 
 /// The initial splash screen with system initialization effect
 struct SplashView: View {
-    @State private var showTitle = false
-    @State private var showSubtitle = false
-    @State private var glowIntensity: Double = 0
+    @State private var showBrand = false
+    @State private var showStatus = false
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
-            SystemTheme.backgroundPrimary
+            GW.bg
                 .ignoresSafeArea()
+            GWAurora()
+                .ignoresSafeArea()
+                .opacity(showBrand ? 1 : 0.35)
 
-            VStack(spacing: 20) {
-                // Logo/Icon
-                ZStack {
-                    // Outer glow ring
-                    Circle()
-                        .stroke(SystemTheme.primaryBlue.opacity(glowIntensity * 0.3), lineWidth: 4)
-                        .frame(width: 120, height: 120)
+            VStack(spacing: 18) {
+                prismMark
+                    .scaleEffect(showBrand ? 1 : 0.86)
+                    .opacity(showBrand ? 1 : 0)
 
-                    // Inner ring
-                    Circle()
-                        .stroke(SystemTheme.primaryBlue, lineWidth: 2)
-                        .frame(width: 100, height: 100)
+                Image("PraxisWordmarkGradient")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 190, height: 54)
+                    .shadow(color: GW.cyan.opacity(0.28), radius: 18, x: 0, y: 8)
+                    .opacity(showBrand ? 1 : 0)
 
-                    // System icon
-                    Image(systemName: "diamond.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(SystemTheme.primaryBlue)
-                        .glow(color: SystemTheme.primaryBlue, radius: 15 * glowIntensity)
-                }
-
-                if showTitle {
-                    Text("PRAXIS")
-                        .font(SystemTypography.titleLarge)
-                        .foregroundStyle(SystemTheme.primaryBlue)
-                        .glow(color: SystemTheme.primaryBlue, radius: 10)
-                }
-
-                if showSubtitle {
-                    Text("[SYSTEM INITIALIZING...]")
-                        .font(SystemTypography.systemMessage)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                if showStatus {
+                    Text("[ SYSTEM · INITIALIZING ]")
+                        .font(GW.mono(12, weight: .medium))
+                        .tracking(2.6)
+                        .foregroundStyle(GW.mute)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
+            .padding(.horizontal, 32)
+            .offset(y: -8)
         }
         .onAppear {
-            // Animate in sequence
-            withAnimation(.easeOut(duration: 0.5)) {
-                glowIntensity = 1.0
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.78)) {
+                showBrand = true
             }
-
-            withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
-                showTitle = true
+            withAnimation(.easeOut(duration: 0.45).delay(0.35)) {
+                showStatus = true
             }
-
-            withAnimation(.easeOut(duration: 0.5).delay(0.6)) {
-                showSubtitle = true
-            }
-
-            // Pulsing glow
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(1.0)) {
-                glowIntensity = 0.5
+            withAnimation(.easeInOut(duration: 1.45).repeatForever(autoreverses: true).delay(0.25)) {
+                pulse = true
             }
         }
+    }
+
+    private var prismMark: some View {
+        ZStack {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 132, height: 132)
+                .overlay(
+                    Circle()
+                        .stroke(GW.hairlineHi, lineWidth: 1)
+                )
+                .shadow(color: GW.pink.opacity(pulse ? 0.32 : 0.18), radius: pulse ? 34 : 22, x: 0, y: 18)
+                .shadow(color: GW.cyan.opacity(pulse ? 0.30 : 0.16), radius: pulse ? 30 : 18, x: 0, y: -8)
+
+            Circle()
+                .strokeBorder(GW.grad, lineWidth: 2)
+                .frame(width: 104, height: 104)
+                .opacity(pulse ? 1 : 0.72)
+
+            Image("PraxisMonogramGradient")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 54, height: 54)
+                .shadow(color: GW.cyan.opacity(0.4), radius: pulse ? 18 : 10)
+        }
+        .accessibilityHidden(true)
     }
 }
 
