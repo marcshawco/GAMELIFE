@@ -454,9 +454,11 @@ struct StatRow: View {
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
     private static let storedOptionKey = "selectedAppIconOption"
+    private static let lastIconChangeDateKey = "lastSuccessfulAppIconChangeDate"
     private static let maxIconChangeAttempts = 3
     private static let iconChangeRetryDelay: TimeInterval = 0.8
     private static let iconChangeSettleDelay: TimeInterval = 1.6
+    private static let iconChangeCooldown: TimeInterval = 60
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
@@ -534,6 +536,10 @@ final class AppIconManager: ObservableObject {
             applyResolvedSystemState(resolvedState)
             return
         }
+        guard !isIconChangeCoolingDown else {
+            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Please wait before changing it again.")
+            return
+        }
 
         let requestID = UUID()
         pendingRequestID = requestID
@@ -604,6 +610,15 @@ final class AppIconManager: ObservableObject {
     ) {
         guard requestID == pendingRequestID else { return }
 
+        if isResourceTemporarilyUnavailable(error) {
+            NSLog("PRAXIS app icon change blocked by iOS: \(error.localizedDescription)")
+            recordIconChangeCooldown()
+            applyResolvedSystemState(resolvedSystemState())
+            clearPendingIconChange()
+            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Please wait before trying again.")
+            return
+        }
+
         if attempt < Self.maxIconChangeAttempts {
             retryIconChange(
                 requestID: requestID,
@@ -629,6 +644,7 @@ final class AppIconManager: ObservableObject {
         let resolvedState = resolvedSystemState()
         if UIApplication.shared.alternateIconName == targetIconName {
             applyResolvedSystemState(resolvedState)
+            recordIconChangeCooldown()
             clearPendingIconChangeAfterSettle(requestID: requestID)
             return
         }
@@ -687,6 +703,23 @@ final class AppIconManager: ObservableObject {
             guard let self, requestID == self.pendingRequestID else { return }
             self.clearPendingIconChange()
         }
+    }
+
+    private func recordIconChangeCooldown() {
+        UserDefaults.standard.set(Date(), forKey: Self.lastIconChangeDateKey)
+    }
+
+    private var isIconChangeCoolingDown: Bool {
+        guard let date = UserDefaults.standard.object(forKey: Self.lastIconChangeDateKey) as? Date else {
+            return false
+        }
+        return Date().timeIntervalSince(date) < Self.iconChangeCooldown
+    }
+
+    private func isResourceTemporarilyUnavailable(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == NSPOSIXErrorDomain && nsError.code == 35
+            || error.localizedDescription.localizedCaseInsensitiveContains("Resource temporarily unavailable")
     }
 
 }
