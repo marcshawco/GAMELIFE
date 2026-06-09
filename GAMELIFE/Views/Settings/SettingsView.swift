@@ -458,7 +458,11 @@ final class AppIconManager: ObservableObject {
     private static let maxIconChangeAttempts = 3
     private static let iconChangeRetryDelay: TimeInterval = 0.8
     private static let iconChangeSettleDelay: TimeInterval = 1.6
+    #if targetEnvironment(simulator)
+    private static let iconChangeCooldown: TimeInterval = 300
+    #else
     private static let iconChangeCooldown: TimeInterval = 60
+    #endif
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
@@ -615,7 +619,6 @@ final class AppIconManager: ObservableObject {
         guard requestID == pendingRequestID else { return }
 
         if isResourceTemporarilyUnavailable(error) {
-            NSLog("PRAXIS app icon change blocked by iOS: \(error.localizedDescription)")
             recordIconChangeCooldown()
             applyResolvedSystemState(resolvedSystemState())
             clearPendingIconChange()
