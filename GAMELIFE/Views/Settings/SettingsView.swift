@@ -454,22 +454,15 @@ struct StatRow: View {
 final class AppIconManager: ObservableObject {
     static let shared = AppIconManager()
     private static let storedOptionKey = "selectedAppIconOption"
-    private static let lastIconChangeDateKey = "lastSuccessfulAppIconChangeDate"
     private static let maxIconChangeAttempts = 3
     private static let iconChangeRetryDelay: TimeInterval = 0.8
     private static let iconChangeSettleDelay: TimeInterval = 1.6
-    #if targetEnvironment(simulator)
-    private static let iconChangeCooldown: TimeInterval = 300
-    #else
-    private static let iconChangeCooldown: TimeInterval = 60
-    #endif
 
     @Published private(set) var currentOption: AppIconOption = .signal
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
     @Published private(set) var pendingIconDisplayName: String?
-    @Published private(set) var cooldownRemainingSeconds = 0
     private var pendingOption: AppIconOption?
     private var pendingRequestID = UUID()
     private var cancellables = Set<AnyCancellable>()
@@ -492,7 +485,6 @@ final class AppIconManager: ObservableObject {
     private init() {
         normalizeLegacyIconIfNeeded()
         refreshCurrentIcon()
-        refreshCooldown()
         NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
                 self?.refreshCurrentIcon()
@@ -509,11 +501,9 @@ final class AppIconManager: ObservableObject {
             pendingIconDisplayName = nil
             pendingOption = nil
             storedOption = nil
-            cooldownRemainingSeconds = 0
             return
         }
 
-        refreshCooldown()
         let resolvedState = resolvedSystemState()
 
         if hasPendingIconChange, let pendingOption {
@@ -542,10 +532,6 @@ final class AppIconManager: ObservableObject {
         guard !hasPendingIconChange else { return }
         guard resolvedState.currentOption != option else {
             applyResolvedSystemState(resolvedState)
-            return
-        }
-        guard !isIconChangeCoolingDown else {
-            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Try again in \(cooldownRemainingSeconds)s.")
             return
         }
 
@@ -619,10 +605,9 @@ final class AppIconManager: ObservableObject {
         guard requestID == pendingRequestID else { return }
 
         if isResourceTemporarilyUnavailable(error) {
-            recordIconChangeCooldown()
             applyResolvedSystemState(resolvedSystemState())
             clearPendingIconChange()
-            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Try again in \(cooldownRemainingSeconds)s.")
+            SystemMessageHelper.showWarning("iOS is still applying the last icon change. Please try again.")
             return
         }
 
@@ -651,7 +636,6 @@ final class AppIconManager: ObservableObject {
         let resolvedState = resolvedSystemState()
         if UIApplication.shared.alternateIconName == targetIconName {
             applyResolvedSystemState(resolvedState)
-            recordIconChangeCooldown()
             clearPendingIconChangeAfterSettle(requestID: requestID)
             return
         }
@@ -712,26 +696,6 @@ final class AppIconManager: ObservableObject {
         }
     }
 
-    private func recordIconChangeCooldown() {
-        UserDefaults.standard.set(Date(), forKey: Self.lastIconChangeDateKey)
-        refreshCooldown()
-    }
-
-    private var isIconChangeCoolingDown: Bool {
-        refreshCooldown()
-        return cooldownRemainingSeconds > 0
-    }
-
-    func refreshCooldown() {
-        guard let date = UserDefaults.standard.object(forKey: Self.lastIconChangeDateKey) as? Date else {
-            cooldownRemainingSeconds = 0
-            return
-        }
-
-        let remaining = Self.iconChangeCooldown - Date().timeIntervalSince(date)
-        cooldownRemainingSeconds = max(0, Int(ceil(remaining)))
-    }
-
     private func isResourceTemporarilyUnavailable(_ error: Error) -> Bool {
         let nsError = error as NSError
         return nsError.domain == NSPOSIXErrorDomain && nsError.code == 35
@@ -742,7 +706,6 @@ final class AppIconManager: ObservableObject {
 
 struct AppIconPickerView: View {
     @ObservedObject private var appIconManager = AppIconManager.shared
-    private let cooldownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ScrollView {
@@ -751,7 +714,6 @@ struct AppIconPickerView: View {
                     let isSelected = appIconManager.currentOption == option
                     let isDisabled = !appIconManager.isSupported
                         || appIconManager.hasPendingIconChange
-                        || appIconManager.cooldownRemainingSeconds > 0
 
                     Button {
                         appIconManager.setIcon(option)
@@ -818,12 +780,6 @@ struct AppIconPickerView: View {
                         .foregroundStyle(SystemTheme.warningOrange)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 4)
-                } else if appIconManager.cooldownRemainingSeconds > 0 {
-                    Text("iOS is finishing the last icon change. Try again in \(appIconManager.cooldownRemainingSeconds)s.")
-                        .font(SystemTypography.captionSmall)
-                        .foregroundStyle(SystemTheme.warningOrange)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
                 }
             }
             .padding(.horizontal, 16)
@@ -840,9 +796,6 @@ struct AppIconPickerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             appIconManager.refreshCurrentIcon()
-        }
-        .onReceive(cooldownTimer) { _ in
-            appIconManager.refreshCooldown()
         }
     }
 }
