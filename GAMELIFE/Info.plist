@@ -169,7 +169,7 @@
 	<true/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Resources/Fonts/Good Times Rg.otf</string>
+		<string>Good Times Rg.otf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
