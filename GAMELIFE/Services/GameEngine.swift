@@ -1144,12 +1144,16 @@ class GameEngine: ObservableObject {
         }
 
         if missedQuestCount > 0 {
-            let usedStreakShield = consumeStreakShieldIfNeeded()
-            applyMissedQuestDamage(
-                for: missedQuestCount,
-                damageWeight: missedQuestDamageWeight,
-                preserveStreak: usedStreakShield
-            )
+            if consumeRestDayPassIfAvailable() {
+                // Planned rest day: no HP loss, streak preserved.
+            } else {
+                let usedStreakShield = consumeStreakShieldIfNeeded()
+                applyMissedQuestDamage(
+                    for: missedQuestCount,
+                    damageWeight: missedQuestDamageWeight,
+                    preserveStreak: usedStreakShield
+                )
+            }
             didChange = true
         }
 
@@ -1196,6 +1200,22 @@ class GameEngine: ObservableObject {
             type: .rewardConsumed,
             title: "Streak Shield",
             detail: "Protected streak from one missed cycle. Remaining: \(player.streakShieldCharges)"
+        )
+        return true
+    }
+
+    private func consumeRestDayPassIfAvailable() -> Bool {
+        guard player.restDayPassCharges > 0 else { return false }
+        player.restDayPassCharges -= 1
+        logActivity(
+            type: .rewardConsumed,
+            title: "Rest Day Pass",
+            detail: "Planned rest day. No HP lost, streak preserved. Remaining: \(player.restDayPassCharges)"
+        )
+        SystemMessageHelper.showInfo("Rest Day Pass Used", "Missed quests were excused. No HP lost, streak intact.")
+        NotificationManager.shared.sendSystemAlert(
+            title: "Rest Day Pass Used",
+            message: "Your rest day absorbed the missed quests. No HP lost, streak preserved."
         )
         return true
     }

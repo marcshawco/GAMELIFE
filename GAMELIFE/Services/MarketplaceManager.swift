@@ -112,6 +112,13 @@ class MarketplaceManager: ObservableObject {
                 category: .entertainment,
                 icon: "popcorn"
             ),
+            MarketplaceReward(
+                name: "Skip-the-Chores Evening",
+                description: "One evening completely free of chores.",
+                cost: 120,
+                category: .experience,
+                icon: "sofa.fill"
+            ),
 
             // Large Rewards (200-500 Gold)
             MarketplaceReward(
@@ -141,6 +148,28 @@ class MarketplaceManager: ObservableObject {
                 cost: 350,
                 category: .entertainment,
                 icon: "play.circle"
+            ),
+            MarketplaceReward(
+                name: "Rest Day Pass",
+                description: "A planned day off. Missed quests cost no HP and your streak stays safe.",
+                cost: 250,
+                category: .item,
+                icon: "moon.zzz.fill",
+                restDayPassCharges: 1
+            ),
+            MarketplaceReward(
+                name: "New Hobby Supplies",
+                description: "Stock up on supplies for a hobby you love.",
+                cost: 250,
+                category: .experience,
+                icon: "paintpalette"
+            ),
+            MarketplaceReward(
+                name: "Concert or Event Ticket",
+                description: "Buy a ticket to a concert, game, or live event.",
+                cost: 500,
+                category: .experience,
+                icon: "ticket"
             ),
 
             // Premium Rewards (500+ Gold)
@@ -276,6 +305,31 @@ class MarketplaceManager: ObservableObject {
             )
         }
 
+        if let restPassCharges = reward.restDayPassCharges, restPassCharges > 0 {
+            player.restDayPassCharges += restPassCharges
+            purchase.isRedeemed = true
+            purchase.redeemedDate = Date()
+            if let historyIndex = purchaseHistory.firstIndex(where: { $0.id == purchase.id }) {
+                purchaseHistory[historyIndex] = purchase
+            }
+
+            savePurchaseHistory()
+
+            GameEngine.shared.recordExternalActivity(
+                type: .rewardConsumed,
+                title: reward.name,
+                detail: "+\(restPassCharges) rest day pass"
+            )
+            GameEngine.shared.evaluateAchievementsIfNeeded()
+            HapticManager.shared.purchaseSucceeded()
+
+            return PurchaseResult(
+                success: true,
+                message: "Rest day pass ready. Passes: \(player.restDayPassCharges).",
+                purchase: purchase
+            )
+        }
+
         unredeemedRewards.append(purchase)
 
         // Save
@@ -406,6 +460,7 @@ struct MarketplaceReward: Codable, Identifiable {
     var isCustom: Bool
     var healthRestore: Int?
     var streakShieldCharges: Int?
+    var restDayPassCharges: Int?
 
     init(
         name: String,
@@ -415,7 +470,8 @@ struct MarketplaceReward: Codable, Identifiable {
         icon: String,
         isCustom: Bool = false,
         healthRestore: Int? = nil,
-        streakShieldCharges: Int? = nil
+        streakShieldCharges: Int? = nil,
+        restDayPassCharges: Int? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -426,6 +482,7 @@ struct MarketplaceReward: Codable, Identifiable {
         self.isCustom = isCustom
         self.healthRestore = healthRestore
         self.streakShieldCharges = streakShieldCharges
+        self.restDayPassCharges = restDayPassCharges
     }
 }
 

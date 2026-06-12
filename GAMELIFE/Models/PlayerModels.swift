@@ -190,6 +190,7 @@ class Player: Codable {
     var longestStreak: Int
     var lastActiveDate: Date?
     var streakShieldCharges: Int
+    var restDayPassCharges: Int
 
     // Achievements & Collections
     var unlockedAchievements: [UnlockedAchievement]
@@ -265,6 +266,7 @@ class Player: Codable {
         self.longestStreak = 0
         self.lastActiveDate = nil
         self.streakShieldCharges = 0
+        self.restDayPassCharges = 0
 
         self.unlockedTitles = ["Awakened"]
         self.unlockedAchievements = []
@@ -288,6 +290,7 @@ class Player: Codable {
         case stats
         case currentStreak, longestStreak, lastActiveDate
         case streakShieldCharges
+        case restDayPassCharges
         case unlockedAchievements, unlockedTitles, shadowSoldiers
         case completedQuestCount, defeatedBossCount, dungeonsClearedCount
         case maxHP, currentHP
@@ -310,6 +313,7 @@ class Player: Codable {
         longestStreak = try container.decode(Int.self, forKey: .longestStreak)
         lastActiveDate = try container.decodeIfPresent(Date.self, forKey: .lastActiveDate)
         streakShieldCharges = max(0, try container.decodeIfPresent(Int.self, forKey: .streakShieldCharges) ?? 0)
+        restDayPassCharges = max(0, try container.decodeIfPresent(Int.self, forKey: .restDayPassCharges) ?? 0)
         unlockedAchievements = try container.decodeIfPresent([UnlockedAchievement].self, forKey: .unlockedAchievements) ?? []
         unlockedTitles = try container.decode([String].self, forKey: .unlockedTitles)
         shadowSoldiers = try container.decode([ShadowSoldier].self, forKey: .shadowSoldiers)
@@ -340,6 +344,7 @@ class Player: Codable {
         try container.encode(longestStreak, forKey: .longestStreak)
         try container.encode(lastActiveDate, forKey: .lastActiveDate)
         try container.encode(streakShieldCharges, forKey: .streakShieldCharges)
+        try container.encode(restDayPassCharges, forKey: .restDayPassCharges)
         try container.encode(unlockedAchievements, forKey: .unlockedAchievements)
         try container.encode(unlockedTitles, forKey: .unlockedTitles)
         try container.encode(shadowSoldiers, forKey: .shadowSoldiers)

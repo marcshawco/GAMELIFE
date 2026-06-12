@@ -25,7 +25,7 @@ enum FAQCatalog {
         ),
         FAQItem(
             question: "What happens if I miss my daily quests?",
-            answer: "Missed quests drain your HP. If HP reaches zero, you are defeated and death penalties apply: your stats and progress take a hit scaled to your rank. Higher ranks risk more."
+            answer: "Missed quests drain your HP. If HP reaches zero, you are defeated and death penalties apply: your stats and progress take a hit scaled to your rank. Higher ranks risk more. A Rest Day Pass from the Shop excuses one full day in advance — no HP loss, streak kept."
         ),
         FAQItem(
             question: "What does the Death Mechanic Penalties toggle do?",
