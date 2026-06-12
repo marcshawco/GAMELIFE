@@ -268,6 +268,8 @@ struct SettingsView: View {
                         Label("Privacy Policy", systemImage: "hand.raised.fill")
                     }
                 }
+
+                FAQSection()
             } header: {
                 Text("About")
             }

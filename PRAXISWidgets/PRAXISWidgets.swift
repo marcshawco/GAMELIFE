@@ -249,6 +249,10 @@ struct StatusWidgetView: View {
             switch family {
             case .accessoryRectangular:
                 accessoryBody
+            case .accessoryCircular:
+                circularAccessoryBody
+            case .accessoryInline:
+                inlineAccessoryBody
             default:
                 defaultBody
             }
@@ -327,6 +331,24 @@ struct StatusWidgetView: View {
                 .font(.caption2)
                 .bold()
         }
+    }
+
+    /// Lock screen circular: quest completion ring for today.
+    private var circularAccessoryBody: some View {
+        Gauge(value: Double(entry.payload.completedToday), in: 0...Double(max(1, entry.payload.totalToday))) {
+            Text("Lv.\(entry.payload.level)")
+                .font(.system(size: 9, weight: .semibold))
+        } currentValueLabel: {
+            Text("\(entry.payload.completedToday)/\(entry.payload.totalToday)")
+                .font(.system(size: 12, weight: .bold))
+        }
+        .gaugeStyle(.accessoryCircular)
+        .foregroundStyle(WidgetTheme.textPrimary)
+    }
+
+    /// Lock screen inline: one-line streak and quest summary.
+    private var inlineAccessoryBody: some View {
+        Label("\(entry.payload.completedToday)/\(entry.payload.totalToday) quests • \(entry.payload.streak)d streak", systemImage: "flame.fill")
     }
 }
 
@@ -532,7 +554,7 @@ struct PRAXISStatusWidget: Widget {
         }
         .configurationDisplayName("Hunter Status")
         .description("See level, HP, streak, gold, and today’s completion status at a glance.")
-        .supportedFamilies([.systemSmall, .accessoryRectangular])
+        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }
 

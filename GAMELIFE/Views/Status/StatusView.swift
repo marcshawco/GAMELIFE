@@ -16,6 +16,7 @@ enum StatusStatDisplayMode: String, CaseIterable {
 enum StatusDashboardTab: String, CaseIterable {
     case activity
     case achievements
+    case heatmap
 }
 
 // MARK: - Status View
@@ -79,6 +80,7 @@ struct StatusView: View {
                     StatusTabbedBottomSection(
                         recentAchievements: recentUnlockedAchievements,
                         activities: gameEngine.recentActivity,
+                        questHistory: QuestDataManager.shared.loadQuestHistory(),
                         isCompact: isCompactHeight,
                         isLargeHeight: isLargeHeight,
                         containerHeight: bottomSectionHeight,
@@ -338,6 +340,7 @@ private struct StatusToggleChip: View {
 struct StatusTabbedBottomSection: View {
     let recentAchievements: [AchievementDefinition]
     let activities: [ActivityLogEntry]
+    let questHistory: [QuestHistoryRecord]
     let isCompact: Bool
     let isLargeHeight: Bool
     let containerHeight: CGFloat
@@ -371,6 +374,15 @@ struct StatusTabbedBottomSection: View {
                     }
                 }
 
+                StatusTabChip(
+                    title: "Heatmap",
+                    isSelected: selectedTab == .heatmap
+                ) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        selectedTab = .heatmap
+                    }
+                }
+
                 Spacer()
 
                 if selectedTab == .achievements {
@@ -396,6 +408,8 @@ struct StatusTabbedBottomSection: View {
                             }
                         }
                     }
+                } else if selectedTab == .heatmap {
+                    QuestHeatmapView(history: questHistory, isCompact: isCompact)
                 } else {
                     if recentAchievements.isEmpty {
                         Text("No badges unlocked yet. Complete quests and boss fights to earn your first trophy.")

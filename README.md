@@ -12,8 +12,9 @@ You do the work. PRAXIS closes the feedback loop instantly with quests, XP, Gold
 - Auto-tracking via HealthKit and Location
 - Dynamic Bosses that react to real metric progress (weight, body fat, savings, workout consistency, steps, sleep, hydration, mindfulness, distance)
 - In-app language switching with German, Russian, French, Italian, and Spanish support
-- Home Screen widgets for status, next-up quests, and boss progress
+- Home Screen widgets for status, next-up quests, and boss progress, plus Lock Screen widgets (circular, rectangular, inline) on iPhone and iPad
 - CloudKit sync, watchOS companion, onboarding, achievements, and configurable death/streak mechanics
+- GitHub-style quest completion heatmap on the Status screen and an in-app FAQ in Settings
 
 ## Product Thesis
 
