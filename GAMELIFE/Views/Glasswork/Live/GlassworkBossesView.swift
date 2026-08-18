@@ -12,6 +12,8 @@ import SwiftUI
 struct GlassworkBossesView: View {
     @EnvironmentObject var gameEngine: GameEngine
     @State private var showSummonSheet = false
+    @State private var bossPendingDelete: BossFight?
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -26,12 +28,25 @@ struct GlassworkBossesView: View {
                             emptyCard
                         } else {
                             ForEach(Array(gameEngine.activeBossFights.enumerated()), id: \.element.id) { idx, boss in
-                                NavigationLink {
-                                    GlassworkBossFightView(bossID: boss.id, hue: hue(for: idx, total: gameEngine.activeBossFights.count))
-                                } label: {
-                                    bossCard(boss, index: idx, total: gameEngine.activeBossFights.count)
+                                SwipeToDeleteContainer(cornerRadius: 18, onDelete: {
+                                    bossPendingDelete = boss
+                                    showDeleteConfirm = true
+                                }) {
+                                    NavigationLink {
+                                        GlassworkBossFightView(bossID: boss.id, hue: hue(for: idx, total: gameEngine.activeBossFights.count))
+                                    } label: {
+                                        bossCard(boss, index: idx, total: gameEngine.activeBossFights.count)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        bossPendingDelete = boss
+                                        showDeleteConfirm = true
+                                    } label: {
+                                        Label("Abandon Boss", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                         summonCard
@@ -48,6 +63,15 @@ struct GlassworkBossesView: View {
         }
         .sheet(isPresented: $showSummonSheet) {
             BossFormSheet()
+        }
+        .alert("Abandon Boss?", isPresented: $showDeleteConfirm, presenting: bossPendingDelete) { boss in
+            Button("Cancel", role: .cancel) { bossPendingDelete = nil }
+            Button("Abandon", role: .destructive) {
+                gameEngine.deleteBossFight(boss.id)
+                bossPendingDelete = nil
+            }
+        } message: { boss in
+            Text("\"\(boss.title)\" and its progress will be removed. This action cannot be undone.")
         }
     }
 

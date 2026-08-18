@@ -79,10 +79,17 @@ struct GlassworkStatusView: View {
                         .font(GW.sans(14, weight: .semibold))
                         .tracking(-0.2)
                         .foregroundStyle(GW.ink)
-                    Text("LV \(gameEngine.player.level)")
-                        .font(GW.mono(10))
-                        .tracking(1)
-                        .foregroundStyle(GW.mute)
+                    HStack(spacing: 5) {
+                        Text("LV \(gameEngine.player.level)")
+                            .foregroundStyle(GW.mute)
+                        Text("·")
+                            .foregroundStyle(GW.mute.opacity(0.6))
+                        Text(gameEngine.player.title.uppercased())
+                            .foregroundStyle(GW.cyan)
+                            .lineLimit(1)
+                    }
+                    .font(GW.mono(10))
+                    .tracking(1)
                 }
             }
             Spacer()

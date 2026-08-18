@@ -173,6 +173,9 @@ class Player: Codable {
     var id: UUID
     var name: String
     var title: String
+    /// User-chosen active title. `nil` means follow the auto attribute-derived
+    /// class title. Must be a value present in `unlockedTitles` to take effect.
+    var preferredTitle: String?
     var originStory: String
     var createdAt: Date
 
@@ -247,6 +250,7 @@ class Player: Codable {
         self.id = UUID()
         self.name = name
         self.title = "Awakened"
+        self.preferredTitle = nil
         self.originStory = originStory
         self.createdAt = Date()
 
@@ -285,7 +289,7 @@ class Player: Codable {
     // MARK: - Codable
 
     enum CodingKeys: String, CodingKey {
-        case id, name, title, originStory, createdAt
+        case id, name, title, preferredTitle, originStory, createdAt
         case level, currentXP, totalXP, gold
         case stats
         case currentStreak, longestStreak, lastActiveDate
@@ -302,6 +306,7 @@ class Player: Codable {
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         title = try container.decode(String.self, forKey: .title)
+        preferredTitle = try container.decodeIfPresent(String.self, forKey: .preferredTitle)
         originStory = try container.decode(String.self, forKey: .originStory)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         level = try container.decode(Int.self, forKey: .level)
@@ -333,6 +338,7 @@ class Player: Codable {
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(preferredTitle, forKey: .preferredTitle)
         try container.encode(originStory, forKey: .originStory)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(level, forKey: .level)

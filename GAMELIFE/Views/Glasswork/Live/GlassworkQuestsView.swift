@@ -15,6 +15,8 @@ struct GlassworkQuestsView: View {
     @State private var showAddSheet = false
     @State private var clearedPayload: ClearedQuestPayload?
     @State private var expandedSubtaskQuestIDs: Set<UUID> = []
+    @State private var questPendingDelete: DailyQuest?
+    @State private var showDeleteConfirm = false
 
     struct ClearedQuestPayload: Identifiable {
         let id = UUID()
@@ -81,6 +83,15 @@ struct GlassworkQuestsView: View {
                 onClose: { clearedPayload = nil }
             )
             .presentationBackground(.clear)
+        }
+        .alert("Delete Quest?", isPresented: $showDeleteConfirm, presenting: questPendingDelete) { quest in
+            Button("Cancel", role: .cancel) { questPendingDelete = nil }
+            Button("Delete", role: .destructive) {
+                gameEngine.deleteQuest(quest.id)
+                questPendingDelete = nil
+            }
+        } message: { quest in
+            Text("\"\(quest.title)\" will be removed. This action cannot be undone.")
         }
     }
 
@@ -153,7 +164,20 @@ struct GlassworkQuestsView: View {
             }
         } else {
             ForEach(quests, id: \.id) { q in
-                questCard(q)
+                SwipeToDeleteContainer(cornerRadius: 18, onDelete: {
+                    questPendingDelete = q
+                    showDeleteConfirm = true
+                }) {
+                    questCard(q)
+                }
+                .contextMenu {
+                    Button(role: .destructive) {
+                        questPendingDelete = q
+                        showDeleteConfirm = true
+                    } label: {
+                        Label("Delete Quest", systemImage: "trash")
+                    }
+                }
             }
         }
     }

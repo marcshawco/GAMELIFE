@@ -98,6 +98,10 @@ class GameEngine: ObservableObject {
         // Load recent activity log
         self.recentActivity = ActivityLogDataManager.shared.loadActivityLog()
 
+        // Reconcile the active title with the attribute-derived class title so
+        // existing profiles migrate off the old rank-name titles immediately.
+        syncClassTitle()
+
         migrateLegacyDefaultQuestTemplatesIfNeeded()
         migrateLegacyStatBaselineIfNeeded()
 
@@ -468,6 +472,31 @@ class GameEngine: ObservableObject {
         save()
     }
 
+    /// Remove a boss fight without awarding any rewards (user-initiated delete).
+    /// Cleans up the auto-generated goal quest and unlinks any linked quests,
+    /// mirroring the teardown in `handleBossDefeated` minus the loot/XP.
+    func deleteBossFight(_ bossID: UUID) {
+        guard let boss = activeBossFights.first(where: { $0.id == bossID }) else { return }
+
+        activeBossFights.removeAll { $0.id == bossID }
+
+        if let generatedQuestID = boss.dynamicGoal?.generatedQuestID {
+            dailyQuests.removeAll { $0.id == generatedQuestID }
+            NotificationManager.shared.removeQuestReminder(questID: generatedQuestID)
+        }
+
+        for index in dailyQuests.indices where dailyQuests[index].linkedBossID == bossID {
+            dailyQuests[index].linkedBossID = nil
+            if dailyQuests[index].linkedDynamicBossID == bossID {
+                dailyQuests[index].linkedDynamicBossID = nil
+            }
+        }
+
+        AnalyticsManager.shared.trackFeature("boss_deleted")
+        HapticManager.shared.selection()
+        save()
+    }
+
     func startFreshProfile(named name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         player = Player(name: trimmed.isEmpty ? "Hunter" : trimmed)
@@ -560,6 +589,41 @@ class GameEngine: ObservableObject {
         player.stats[statType] = stat
     }
 
+    /// Reconciles the player's active title. The attribute-derived class title
+    /// (see `PlayerClassTitle`) is always earned/unlocked; the *active* title is
+    /// the player's chosen `preferredTitle` when still valid, otherwise the auto
+    /// class title. The level-based `rank` is a separate, complementary badge.
+    func syncClassTitle() {
+        let derived = player.classTitle
+        if !player.unlockedTitles.contains(derived) {
+            player.unlockedTitles.append(derived)
+        }
+
+        if let preferred = player.preferredTitle, player.unlockedTitles.contains(preferred) {
+            if player.title != preferred { player.title = preferred }
+        } else {
+            if player.preferredTitle != nil { player.preferredTitle = nil } // prune stale pick
+            if player.title != derived { player.title = derived }
+        }
+    }
+
+    /// Player picks an active title from the ones they've earned.
+    func setPreferredTitle(_ title: String) {
+        guard player.unlockedTitles.contains(title) else { return }
+        player.preferredTitle = title
+        syncClassTitle()
+        HapticManager.shared.selection()
+        save()
+    }
+
+    /// Revert to the automatic attribute-derived class title.
+    func useAutomaticTitle() {
+        player.preferredTitle = nil
+        syncClassTitle()
+        HapticManager.shared.selection()
+        save()
+    }
+
     /// Handle level up rewards and notifications
     private func handleLevelUp(from previousLevel: Int, to newLevel: Int) {
         let previousRank = PlayerRank.rank(forLevel: previousLevel)
@@ -568,13 +632,8 @@ class GameEngine: ObservableObject {
         let levelsGained = max(0, newLevel - previousLevel)
         let levelUpRecovery = applyLevelUpRecoveryBonus(levelsGained: levelsGained)
 
-        // Update title if rank changed
-        if rankUp {
-            player.title = newRank.title
-            if !player.unlockedTitles.contains(newRank.title) {
-                player.unlockedTitles.append(newRank.title)
-            }
-        }
+        // The mastery tier can shift on level up, so refresh the class title.
+        syncClassTitle()
 
         // Create level up data for display
         lastLevelUpData = LevelUpData(
@@ -1294,7 +1353,7 @@ class GameEngine: ObservableObject {
         let demotedRank = ranks[currentIndex - 1]
         let targetLevel = max(1, demotedRank.minLevel)
         player.level = targetLevel
-        player.title = demotedRank.title
+        syncClassTitle()
 
         let lowerBoundXP = GameFormulas.xpRequired(forLevel: targetLevel)
         let upperBoundXP = max(lowerBoundXP, GameFormulas.xpRequired(forLevel: targetLevel + 1) - 1)
@@ -1854,6 +1913,7 @@ class GameEngine: ObservableObject {
 
     /// Save all game data
     func save(syncToCloud: Bool = true) {
+        syncClassTitle()
         PlayerDataManager.shared.savePlayer(player)
         QuestDataManager.shared.saveDailyQuests(dailyQuests)
         QuestDataManager.shared.saveBossFights(activeBossFights)

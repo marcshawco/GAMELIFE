@@ -807,7 +807,6 @@ struct AppIconPickerView: View {
 struct PlayerProfileView: View {
     @EnvironmentObject var gameEngine: GameEngine
     @State private var editedName: String = ""
-    @State private var editedTitle: String = ""
     @State private var isEditing = false
 
     var body: some View {
@@ -835,19 +834,13 @@ struct PlayerProfileView: View {
                         .foregroundStyle(gameEngine.player.rank.glowColor)
                 }
 
-                if isEditing {
-                    Picker("Title", selection: $editedTitle) {
-                        ForEach(gameEngine.player.unlockedTitles, id: \.self) { title in
-                            Text(title).tag(title)
-                        }
-                    }
-                } else {
-                    HStack {
-                        Text("Title")
-                            .foregroundStyle(SystemTheme.textSecondary)
-                        Spacer()
-                        Text(gameEngine.player.title)
-                    }
+                HStack {
+                    Text("Title")
+                        .foregroundStyle(SystemTheme.textSecondary)
+                    Spacer()
+                    Text(gameEngine.player.title)
+                        .font(SystemTypography.mono(14, weight: .bold))
+                        .foregroundStyle(SystemTheme.primaryBlue)
                 }
 
                 HStack {
@@ -910,21 +903,51 @@ struct PlayerProfileView: View {
 
             if !gameEngine.player.unlockedTitles.isEmpty {
                 Section {
-                    ForEach(gameEngine.player.unlockedTitles, id: \.self) { title in
+                    // Automatic option: follow the attribute-derived class title.
+                    Button {
+                        gameEngine.useAutomaticTitle()
+                    } label: {
                         HStack {
-                            Image(systemName: "text.badge.star")
-                                .foregroundStyle(SystemTheme.goldColor)
-                            Text(title)
-                            Spacer()
-                            if title == gameEngine.player.title {
-                                Text("Active")
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(SystemTheme.primaryBlue)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Automatic")
+                                    .foregroundStyle(SystemTheme.textPrimary)
+                                Text("Follows your playstyle — currently \(gameEngine.player.classTitle)")
                                     .font(SystemTypography.captionSmall)
+                                    .foregroundStyle(SystemTheme.textTertiary)
+                            }
+                            Spacer()
+                            if gameEngine.player.preferredTitle == nil {
+                                Image(systemName: "checkmark")
                                     .foregroundStyle(SystemTheme.successGreen)
                             }
                         }
                     }
+                    .buttonStyle(.plain)
+
+                    ForEach(gameEngine.player.unlockedTitles, id: \.self) { title in
+                        Button {
+                            gameEngine.setPreferredTitle(title)
+                        } label: {
+                            HStack {
+                                Image(systemName: "text.badge.star")
+                                    .foregroundStyle(SystemTheme.goldColor)
+                                Text(title)
+                                    .foregroundStyle(SystemTheme.textPrimary)
+                                Spacer()
+                                if gameEngine.player.preferredTitle != nil && title == gameEngine.player.title {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(SystemTheme.successGreen)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
                 } header: {
-                    Text("Unlocked Titles")
+                    Text("Active Title")
+                } footer: {
+                    Text("Pick any title you've earned, or choose Automatic to follow your dominant attributes and level. Your rank is a separate badge.")
                 }
             }
         }
@@ -946,7 +969,6 @@ struct PlayerProfileView: View {
                         saveProfile()
                     } else {
                         editedName = gameEngine.player.name
-                        editedTitle = gameEngine.player.title
                     }
                     isEditing.toggle()
                 }
@@ -958,7 +980,6 @@ struct PlayerProfileView: View {
 
     private func saveProfile() {
         gameEngine.player.name = editedName.trimmingCharacters(in: .whitespaces)
-        gameEngine.player.title = editedTitle
         gameEngine.save()
     }
 }

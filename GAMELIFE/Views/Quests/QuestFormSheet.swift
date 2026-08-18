@@ -230,7 +230,7 @@ struct QuestFormSheet: View {
 
     private var navigationTitle: String {
         if mode.isEditing { return "Edit Quest" }
-        return creationPage == 0 ? "Quick Quest" : "Create Quest"
+        return creationPage == 0 ? "Express Quest" : "Custom Quest"
     }
 
     var body: some View {
@@ -348,272 +348,31 @@ struct QuestFormSheet: View {
         }
     }
 
+    // MARK: - Custom (advanced) quest form — Glasswork styled
+
     private var advancedQuestForm: some View {
-        Form {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
                 if !mode.isEditing {
-                    Section {
-                        creationModeSwitch
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 0, trailing: 16))
+                    creationModeSwitch
                 }
-
-                Section {
-                    questReadinessCard
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 6, trailing: 16))
-
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        TextField("Quest Title", text: $title)
-                            .onChange(of: title) { _, _ in
-                                if isValid {
-                                    showValidationFeedback = false
-                                }
-                            }
-
-                        if showValidationFeedback && !hasTitle {
-                            Label("Give this quest a name so it can be created.", systemImage: "exclamationmark.triangle.fill")
-                                .font(SystemTypography.captionSmall)
-                                .foregroundStyle(SystemTheme.warningOrange)
-                        }
-                    }
-
-                    TextField("Description (optional)", text: $description)
-                } header: {
-                    Text("Quest Details")
-                }
-
-                Section {
-                    Picker("Difficulty", selection: $difficulty) {
-                        ForEach(QuestDifficulty.allCases, id: \.self) { diff in
-                            Label(diff.rawValue, systemImage: diff.icon)
-                                .foregroundStyle(diff.color)
-                                .tag(diff)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    VStack(spacing: 10) {
-                        HStack {
-                            let previewXP = GameFormulas.questXP(difficulty: difficulty)
-                            let previewGold = isOptionalQuest ? 0 : GameFormulas.questGold(difficulty: difficulty)
-
-                            Text("Rewards")
-                                .font(SystemTypography.body)
-                                .foregroundStyle(SystemTheme.textPrimary)
-                            Spacer()
-                            Label("+\(previewXP)", systemImage: "star.fill")
-                                .font(SystemTypography.mono(16, weight: .semibold))
-                                .foregroundStyle(SystemTheme.primaryBlue)
-                            if previewGold > 0 {
-                                Label("+\(previewGold)", systemImage: "dollarsign.circle.fill")
-                                    .font(SystemTypography.mono(16, weight: .semibold))
-                                    .foregroundStyle(SystemTheme.goldColor)
-                            } else {
-                                Text("XP only")
-                                    .font(SystemTypography.caption)
-                                    .foregroundStyle(SystemTheme.textTertiary)
-                            }
-                        }
-
-                        Divider()
-                    }
-
-                    Toggle("Optional Quest (XP only)", isOn: $isOptionalQuest)
-                } header: {
-                    Text("Difficulty")
-                } footer: {
-                    Text("Optional quests never deal missed-quest HP damage. Completing them awards XP and stats, but no Gold.")
-                }
-
-                Section {
-                    ForEach(StatType.allCases) { stat in
-                        let isSelected = selectedStats.contains(stat)
-                        Button {
-                            toggleStat(stat)
-                        } label: {
-                            HStack {
-                                Image(systemName: stat.icon)
-                                    .foregroundStyle(stat.color)
-                                    .frame(width: 24)
-                                Text(stat.fullName)
-                                    .foregroundStyle(SystemTheme.textPrimary)
-                                Text(stat.rawValue)
-                                    .font(SystemTypography.mono(12, weight: .semibold))
-                                    .foregroundStyle(stat.color)
-                                Spacer()
-                                if isSelected {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(SystemTheme.primaryBlue)
-                                }
-                            }
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(
-                                        isSelected
-                                        ? stat.color.opacity(0.16)
-                                        : SystemTheme.backgroundSecondary.opacity(0.45)
-                                    )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(
-                                        isSelected
-                                        ? stat.color.opacity(0.95)
-                                        : SystemTheme.borderSecondary.opacity(0.45),
-                                        lineWidth: isSelected ? 1.6 : 1
-                                    )
-                            )
-                            .shadow(
-                                color: isSelected ? stat.color.opacity(0.28) : .clear,
-                                radius: isSelected ? 8 : 0,
-                                x: 0,
-                                y: 0
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .contentShape(Rectangle())
-                    }
-                } header: {
-                    HStack(spacing: 6) {
-                        Text("Target Stats (Select 1-3)")
-                        if showValidationFeedback && !hasStats {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(SystemTheme.warningOrange)
-                        }
-                    }
-                } footer: {
-                    if showValidationFeedback && !hasStats {
-                        Text("Select at least one stat. This tells PRAXIS where to award XP when the quest is completed.")
-                            .foregroundStyle(SystemTheme.warningOrange)
-                    } else {
-                        Text("Selected stats receive XP when this quest is completed.")
-                    }
-                }
-
-                Section {
-                    if subtaskDrafts.isEmpty {
-                        Text("No subtasks yet.")
-                            .foregroundStyle(SystemTheme.textTertiary)
-                    } else {
-                        ForEach($subtaskDrafts) { $draft in
-                            HStack(spacing: 10) {
-                                Image(systemName: draft.isCompleted ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(draft.isCompleted ? SystemTheme.successGreen : SystemTheme.textTertiary)
-                                    .frame(width: 22)
-
-                                TextField("Subtask", text: $draft.title)
-                                    .textInputAutocapitalization(.sentences)
-
-                                Button {
-                                    removeSubtask(draft.id)
-                                } label: {
-                                    Image(systemName: "minus.circle.fill")
-                                        .foregroundStyle(SystemTheme.criticalRed)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Remove subtask")
-                            }
-                        }
-                    }
-
-                    HStack(spacing: 10) {
-                        TextField("Add a subtask", text: $newSubtaskTitle)
-                            .textInputAutocapitalization(.sentences)
-                            .onSubmit(addSubtask)
-
-                        Button(action: addSubtask) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(SystemTheme.primaryBlue)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .accessibilityLabel("Add subtask")
-                    }
-                } header: {
-                    Text("Subtasks")
-                } footer: {
-                    Text(subtaskRewardPreview)
-                }
-
-                Section {
-                    Picker("Tracking Method", selection: $trackingType) {
-                        ForEach(QuestTrackingType.betaSelectableTypes, id: \.self) { type in
-                            Text(trackingLabel(for: type)).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    trackingConfigurationSection
-                } header: {
-                    Text("Tracking")
-                } footer: {
-                    trackingFooter
-                }
-
-                Section {
-                    if linkableBosses.isEmpty {
-                        Text("No active bosses yet.")
-                            .foregroundStyle(SystemTheme.textTertiary)
-
-                        Button {
-                            showCreateBossSheet = true
-                        } label: {
-                            Label("Create Boss", systemImage: "plus.circle.fill")
-                                .foregroundStyle(SystemTheme.primaryBlue)
-                        }
-                    } else {
-                        Picker("Linked Boss", selection: $selectedBossID) {
-                            Text("None").tag(UUID?.none)
-                            ForEach(linkableBosses) { boss in
-                                Text(boss.title).tag(Optional(boss.id))
-                            }
-                        }
-                        // navigationLink keeps the Form's scroll position
-                        // stable instead of letting iOS' contextual menu
-                        // popup yank the scroll up to anchor on the row.
-                        .pickerStyle(.navigationLink)
-                    }
-                } header: {
-                    Text("Boss Link")
-                } footer: {
-                    if let selectedBoss {
-                        Text("Estimated impact: \(estimatedBossDamage) HP (~\(estimatedBossDamagePercentage)% of \(selectedBoss.title)'s max HP) each completion.")
-                    } else {
-                        Text("Completing this quest will damage the linked boss.")
-                    }
-                }
-
-                Section {
-                    Picker("Repeat", selection: $frequency) {
-                        ForEach(QuestFrequency.allCases) { option in
-                            Label(option.rawValue, systemImage: option.icon)
-                                .tag(option)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Toggle("Enable Reminder", isOn: $reminderEnabled)
-
-                    if reminderEnabled {
-                        DatePicker(
-                            "Reminder Time",
-                            selection: $reminderTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                    }
-                } header: {
-                    Text("Schedule")
-                } footer: {
-                    Text("Set how often the quest resets and optionally schedule a reminder.")
-                }
+                customReadinessCard
+                customDetailsCard
+                customDifficultyCard
+                customStatsCard
+                customSubtasksCard
+                customTrackingCard
+                customBossCard
+                customScheduleCard
+                customSaveButton
+                Color.clear.frame(height: 40)
             }
-        .scrollContentBackground(.hidden)
+            .padding(.horizontal, 16)
+            .padding(.top, mode.isEditing ? 18 : 8)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scrollDismissesKeyboard(.interactively)
         .background(
             ZStack {
                 GW.bg
@@ -622,6 +381,345 @@ struct QuestFormSheet: View {
             .ignoresSafeArea()
         )
     }
+
+    private var customReadinessCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill((isValid ? GW.cyan : GW.amber).opacity(0.16))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: isValid ? "checkmark.seal.fill" : "checklist")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(isValid ? GW.cyan : GW.amber)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isValid ? "READY" : "NEEDS ATTENTION")
+                        .font(GW.mono(9, weight: .bold))
+                        .tracking(1.5)
+                        .foregroundStyle(isValid ? GW.cyan : GW.amber)
+                    Text(validationSummaryText)
+                        .font(GW.sans(12))
+                        .foregroundStyle(GW.mute)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var customDetailsCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("QUEST DETAILS")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                gwTextField("What needs doing?", text: $title)
+                    .onChange(of: title) { _, _ in
+                        if isValid { showValidationFeedback = false }
+                    }
+
+                if showValidationFeedback && !hasTitle {
+                    Label("Give this quest a name so it can be created.", systemImage: "exclamationmark.triangle.fill")
+                        .font(GW.sans(12, weight: .medium))
+                        .foregroundStyle(GW.amber)
+                }
+
+                gwTextField("Description (optional)", text: $description)
+            }
+        }
+    }
+
+    private var customDifficultyCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("DIFFICULTY")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Text("+\(GameFormulas.questXP(difficulty: difficulty)) XP")
+                        .font(GW.display(18, weight: .bold))
+                        .foregroundStyle(GW.cyan)
+                    let previewGold = isOptionalQuest ? 0 : GameFormulas.questGold(difficulty: difficulty)
+                    if previewGold > 0 {
+                        Text("+\(previewGold)g")
+                            .font(GW.mono(11, weight: .semibold))
+                            .foregroundStyle(GW.amber)
+                    }
+                }
+
+                QuickQuestChipsRow {
+                    ForEach(QuestDifficulty.allCases, id: \.self) { option in
+                        gwSelectableChip(option.rawValue, systemImage: option.icon, selected: difficulty == option) {
+                            difficulty = option
+                        }
+                    }
+                }
+
+                Divider().overlay(GW.hairline)
+
+                Toggle(isOn: $isOptionalQuest) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Optional Quest")
+                            .font(GW.sans(13, weight: .semibold))
+                            .foregroundStyle(GW.ink)
+                        Text("XP & stats only — no Gold, and no missed-quest HP damage.")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+                .tint(GW.cyan)
+            }
+        }
+    }
+
+    private var customStatsCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("TARGET STATS")
+                        .font(GW.mono(9, weight: .medium))
+                        .tracking(2)
+                        .foregroundStyle(GW.mute)
+                    Spacer()
+                    Text("\(selectedStats.count)/3")
+                        .font(GW.mono(10, weight: .medium))
+                        .foregroundStyle(showValidationFeedback && !hasStats ? GW.amber : GW.mute)
+                }
+
+                QuickQuestChipsRow {
+                    ForEach(StatType.allCases) { stat in
+                        gwSelectableChip(stat.rawValue, systemImage: stat.icon, selected: selectedStats.contains(stat)) {
+                            toggleStat(stat)
+                        }
+                    }
+                }
+
+                Text(showValidationFeedback && !hasStats
+                     ? "Select at least one stat — this is where completing the quest awards XP."
+                     : "Selected stats receive XP when this quest is completed.")
+                    .font(GW.sans(11))
+                    .foregroundStyle(showValidationFeedback && !hasStats ? GW.amber : GW.mute)
+            }
+        }
+    }
+
+    private var customSubtasksCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("SUBTASKS")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                ForEach($subtaskDrafts) { $draft in
+                    HStack(spacing: 8) {
+                        Image(systemName: draft.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(draft.isCompleted ? GW.cyan : GW.mute)
+                            .frame(width: 20)
+                        TextField("Subtask", text: $draft.title)
+                            .font(GW.sans(13))
+                            .foregroundStyle(GW.ink)
+                            .textInputAutocapitalization(.sentences)
+                        Button { removeSubtask(draft.id) } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundStyle(GW.pink)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Remove subtask")
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    gwTextField("Add a step", text: $newSubtaskTitle)
+                        .onSubmit(addSubtask)
+                    Button(action: addSubtask) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(GW.cyan)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityLabel("Add subtask")
+                }
+
+                Text(subtaskRewardPreview)
+                    .font(GW.sans(11))
+                    .foregroundStyle(GW.mute)
+            }
+        }
+    }
+
+    private var customTrackingCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("TRACKING")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                QuickQuestChipsRow {
+                    ForEach(QuestTrackingType.betaSelectableTypes, id: \.self) { type in
+                        gwSelectableChip(trackingLabel(for: type), selected: trackingType == type) {
+                            trackingType = type
+                        }
+                    }
+                }
+
+                trackingConfigurationSection
+
+                trackingFooter
+                    .font(GW.sans(11))
+                    .foregroundStyle(GW.mute)
+            }
+        }
+    }
+
+    private var customBossCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("LINK A BOSS")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                if linkableBosses.isEmpty {
+                    Text("No active bosses yet.")
+                        .font(GW.sans(12))
+                        .foregroundStyle(GW.mute)
+                    Button { showCreateBossSheet = true } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Create a boss")
+                        }
+                        .font(GW.sans(12, weight: .semibold))
+                        .foregroundStyle(GW.cyan)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    QuickQuestChipsRow {
+                        gwSelectableChip("None", selected: selectedBossID == nil) {
+                            selectedBossID = nil
+                        }
+                        ForEach(linkableBosses) { boss in
+                            gwSelectableChip(boss.title, selected: selectedBossID == boss.id) {
+                                selectedBossID = boss.id
+                            }
+                        }
+                    }
+
+                    if let selectedBoss {
+                        Text("~\(estimatedBossDamage) HP per completion (\(estimatedBossDamagePercentage)% of \(selectedBoss.title)'s max HP).")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    } else {
+                        Text("Completing this quest will damage the linked boss.")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+            }
+        }
+    }
+
+    private var customScheduleCard: some View {
+        GWCard(paddingX: 14, paddingY: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SCHEDULE")
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(2)
+                    .foregroundStyle(GW.mute)
+
+                QuickQuestChipsRow {
+                    ForEach(QuestFrequency.allCases) { option in
+                        gwSelectableChip(option.rawValue, systemImage: option.icon, selected: frequency == option) {
+                            frequency = option
+                        }
+                    }
+                }
+
+                Divider().overlay(GW.hairline)
+
+                Toggle(isOn: $reminderEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reminder")
+                            .font(GW.sans(13, weight: .semibold))
+                            .foregroundStyle(GW.ink)
+                        Text("Optional nudge for this quest.")
+                            .font(GW.sans(11))
+                            .foregroundStyle(GW.mute)
+                    }
+                }
+                .tint(GW.cyan)
+
+                if reminderEnabled {
+                    DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                        .font(GW.sans(13))
+                        .foregroundStyle(GW.ink)
+                        .datePickerStyle(.compact)
+                        .tint(GW.cyan)
+                }
+            }
+        }
+    }
+
+    private var customSaveButton: some View {
+        GWButton(label: mode.isEditing ? "SAVE QUEST" : "CREATE QUEST", variant: .primary) {
+            Task { await saveQuest() }
+        }
+        .opacity(isValid ? 1 : 0.6)
+        .padding(.top, 2)
+    }
+
+    // MARK: - Glasswork field / chip helpers
+
+    private func gwTextField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .font(GW.sans(15))
+            .foregroundStyle(GW.ink)
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(GW.cyan.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(GW.cyan.opacity(0.22), lineWidth: 1)
+                    )
+            )
+    }
+
+    private func gwSelectableChip(_ label: String, systemImage: String? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            HapticManager.shared.selection()
+            action()
+        } label: {
+            HStack(spacing: 5) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                Text(label.uppercased())
+                    .font(GW.mono(9, weight: .medium))
+                    .tracking(0.6)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(selected ? GW.bg : GW.cyan)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity)
+            .background(Capsule().fill(selected ? GW.cyan : GW.cyan.opacity(0.07)))
+            .overlay(Capsule().stroke(GW.cyan.opacity(0.32), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
 
     private var quickQuestSlide: some View {
         GeometryReader { geometry in
@@ -647,14 +745,14 @@ struct QuestFormSheet: View {
 
     private var creationModeSwitch: some View {
         HStack(spacing: 8) {
-            creationModeButton(title: "Quick Quest", isActive: creationPage == 0) {
+            creationModeButton(title: "Express", isActive: creationPage == 0) {
                 withAnimation(.easeInOut(duration: 0.22)) {
                     creationPage = 0
                 }
                 HapticManager.shared.selection()
             }
 
-            creationModeButton(title: "Full Builder", isActive: creationPage == 1) {
+            creationModeButton(title: "Custom", isActive: creationPage == 1) {
                 withAnimation(.easeInOut(duration: 0.22)) {
                     creationPage = 1
                 }

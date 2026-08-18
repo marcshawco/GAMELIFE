@@ -79,6 +79,10 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 ### 5) Mastery + Identity Loop
 
 - Six attributes: `STR`, `INT`, `AGI`, `VIT`, `WIL`, `SPI`
+- Attribute-driven class titles: an auto title derived from your dominant
+  stats + level (Apprentice → Scholar → Grand Wizard, plus dual-stat hybrids),
+  shown alongside the separate level rank. Players can pin any earned title or
+  return to Automatic from the profile
 - Trophy Room + achievements with rarity tiers and rewards
 - Persistent display preferences on Status dashboard
 
@@ -117,9 +121,14 @@ PRAXIS implements all three so discipline feels like progression, not friction.
 ## Feature Highlights
 
 - Status dashboard with radar/grid stat toggle and persisted preference
-- Slide-based quest creation: quick capture includes starter templates,
-  difficulty, XP preview, attribute selection, optional reminder time, and
-  optional three-step breakdown before users swipe into the full builder
+- Slide-based quest creation with two Glasswork-styled modes — **Express**
+  (quick capture: starter templates, difficulty, XP preview, attribute
+  selection, optional reminder + three-step breakdown) and **Custom** (full
+  builder: tracking method, boss link, schedule) sharing one cohesive look
+- Swipe-to-delete (plus long-press) with confirmation on quest and boss cards
+- Keyboard "Done" bar and drag-to-dismiss across the quest/boss builders
+- Dynamic-goal bosses auto-import their current value from Apple Health
+  (weight, steps, sleep, and more) and offer one-tap starter names
 - Tabbed Activity/Achievements module with persisted preference
 - Next Up prioritization for high-impact quests
 - GitHub-style quest completion heatmap with toggleable visibility

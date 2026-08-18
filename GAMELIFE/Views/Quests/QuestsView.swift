@@ -91,19 +91,24 @@ struct QuestsView: View {
                                 }
 
                                 ForEach(sortedQuests) { quest in
-                                    QuestRowView(
-                                        quest: quest,
-                                        locationManager: locationManager,
-                                        healthKitManager: healthKitManager,
-                                        permissionManager: permissionManager,
-                                        liveProgressTick: liveProgressTick,
-                                        impactBossText: bossImpactText(for: quest),
-                                        impactRewardsText: rewardImpactText(for: quest),
-                                        impactStreakText: streakImpactText(for: quest),
-                                        onComplete: { completeQuest(quest) },
-                                        onSubtaskComplete: { subtask in completeSubtask(subtask, in: quest) },
-                                        onShowActions: { questActionTarget = quest }
-                                    )
+                                    SwipeToDeleteContainer(onDelete: {
+                                        questToDelete = quest
+                                        showDeleteConfirmation = true
+                                    }) {
+                                        QuestRowView(
+                                            quest: quest,
+                                            locationManager: locationManager,
+                                            healthKitManager: healthKitManager,
+                                            permissionManager: permissionManager,
+                                            liveProgressTick: liveProgressTick,
+                                            impactBossText: bossImpactText(for: quest),
+                                            impactRewardsText: rewardImpactText(for: quest),
+                                            impactStreakText: streakImpactText(for: quest),
+                                            onComplete: { completeQuest(quest) },
+                                            onSubtaskComplete: { subtask in completeSubtask(subtask, in: quest) },
+                                            onShowActions: { questActionTarget = quest }
+                                        )
+                                    }
                                     .padding(.horizontal)
                                     .id(quest.id)
                                     .overlay {
